@@ -1,0 +1,8 @@
+{
+  "include": ["custom_components"],
+  "exclude": ["**/__pycache__", ".git", ".venv", ".venv39"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic"
+}
