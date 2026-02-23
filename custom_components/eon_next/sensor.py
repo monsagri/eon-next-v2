@@ -1,115 +1,158 @@
 #!/usr/bin/env python3
+"""Sensor platform for the Eon Next integration."""
 
 import logging
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
-    SensorEntity
+    SensorEntity,
+    SensorStateClass,
 )
 
 from homeassistant.const import (
     UnitOfEnergy,
-    UnitOfVolume
+    UnitOfVolume,
 )
 
-from . import DOMAIN
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN
 from .eonnext import METER_TYPE_GAS, METER_TYPE_ELECTRIC
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Setup sensors from a config entry created in the integrations UI."""
-
-    api = hass.data[DOMAIN][config_entry.entry_id]
+    """Set up sensors from a config entry."""
+    entry_data = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = entry_data["coordinator"]
+    api = entry_data["api"]
 
     entities = []
     for account in api.accounts:
         for meter in account.meters:
-            if await meter.has_reading() == True:
+            serial = meter.serial
+            if serial not in coordinator.data:
+                continue
 
-                entities.append(LatestReadingDateSensor(meter))
+            entities.append(LatestReadingDateSensor(coordinator, meter))
 
-                if meter.get_type() == METER_TYPE_ELECTRIC:
-                    entities.append(LatestElectricKwhSensor(meter))
-                
-                if meter.get_type() == METER_TYPE_GAS:
-                    entities.append(LatestGasCubicMetersSensor(meter))
-                    entities.append(LatestGasKwhSensor(meter))
+            if meter.type == METER_TYPE_ELECTRIC:
+                entities.append(LatestElectricKwhSensor(coordinator, meter))
 
-    async_add_entities(entities, update_before_add=True)
+            if meter.type == METER_TYPE_GAS:
+                entities.append(LatestGasCubicMetersSensor(coordinator, meter))
+                entities.append(LatestGasKwhSensor(coordinator, meter))
+
+            # Add daily consumption sensor if REST data is available
+            meter_data = coordinator.data.get(serial, {})
+            if meter_data.get("daily_consumption") is not None:
+                entities.append(DailyConsumptionSensor(coordinator, meter))
+
+    async_add_entities(entities)
 
 
+class EonNextSensorBase(CoordinatorEntity, SensorEntity):
+    """Base class for Eon Next sensors."""
 
-class LatestReadingDateSensor(SensorEntity):
-    """Date of latest meter reading"""
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator)
+        self._meter_serial = meter.serial
 
-    def __init__(self, meter):
-        self.meter = meter
+    @property
+    def _meter_data(self) -> dict | None:
+        if self.coordinator.data and self._meter_serial in self.coordinator.data:
+            return self.coordinator.data[self._meter_serial]
+        return None
 
-        self._attr_name = self.meter.get_serial() + " Reading Date"
+    @property
+    def available(self) -> bool:
+        return super().available and self._meter_data is not None
+
+
+class LatestReadingDateSensor(EonNextSensorBase):
+    """Date of latest meter reading."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter)
+        self._attr_name = f"{meter.serial} Reading Date"
         self._attr_device_class = SensorDeviceClass.DATE
         self._attr_icon = "mdi:calendar"
-        self._attr_unique_id = self.meter.get_serial() + "__" + "reading_date"
-    
+        self._attr_unique_id = f"{meter.serial}__reading_date"
 
-    async def async_update(self) -> None:
-        self._attr_native_value = await self.meter.get_latest_reading_date()
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data["latest_reading_date"] if data else None
 
 
+class LatestElectricKwhSensor(EonNextSensorBase):
+    """Latest electricity meter reading."""
 
-class LatestElectricKwhSensor(SensorEntity):
-    """Latest electricity meter reading"""
-
-    def __init__(self, meter):
-        self.meter = meter
-
-        self._attr_name = self.meter.get_serial() + " Electricity"
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter)
+        self._attr_name = f"{meter.serial} Electricity"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = "total"
+        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:meter-electric-outline"
-        self._attr_unique_id = self.meter.get_serial() + "__" + "electricity_kwh"
-    
+        self._attr_unique_id = f"{meter.serial}__electricity_kwh"
 
-    async def async_update(self) -> None:
-        self._attr_native_value = await self.meter.get_latest_reading()
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data["latest_reading"] if data else None
 
 
+class LatestGasKwhSensor(EonNextSensorBase):
+    """Latest gas meter reading in kWh."""
 
-class LatestGasKwhSensor(SensorEntity):
-    """Latest gas meter reading in kWh"""
-
-    def __init__(self, meter):
-        self.meter = meter
-
-        self._attr_name = self.meter.get_serial() + " Gas kWh"
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter)
+        self._attr_name = f"{meter.serial} Gas kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = "total"
+        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:meter-gas-outline"
-        self._attr_unique_id = self.meter.get_serial() + "__" + "gas_kwh"
-    
+        self._attr_unique_id = f"{meter.serial}__gas_kwh"
 
-    async def async_update(self) -> None:
-        self._attr_native_value = await self.meter.get_latest_reading_kwh()
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("latest_reading_kwh") if data else None
 
 
+class LatestGasCubicMetersSensor(EonNextSensorBase):
+    """Latest gas meter reading in cubic meters."""
 
-class LatestGasCubicMetersSensor(SensorEntity):
-    """Latest gas meter reading in kWh"""
-
-    def __init__(self, meter):
-        self.meter = meter
-
-        self._attr_name = self.meter.get_serial() + " Gas"
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter)
+        self._attr_name = f"{meter.serial} Gas"
         self._attr_device_class = SensorDeviceClass.GAS
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
-        self._attr_state_class = "total"
+        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:meter-gas-outline"
-        self._attr_unique_id = self.meter.get_serial() + "__" + "gas_m3"
-    
+        self._attr_unique_id = f"{meter.serial}__gas_m3"
 
-    async def async_update(self) -> None:
-        self._attr_native_value = await self.meter.get_latest_reading()
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data["latest_reading"] if data else None
 
+
+class DailyConsumptionSensor(EonNextSensorBase):
+    """Daily energy consumption from smart meter data."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter)
+        self._attr_name = f"{meter.serial} Daily Consumption"
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_icon = "mdi:lightning-bolt"
+        self._attr_unique_id = f"{meter.serial}__daily_consumption"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("daily_consumption") if data else None
