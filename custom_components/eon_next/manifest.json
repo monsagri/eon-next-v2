@@ -1,11 +1,10 @@
 {
     "domain": "eon_next",
     "name": "Eon Next",
-    "codeowners": ["@madmachinations"],
+    "codeowners": ["@monsagri"],
     "config_flow": true,
     "dependencies": [],
     "documentation": "https://github.com/monsagri/eon-next-v2",
-    "homeassistant": "2024.4.0",
     "integration_type": "hub",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/monsagri/eon-next-v2/issues",
