@@ -1,49 +1,61 @@
 #!/usr/bin/env python3
 """The Eon Next integration."""
 
-import logging
+from __future__ import annotations
+
+from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 
-from .const import DOMAIN, CONF_EMAIL, CONF_PASSWORD, PLATFORMS, DEFAULT_UPDATE_INTERVAL_MINUTES
-from .eonnext import EonNext
+from .const import (
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    DEFAULT_UPDATE_INTERVAL_MINUTES,
+    PLATFORMS,
+)
 from .coordinator import EonNextCoordinator
+from .eonnext import EonNext
 
-_LOGGER = logging.getLogger(__name__)
+
+@dataclass(slots=True)
+class EonNextRuntimeData:
+    """Runtime integration data stored on the config entry."""
+
+    api: EonNext
+    coordinator: EonNextCoordinator
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+EonNextConfigEntry = ConfigEntry[EonNextRuntimeData]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Set up Eon Next from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-
     api = EonNext()
+
     success = await api.login_with_username_and_password(
         entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]
     )
-
     if not success:
-        _LOGGER.error("Failed to authenticate with Eon Next")
-        return False
+        await api.async_close()
+        raise ConfigEntryAuthFailed("Failed to authenticate with Eon Next")
 
-    coordinator = EonNextCoordinator(
-        hass, api, DEFAULT_UPDATE_INTERVAL_MINUTES
-    )
-    await coordinator.async_config_entry_first_refresh()
+    coordinator = EonNextCoordinator(hass, api, DEFAULT_UPDATE_INTERVAL_MINUTES)
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        await api.async_close()
+        raise
 
-    hass.data[DOMAIN][entry.entry_id] = {
-        "api": api,
-        "coordinator": coordinator,
-    }
-
+    entry.runtime_data = EonNextRuntimeData(api=api, coordinator=coordinator)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Unload an Eon Next config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        entry_data = hass.data[DOMAIN].pop(entry.entry_id)
-        await entry_data["api"].async_close()
+        await entry.runtime_data.api.async_close()
     return unload_ok
