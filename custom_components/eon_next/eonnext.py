@@ -546,6 +546,11 @@ class EnergyAccount:
 
             status = device.get("status", {}).get("current")
             if status and status != "LIVE":
+                _LOGGER.debug(
+                    "Skipping account device %s due to status=%s",
+                    device_id,
+                    status,
+                )
                 continue
 
             device_type = str(device.get("deviceType", "")).upper()
@@ -557,6 +562,12 @@ class EnergyAccount:
                 or "CHARGE_POINT" in device_type
             )
             if not is_ev_device:
+                _LOGGER.debug(
+                    "Skipping non-EV account device %s (typename=%s, deviceType=%s)",
+                    device_id,
+                    typename or "<unknown>",
+                    device_type or "<unknown>",
+                )
                 continue
 
             make = str(device.get("make") or "").strip()
@@ -598,13 +609,17 @@ class EnergyMeter:
     def get_serial(self) -> str:
         return self.serial
 
-    def _convert_datetime_str_to_date(self, datetime_str: str) -> datetime.date:
-        date_chunks = str(datetime_str.split("T")[0]).split("-")
-        return datetime.date(
-            int(date_chunks[0]),
-            int(date_chunks[1]),
-            int(date_chunks[2]),
-        )
+    def _convert_datetime_str_to_date(self, datetime_str: str) -> datetime.date | None:
+        try:
+            return datetime.date.fromisoformat(str(datetime_str).split("T", 1)[0])
+        except ValueError as err:
+            _LOGGER.debug(
+                "Unable to parse reading date for meter %s from value %r: %s",
+                self.serial,
+                datetime_str,
+                err,
+            )
+            return None
 
     async def _update(self):
         pass

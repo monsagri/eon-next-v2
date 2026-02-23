@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -11,6 +12,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import UnitOfEnergy, UnitOfVolume
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -19,16 +22,19 @@ from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
 from .models import EonNextConfigEntry
 
 
-def _parse_timestamp(value: Any):
+def _parse_timestamp(value: Any) -> datetime | None:
     """Parse an ISO8601 datetime string to datetime."""
     if not isinstance(value, str):
         return None
     return dt_util.parse_datetime(value)
 
 
-async def async_setup_entry(hass, config_entry: EonNextConfigEntry, async_add_entities):
+async def async_setup_entry(
+    _hass: HomeAssistant,
+    config_entry: EonNextConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up sensors from a config entry."""
-    del hass
 
     coordinator = config_entry.runtime_data.coordinator
     api = config_entry.runtime_data.api

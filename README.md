@@ -43,6 +43,10 @@ Custom integration for E.ON Next accounts in Home Assistant.
 
 If credentials expire or your password changes, Home Assistant will prompt for re-authentication. Open the integration card and complete the re-auth flow to restore updates.
 
+## Upgrade Note
+
+In `1.1.0`, the `Daily Consumption` sensor state class changed to `measurement` (from `total_increasing`) to reflect day-to-day values accurately. Existing long-term statistics or Energy Dashboard setups that relied on the previous state class may need to be recreated.
+
 ## Development And Releases
 
 Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md).

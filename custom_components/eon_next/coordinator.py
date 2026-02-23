@@ -215,5 +215,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 }
             )
 
-        slots.sort(key=lambda item: item["start"])
+        try:
+            slots.sort(key=lambda item: str(item["start"]))
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug("Unable to sort EV schedule slots by start time: %s", err)
         return slots
