@@ -1,12 +1,13 @@
 {
     "config": {
         "error": {
-            "invalid_auth": "Authentication failed"
+            "invalid_auth": "Authentication failed",
+            "unknown": "An unexpected error occurred"
         },
         "step": {
             "user": {
                 "data": {
-                    "email": "Email addresss",
+                    "email": "Email address",
                     "password": "Password"
                 },
                 "description": "Login to your Eon Next account.",
