@@ -3,9 +3,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
@@ -17,17 +14,7 @@ from .const import (
 )
 from .coordinator import EonNextCoordinator
 from .eonnext import EonNext
-
-
-@dataclass(slots=True)
-class EonNextRuntimeData:
-    """Runtime integration data stored on the config entry."""
-
-    api: EonNext
-    coordinator: EonNextCoordinator
-
-
-EonNextConfigEntry = ConfigEntry[EonNextRuntimeData]
+from .models import EonNextConfigEntry, EonNextRuntimeData
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:

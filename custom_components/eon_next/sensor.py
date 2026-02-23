@@ -14,9 +14,9 @@ from homeassistant.const import UnitOfEnergy, UnitOfVolume
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from . import EonNextConfigEntry
 from .coordinator import ev_data_key
 from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
+from .models import EonNextConfigEntry
 
 
 async def async_setup_entry(hass, config_entry: EonNextConfigEntry, async_add_entities):
