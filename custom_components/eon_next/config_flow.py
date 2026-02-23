@@ -78,9 +78,11 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reauth(self, entry_data: Mapping[str, Any]):
         """Handle initiation of re-auth flow."""
         del entry_data
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        entry_id = self.context.get("entry_id")
+        if not isinstance(entry_id, str):
+            return self.async_abort(reason="unknown")
+
+        self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(

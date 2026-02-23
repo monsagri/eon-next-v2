@@ -9,7 +9,13 @@ from typing import Any
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .eonnext import EonNext, EonNextApiError, EonNextAuthError, METER_TYPE_GAS
+from .eonnext import (
+    EonNext,
+    EonNextApiError,
+    EonNextAuthError,
+    GasMeter,
+    METER_TYPE_GAS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +57,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "latest_reading_date": meter.latest_reading_date,
                     }
 
-                    if meter.type == METER_TYPE_GAS and meter.latest_reading is not None:
+                    if (
+                        meter.type == METER_TYPE_GAS
+                        and isinstance(meter, GasMeter)
+                        and meter.latest_reading is not None
+                    ):
                         meter_data["latest_reading_kwh"] = meter.get_latest_reading_kwh(
                             meter.latest_reading
                         )

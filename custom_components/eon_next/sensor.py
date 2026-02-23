@@ -19,6 +19,13 @@ from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
 from .models import EonNextConfigEntry
 
 
+def _parse_timestamp(value: Any):
+    """Parse an ISO8601 datetime string to datetime."""
+    if not isinstance(value, str):
+        return None
+    return dt_util.parse_datetime(value)
+
+
 async def async_setup_entry(hass, config_entry: EonNextConfigEntry, async_add_entities):
     """Set up sensors from a config entry."""
     del hass
@@ -197,7 +204,7 @@ class NextChargeStartSensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return None
-        return dt_util.parse_datetime(data.get("next_charge_start"))
+        return _parse_timestamp(data.get("next_charge_start"))
 
 
 class NextChargeEndSensor(EonNextSensorBase):
@@ -215,7 +222,7 @@ class NextChargeEndSensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return None
-        return dt_util.parse_datetime(data.get("next_charge_end"))
+        return _parse_timestamp(data.get("next_charge_end"))
 
 
 class NextChargeStartSlot2Sensor(EonNextSensorBase):
@@ -233,7 +240,7 @@ class NextChargeStartSlot2Sensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return None
-        return dt_util.parse_datetime(data.get("next_charge_start_2"))
+        return _parse_timestamp(data.get("next_charge_start_2"))
 
 
 class NextChargeEndSlot2Sensor(EonNextSensorBase):
@@ -251,4 +258,4 @@ class NextChargeEndSlot2Sensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return None
-        return dt_util.parse_datetime(data.get("next_charge_end_2"))
+        return _parse_timestamp(data.get("next_charge_end_2"))
