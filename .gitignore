@@ -1,2 +1,6 @@
 notes
 test.py
+.vscode
+.claude
+.venv
+custom_components/eon_next/__pycache__

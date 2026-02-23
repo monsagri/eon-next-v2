@@ -1,25 +1,52 @@
-# Eon Next
+# E.ON Next for Home Assistant
 
-This is a custom component for Home Assistant which integrates with the Eon Next API and gets all the meter readings from your accounts.
+Custom integration for E.ON Next accounts in Home Assistant.
 
-A sensor will be created for each meter showing:
+## What This Integration Provides
 
-- The latest reading
-- The date the latest reading was taken
+- Latest electricity and gas meter readings.
+- Meter reading date sensors.
+- Gas conversion from m3 to kWh.
+- Daily consumption sensors with fallback:
+  - REST consumption endpoint first.
+  - `consumptionDataByMpxn` GraphQL fallback when REST data is unavailable.
+- EV smart charging sensors (when SmartFlex devices are available):
+  - Smart charging schedule status.
+  - Next charge start/end.
+  - Second charge start/end.
+- Home Assistant re-auth support for password changes.
 
-For electric meters the readings are in kWh. For gas meter the readings are in m³.
+## Requirements
 
-An additional sensor is created for gas meters showing the latest reading in kWh.
+- Home Assistant `2024.4.0` or newer.
+- An active E.ON Next account.
 
+## Install With HACS (Recommended)
 
-## Installation
+1. Open HACS in Home Assistant.
+2. Go to **Integrations**.
+3. If this repository is not already listed, add it as a custom repository:
+   - URL: `https://github.com/monsagri/eon-next-v2`
+   - Category: **Integration**
+4. Find **Eon Next Integration** in HACS and install it.
+5. Restart Home Assistant.
+6. Go to **Settings -> Devices & Services -> Add Integration**.
+7. Search for **Eon Next** and complete login.
 
-Copy the `eon_next` folder to the `custom_components` folder inside your HA config directory. If a `custom_components` folder does not exist, just create it.
+## Manual Installation
 
-Next restart Home Assistant.
+1. Copy `custom_components/eon_next` into your Home Assistant `custom_components` directory.
+2. Restart Home Assistant.
+3. Add the integration from **Settings -> Devices & Services**.
 
-Setting up this component is done entirely in the UI. Go to your Integration settings, press to add a new integration, and find "Eon Next".
+## Reauthentication
 
-The setup wizard will ask you to enter your account login details, and that is all there is too it!
+If credentials expire or your password changes, Home Assistant will prompt for re-authentication. Open the integration card and complete the re-auth flow to restore updates.
 
-The integration should now be showing on your list, along with a number of new entities for all the sensors it has created.
+## Upgrade Note
+
+In `1.1.0`, the `Daily Consumption` sensor state class changed to `measurement` (from `total_increasing`) to reflect day-to-day values accurately. Existing long-term statistics or Energy Dashboard setups that relied on the previous state class may need to be recreated.
+
+## Development And Releases
+
+Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md).

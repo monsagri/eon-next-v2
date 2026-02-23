@@ -1,40 +1,47 @@
 #!/usr/bin/env python3
 """Sensor platform for the Eon Next integration."""
 
-import logging
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-
-from homeassistant.const import (
-    UnitOfEnergy,
-    UnitOfVolume,
-)
-
+from homeassistant.const import UnitOfEnergy, UnitOfVolume
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
-from .eonnext import METER_TYPE_GAS, METER_TYPE_ELECTRIC
+from .coordinator import ev_data_key
+from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
+from .models import EonNextConfigEntry
 
-_LOGGER = logging.getLogger(__name__)
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    """Parse an ISO8601 datetime string to datetime."""
+    if not isinstance(value, str):
+        return None
+    return dt_util.parse_datetime(value)
 
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(
+    _hass: HomeAssistant,
+    config_entry: EonNextConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Set up sensors from a config entry."""
-    entry_data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinator = entry_data["coordinator"]
-    api = entry_data["api"]
 
-    entities = []
+    coordinator = config_entry.runtime_data.coordinator
+    api = config_entry.runtime_data.api
+
+    entities: list[SensorEntity] = []
     for account in api.accounts:
         for meter in account.meters:
-            serial = meter.serial
-            if serial not in coordinator.data:
-                continue
-
             entities.append(LatestReadingDateSensor(coordinator, meter))
 
             if meter.type == METER_TYPE_ELECTRIC:
@@ -44,10 +51,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                 entities.append(LatestGasCubicMetersSensor(coordinator, meter))
                 entities.append(LatestGasKwhSensor(coordinator, meter))
 
-            # Add daily consumption sensor if REST data is available
-            meter_data = coordinator.data.get(serial, {})
-            if meter_data.get("daily_consumption") is not None:
-                entities.append(DailyConsumptionSensor(coordinator, meter))
+            entities.append(DailyConsumptionSensor(coordinator, meter))
+
+        for charger in account.ev_chargers:
+            entities.append(SmartChargingScheduleSensor(coordinator, charger))
+            entities.append(NextChargeStartSensor(coordinator, charger))
+            entities.append(NextChargeEndSensor(coordinator, charger))
+            entities.append(NextChargeStartSlot2Sensor(coordinator, charger))
+            entities.append(NextChargeEndSlot2Sensor(coordinator, charger))
 
     async_add_entities(entities)
 
@@ -55,14 +66,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class EonNextSensorBase(CoordinatorEntity, SensorEntity):
     """Base class for Eon Next sensors."""
 
-    def __init__(self, coordinator, meter):
+    def __init__(self, coordinator, data_key: str):
         super().__init__(coordinator)
-        self._meter_serial = meter.serial
+        self._data_key = data_key
 
     @property
-    def _meter_data(self) -> dict | None:
-        if self.coordinator.data and self._meter_serial in self.coordinator.data:
-            return self.coordinator.data[self._meter_serial]
+    def _meter_data(self) -> dict[str, Any] | None:
+        if self.coordinator.data and self._data_key in self.coordinator.data:
+            return self.coordinator.data[self._data_key]
         return None
 
     @property
@@ -74,7 +85,7 @@ class LatestReadingDateSensor(EonNextSensorBase):
     """Date of latest meter reading."""
 
     def __init__(self, coordinator, meter):
-        super().__init__(coordinator, meter)
+        super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Reading Date"
         self._attr_device_class = SensorDeviceClass.DATE
         self._attr_icon = "mdi:calendar"
@@ -83,14 +94,14 @@ class LatestReadingDateSensor(EonNextSensorBase):
     @property
     def native_value(self):
         data = self._meter_data
-        return data["latest_reading_date"] if data else None
+        return data.get("latest_reading_date") if data else None
 
 
 class LatestElectricKwhSensor(EonNextSensorBase):
     """Latest electricity meter reading."""
 
     def __init__(self, coordinator, meter):
-        super().__init__(coordinator, meter)
+        super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Electricity"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -101,14 +112,14 @@ class LatestElectricKwhSensor(EonNextSensorBase):
     @property
     def native_value(self):
         data = self._meter_data
-        return data["latest_reading"] if data else None
+        return data.get("latest_reading") if data else None
 
 
 class LatestGasKwhSensor(EonNextSensorBase):
     """Latest gas meter reading in kWh."""
 
     def __init__(self, coordinator, meter):
-        super().__init__(coordinator, meter)
+        super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Gas kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
@@ -126,7 +137,7 @@ class LatestGasCubicMetersSensor(EonNextSensorBase):
     """Latest gas meter reading in cubic meters."""
 
     def __init__(self, coordinator, meter):
-        super().__init__(coordinator, meter)
+        super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Gas"
         self._attr_device_class = SensorDeviceClass.GAS
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
@@ -137,18 +148,18 @@ class LatestGasCubicMetersSensor(EonNextSensorBase):
     @property
     def native_value(self):
         data = self._meter_data
-        return data["latest_reading"] if data else None
+        return data.get("latest_reading") if data else None
 
 
 class DailyConsumptionSensor(EonNextSensorBase):
     """Daily energy consumption from smart meter data."""
 
     def __init__(self, coordinator, meter):
-        super().__init__(coordinator, meter)
+        super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Daily Consumption"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:lightning-bolt"
         self._attr_unique_id = f"{meter.serial}__daily_consumption"
 
@@ -156,3 +167,101 @@ class DailyConsumptionSensor(EonNextSensorBase):
     def native_value(self):
         data = self._meter_data
         return data.get("daily_consumption") if data else None
+
+
+class SmartChargingScheduleSensor(EonNextSensorBase):
+    """Smart charging schedule status."""
+
+    def __init__(self, coordinator, charger):
+        super().__init__(coordinator, ev_data_key(charger.device_id))
+        self._attr_name = f"{charger.serial} Smart Charging Schedule"
+        self._attr_icon = "mdi:ev-station"
+        self._attr_unique_id = f"{charger.device_id}__smart_charging_schedule"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+
+        schedule = data.get("schedule", [])
+        if schedule:
+            return "Active"
+        return "No Schedule"
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        return {"schedule": data.get("schedule", [])}
+
+
+class NextChargeStartSensor(EonNextSensorBase):
+    """Start time of next EV charge slot."""
+
+    def __init__(self, coordinator, charger):
+        super().__init__(coordinator, ev_data_key(charger.device_id))
+        self._attr_name = f"{charger.serial} Next Charge Start"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_icon = "mdi:clock-start"
+        self._attr_unique_id = f"{charger.device_id}__next_charge_start"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        return _parse_timestamp(data.get("next_charge_start"))
+
+
+class NextChargeEndSensor(EonNextSensorBase):
+    """End time of next EV charge slot."""
+
+    def __init__(self, coordinator, charger):
+        super().__init__(coordinator, ev_data_key(charger.device_id))
+        self._attr_name = f"{charger.serial} Next Charge End"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_icon = "mdi:clock-end"
+        self._attr_unique_id = f"{charger.device_id}__next_charge_end"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        return _parse_timestamp(data.get("next_charge_end"))
+
+
+class NextChargeStartSlot2Sensor(EonNextSensorBase):
+    """Start time of the second EV charge slot."""
+
+    def __init__(self, coordinator, charger):
+        super().__init__(coordinator, ev_data_key(charger.device_id))
+        self._attr_name = f"{charger.serial} Next Charge Start 2"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_icon = "mdi:clock-start"
+        self._attr_unique_id = f"{charger.device_id}__next_charge_start_2"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        return _parse_timestamp(data.get("next_charge_start_2"))
+
+
+class NextChargeEndSlot2Sensor(EonNextSensorBase):
+    """End time of the second EV charge slot."""
+
+    def __init__(self, coordinator, charger):
+        super().__init__(coordinator, ev_data_key(charger.device_id))
+        self._attr_name = f"{charger.serial} Next Charge End 2"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_icon = "mdi:clock-end"
+        self._attr_unique_id = f"{charger.device_id}__next_charge_end_2"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        return _parse_timestamp(data.get("next_charge_end_2"))

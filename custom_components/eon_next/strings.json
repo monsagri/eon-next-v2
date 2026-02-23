@@ -1,10 +1,21 @@
 {
     "config": {
+        "abort": {
+            "reauth_successful": "Re-authentication was successful"
+        },
         "error": {
             "invalid_auth": "Authentication failed",
             "unknown": "An unexpected error occurred"
         },
         "step": {
+            "reauth_confirm": {
+                "data": {
+                    "email": "Email address",
+                    "password": "Password"
+                },
+                "description": "Your login is no longer valid. Re-enter your credentials to reconnect.",
+                "title": "Reauthenticate Eon Next"
+            },
             "user": {
                 "data": {
                     "email": "Email address",
