@@ -1,7 +1,7 @@
 {
     "domain": "eon_next",
     "name": "Eon Next",
-    "codeowners": ["@madmachinations"],
+    "codeowners": ["@monsagri"],
     "config_flow": true,
     "dependencies": [],
     "documentation": "https://github.com/monsagri/eon-next-v2",
