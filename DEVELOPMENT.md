@@ -36,6 +36,7 @@ Run a basic syntax and typing pass before opening a PR:
 ```bash
 python -m compileall custom_components/eon_next
 basedpyright -p pyrightconfig.json
+python3 .github/scripts/check_release_metadata.py
 ```
 
 ## Home Assistant Development Validation
@@ -70,20 +71,19 @@ Allowed types:
 
 ## Release Process (HACS-Compatible)
 
-1. Update integration version in `custom_components/eon_next/manifest.json`.
-2. Ensure `hacs.json` and manifest metadata are still correct.
-3. Merge to `main`.
-4. Choose the semantic version increment:
-   - `MAJOR`: breaking changes
-   - `MINOR`: new backwards-compatible functionality
-   - `PATCH`: backwards-compatible bug fixes
-5. Create and push an annotated semantic tag:
+Releases are managed by `release-please` and derived from Conventional Commits.
 
-```bash
-git tag -a vX.Y.Z -m "Eon Next X.Y.Z"
-git push origin vX.Y.Z
-```
+1. Merge Conventional Commit PRs into `main`.
+2. CI updates a draft release PR with:
+   - `CHANGELOG.md` updates.
+   - `custom_components/eon_next/manifest.json` version bump.
+3. Review that draft PR, mark it ready, approve, and merge it when you want to release.
+4. The merge triggers tag creation (`vX.Y.Z`) and GitHub Release publication.
 
-6. Create a GitHub Release for that tag with release notes.
+Workflow/config files:
 
-HACS discovers new versions from GitHub releases/tags, so pushing the tag is required.
+- `.github/workflows/release-please.yml`
+- `release-please-config.json`
+- `.release-please-manifest.json`
+
+HACS discovers new versions from GitHub tags/releases, so release publication is still required.

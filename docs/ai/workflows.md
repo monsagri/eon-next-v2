@@ -27,6 +27,7 @@ Minimum required:
 ```bash
 python -m compileall custom_components/eon_next
 basedpyright -p pyrightconfig.json
+python3 .github/scripts/check_release_metadata.py
 ```
 
 Commit/PR convention sanity:
@@ -47,18 +48,23 @@ When behavior changes, validate in a HA test instance:
 
 ## Release Workflow (HACS-Compatible)
 
-1. Update `custom_components/eon_next/manifest.json` version.
-2. Verify `hacs.json` metadata remains valid for HACS.
-3. Update `CHANGELOG.md`.
-4. Merge to `main`.
-5. Tag release semver (`vX.Y.Z`) and publish GitHub release.
+1. Merge Conventional Commit PRs into `main`.
+2. `release-please.yml` updates/creates a draft release PR.
+3. Review release PR contents (`CHANGELOG.md` + `manifest.json` version bump).
+4. Mark the release PR ready, approve, and merge it to trigger release publication.
 
-HACS release discovery relies on tags/releases, not repository state alone.
+Notes:
+
+- SemVer bump level is computed from commit types (`feat` -> minor, `fix` -> patch, breaking change -> major).
+- Release/tag publication is triggered by merging the release PR, not by every merge to `main`.
+- HACS release discovery relies on tags/releases, not repository state alone.
 
 ## CI Expectations
 
 - `validate.yml`: HACS integration validation action.
 - `hassfest.yml`: Home Assistant hassfest checks.
 - `commit-conventions.yml`: commit message and PR title conventional checks.
+- `metadata-consistency.yml`: manifest/changelog/release-manifest version lockstep validation.
+- `release-please.yml`: release PR orchestration and release publication.
 
 Agents should not bypass these workflows; local success is necessary but not sufficient.

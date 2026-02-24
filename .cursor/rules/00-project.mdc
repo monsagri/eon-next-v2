@@ -14,3 +14,5 @@ Use repository guidance from:
 5. `docs/ai/checklist.md`
 
 Keep changes small, preserve Home Assistant entity stability, and run local validation commands referenced in `docs/ai/workflows.md`.
+
+Non-negotiable metadata rule: keep `custom_components/eon_next/manifest.json` version aligned with the latest `CHANGELOG.md` version and `.release-please-manifest.json` (when present).

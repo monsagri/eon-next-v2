@@ -12,5 +12,5 @@ Key constraints:
 
 - Preserve Home Assistant integration contracts and entity stability.
 - Avoid credential/token leakage in logs or code.
-- Keep `manifest.json`, `hacs.json`, and release docs aligned when versioning changes.
+- Keep release metadata strictly aligned: `manifest.json` version must match latest `CHANGELOG.md` version and `.release-please-manifest.json` when present.
 - Use Conventional Commit format for commits and PR titles.

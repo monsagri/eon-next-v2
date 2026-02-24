@@ -15,7 +15,7 @@ Core outcomes:
 - `custom_components/eon_next/`: integration source code.
 - `custom_components/eon_next/manifest.json`: HA integration metadata.
 - `hacs.json`: HACS metadata.
-- `.github/workflows/`: CI validation (hassfest, HACS checks, commit conventions).
+- `.github/workflows/`: CI validation (hassfest, HACS checks, commit conventions, metadata consistency, release-please).
 - `README.md`: user-facing install and usage docs.
 - `DEVELOPMENT.md`: maintainer workflow summary.
 - `planning/README.md`: planning index.

@@ -52,3 +52,5 @@ In `1.2.0`, the `Daily Consumption` sensor state class changed to `total` and no
 Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 Contributors should use Conventional Commit messages (for example, `feat: ...`, `fix: ...`) and matching pull request titles because squash merges use PR titles as final commit subjects.
+
+Releases use a draft release-PR flow (`release-please`) so merges to `main` prepare release metadata, and maintainers explicitly approve/merge the release PR to publish.

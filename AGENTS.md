@@ -39,7 +39,10 @@ If instructions conflict and precedence does not resolve it, ask the user before
 - Preserve consumption fallback behavior unless intentionally changing it:
   - REST half-hourly -> REST daily -> GraphQL `consumptionDataByMpxn`.
 - Preserve runtime data pattern (`entry.runtime_data`) for config entries.
-- Keep `manifest.json`, `hacs.json`, and `CHANGELOG.md` in sync for versioned release changes.
+- Keep release metadata in lockstep:
+  - `custom_components/eon_next/manifest.json` `version` must match the latest version header in `CHANGELOG.md`.
+  - `.release-please-manifest.json` `.` must match `manifest.json` `version` when present.
+  - Do not merge changes that leave these versions drifted.
 - For user-visible behavior changes, update both `README.md` and `CHANGELOG.md` in the same change before marking work complete.
 
 ## Validation Baseline
@@ -56,6 +59,7 @@ Also ensure CI-relevant constraints still hold:
 - Conventional Commits for commits and PR titles.
 - HACS metadata remains valid.
 - Hassfest metadata checks remain valid.
+- Metadata consistency check remains valid (`manifest.json`/`CHANGELOG.md`/release manifest versions).
 
 ## Tool-Specific Adapters
 
