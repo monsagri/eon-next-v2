@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -69,7 +69,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
                     consumption = await self._fetch_consumption(meter)
                     if consumption is not None:
                         meter_data["consumption"] = consumption
-                        meter_data["daily_consumption"] = self._sum_consumption(consumption)
+                        daily = self._aggregate_daily_consumption(consumption)
+                        meter_data["daily_consumption"] = daily["total"]
+                        meter_data["daily_consumption_last_reset"] = daily[
+                            "last_reset"
+                        ]
 
                     data[meter_key] = meter_data
 
@@ -132,7 +136,32 @@ class EonNextCoordinator(DataUpdateCoordinator):
         return data
 
     async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
-        """Try to fetch daily consumption from REST, then GraphQL fallback."""
+        """Fetch consumption data, preferring half-hourly granularity.
+
+        Tries half-hourly REST data first (48 slots = 1 day), then falls back
+        to daily REST data, then to the GraphQL consumptionDataByMpxn query.
+        """
+        # Try half-hourly data first (48 half-hour slots covers one full day)
+        try:
+            result = await self.api.async_get_consumption(
+                meter.type,
+                meter.supply_point_id,
+                meter.serial,
+                group_by="half_hour",
+                page_size=48,
+            )
+            if result and "results" in result and len(result["results"]) > 0:
+                return result["results"]
+        except EonNextAuthError:
+            raise
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(
+                "REST half-hourly consumption unavailable for meter %s: %s",
+                meter.serial,
+                err,
+            )
+
+        # Fall back to daily-grouped REST data
         try:
             result = await self.api.async_get_consumption(
                 meter.type,
@@ -147,11 +176,12 @@ class EonNextCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(
-                "REST consumption unavailable for meter %s: %s",
+                "REST daily consumption unavailable for meter %s: %s",
                 meter.serial,
                 err,
             )
 
+        # Fall back to GraphQL
         try:
             fallback = await self.api.async_get_consumption_data_by_mpxn(
                 meter.supply_point_id,
@@ -171,26 +201,47 @@ class EonNextCoordinator(DataUpdateCoordinator):
         return None
 
     @staticmethod
-    def _sum_consumption(consumption_results: list[dict[str, Any]]) -> float | None:
-        """Sum consumption values from consumption results."""
-        if not consumption_results:
-            return None
+    def _aggregate_daily_consumption(
+        consumption_results: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Sum today's consumption and derive last_reset from the data.
+
+        Filters entries to today (by interval_start) and sums their
+        consumption values.  Returns a dict with ``total`` (float | None)
+        and ``last_reset`` (str | None) — the interval_start of the
+        earliest entry included in the sum.
+        """
+        today = date.today().isoformat()
 
         total = 0.0
         has_value = False
+        earliest_start: str | None = None
+
         for entry in consumption_results:
+            interval_start = entry.get("interval_start") or ""
+            # Keep entries whose interval_start falls on today.
+            # interval_start is typically ISO-8601, e.g.
+            # "2026-02-24T00:00:00Z" or "2026-02-24".
+            if not interval_start.startswith(today):
+                continue
+
             consumption = entry.get("consumption")
             if consumption is None:
                 continue
             try:
-                total += float(consumption)
-                has_value = True
+                val = float(consumption)
             except (TypeError, ValueError):
                 continue
 
-        if not has_value:
-            return None
-        return round(total, 3)
+            total += val
+            has_value = True
+            if earliest_start is None or interval_start < earliest_start:
+                earliest_start = interval_start
+
+        return {
+            "total": round(total, 3) if has_value else None,
+            "last_reset": earliest_start,
+        }
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
