@@ -38,6 +38,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(minutes=update_interval_minutes),
         )
         self.api = api
+        self._statistics_import_enabled = True
+
+    def set_statistics_import_enabled(self, enabled: bool) -> None:
+        """Enable or disable automatic statistics imports during updates."""
+        self._statistics_import_enabled = enabled
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the Eon Next API."""
@@ -77,19 +82,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
                             "last_reset"
                         ]
 
-                        try:
-                            await async_import_consumption_statistics(
-                                self.hass,
-                                meter.serial,
-                                meter.type,
-                                consumption,
-                            )
-                        except Exception as err:  # pylint: disable=broad-except
-                            _LOGGER.debug(
-                                "Statistics import failed for meter %s: %s",
-                                meter.serial,
-                                err,
-                            )
+                        if self._statistics_import_enabled:
+                            try:
+                                await async_import_consumption_statistics(
+                                    self.hass,
+                                    meter.serial,
+                                    meter.type,
+                                    consumption,
+                                )
+                            except Exception as err:  # pylint: disable=broad-except
+                                _LOGGER.debug(
+                                    "Statistics import failed for meter %s: %s",
+                                    meter.serial,
+                                    err,
+                                )
 
                     cost_data = await self._fetch_daily_costs(meter)
                     if cost_data:

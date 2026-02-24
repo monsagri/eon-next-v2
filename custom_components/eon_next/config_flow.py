@@ -10,9 +10,29 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_EMAIL, CONF_PASSWORD, CONF_REFRESH_TOKEN, DOMAIN
+from .const import (
+    CONF_BACKFILL_CHUNK_DAYS,
+    CONF_BACKFILL_DELAY_SECONDS,
+    CONF_BACKFILL_ENABLED,
+    CONF_BACKFILL_LOOKBACK_DAYS,
+    CONF_BACKFILL_REBUILD_STATISTICS,
+    CONF_BACKFILL_REQUESTS_PER_RUN,
+    CONF_BACKFILL_RUN_INTERVAL_MINUTES,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_REFRESH_TOKEN,
+    DEFAULT_BACKFILL_CHUNK_DAYS,
+    DEFAULT_BACKFILL_DELAY_SECONDS,
+    DEFAULT_BACKFILL_ENABLED,
+    DEFAULT_BACKFILL_LOOKBACK_DAYS,
+    DEFAULT_BACKFILL_REBUILD_STATISTICS,
+    DEFAULT_BACKFILL_REQUESTS_PER_RUN,
+    DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
+    DOMAIN,
+)
 from .eonnext import EonNext
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,6 +42,12 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle Eon Next config flow."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry):
+        """Return options flow for this handler."""
+        return EonNextOptionsFlow(config_entry)
 
     def __init__(self) -> None:
         self._reauth_entry: ConfigEntry | None = None
@@ -136,4 +162,73 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+
+class EonNextOptionsFlow(config_entries.OptionsFlow):
+    """Handle Eon Next options."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        """Manage Eon Next options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = self._config_entry.options
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_BACKFILL_ENABLED,
+                        default=options.get(
+                            CONF_BACKFILL_ENABLED, DEFAULT_BACKFILL_ENABLED
+                        ),
+                    ): bool,
+                    vol.Required(
+                        CONF_BACKFILL_REBUILD_STATISTICS,
+                        default=options.get(
+                            CONF_BACKFILL_REBUILD_STATISTICS,
+                            DEFAULT_BACKFILL_REBUILD_STATISTICS,
+                        ),
+                    ): bool,
+                    vol.Required(
+                        CONF_BACKFILL_LOOKBACK_DAYS,
+                        default=options.get(
+                            CONF_BACKFILL_LOOKBACK_DAYS,
+                            DEFAULT_BACKFILL_LOOKBACK_DAYS,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=36500)),
+                    vol.Required(
+                        CONF_BACKFILL_CHUNK_DAYS,
+                        default=options.get(
+                            CONF_BACKFILL_CHUNK_DAYS,
+                            DEFAULT_BACKFILL_CHUNK_DAYS,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=31)),
+                    vol.Required(
+                        CONF_BACKFILL_REQUESTS_PER_RUN,
+                        default=options.get(
+                            CONF_BACKFILL_REQUESTS_PER_RUN,
+                            DEFAULT_BACKFILL_REQUESTS_PER_RUN,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
+                    vol.Required(
+                        CONF_BACKFILL_RUN_INTERVAL_MINUTES,
+                        default=options.get(
+                            CONF_BACKFILL_RUN_INTERVAL_MINUTES,
+                            DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+                    vol.Required(
+                        CONF_BACKFILL_DELAY_SECONDS,
+                        default=options.get(
+                            CONF_BACKFILL_DELAY_SECONDS,
+                            DEFAULT_BACKFILL_DELAY_SECONDS,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=0, max=3600)),
+                }
+            ),
         )
