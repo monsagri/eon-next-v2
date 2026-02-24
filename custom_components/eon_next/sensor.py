@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -159,9 +159,15 @@ class DailyConsumptionSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Daily Consumption"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:lightning-bolt"
         self._attr_unique_id = f"{meter.serial}__daily_consumption"
+
+    @property
+    def last_reset(self) -> datetime | None:
+        return dt_util.as_utc(
+            datetime.combine(dt_util.now().date(), time.min)
+        )
 
     @property
     def native_value(self):
