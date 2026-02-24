@@ -17,6 +17,9 @@ Patch-only changes (backward-compatible bug fixes), intended for the next `1.1.x
 - Persisted newly issued refresh tokens to config-entry data so auth sessions survive Home Assistant restarts
 - Tightened auth error detection by removing overly broad `"token"` message matching and keeping specific auth indicators (`jwt`, `unauthenticated`, etc.)
 - Used explicit authentication success tracking during setup instead of `api.accounts` presence, preventing unnecessary second login attempts when account discovery returns no entities
+- Hardened token validation to treat missing/non-numeric expiry values as invalid (instead of raising `TypeError` in auth refresh checks)
+- Avoided no-op config-entry writes when refresh token value is unchanged and isolated token-update callback failures so successful auth is not downgraded by persistence callback errors
+- Exposed a public token-update callback setter on the API client to avoid external assignment to private internals
 
 ## [1.1.1] - 2026-02-23
 

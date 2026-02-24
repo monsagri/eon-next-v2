@@ -29,12 +29,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
 
     def _persist_refresh_token(refresh_token: str) -> None:
         """Save the latest refresh token to config entry data."""
+        if entry.data.get(CONF_REFRESH_TOKEN) == refresh_token:
+            return
         hass.config_entries.async_update_entry(
             entry,
             data={**entry.data, CONF_REFRESH_TOKEN: refresh_token},
         )
 
-    api._on_token_update = _persist_refresh_token
+    api.set_token_update_callback(_persist_refresh_token)
     api.username = entry.data[CONF_EMAIL]
     api.password = entry.data[CONF_PASSWORD]
 

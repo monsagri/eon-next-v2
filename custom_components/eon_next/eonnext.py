@@ -115,6 +115,12 @@ class EonNext:
         self.__reset_authentication()
         self.__reset_accounts()
 
+    def set_token_update_callback(
+        self, callback: Callable[[str], None] | None
+    ) -> None:
+        """Register a callback for refresh token updates."""
+        self._on_token_update = callback
+
     def _json_contains_key_chain(self, data: Any, key_chain: list[str]) -> bool:
         for key in key_chain:
             if not isinstance(data, dict) or key not in data:
@@ -168,19 +174,28 @@ class EonNext:
             },
         }
         if self._on_token_update is not None:
-            self._on_token_update(self.auth["refresh"]["token"])
+            try:
+                self._on_token_update(self.auth["refresh"]["token"])
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Error while running token update callback")
 
     def __auth_token_is_valid(self) -> bool:
         if self.auth["token"]["token"] is None:
             return False
-        if self.auth["token"]["expires"] <= self.__current_timestamp():
+        token_expires = self.auth["token"]["expires"]
+        if token_expires is None or not isinstance(token_expires, int | float):
+            return False
+        if token_expires <= self.__current_timestamp():
             return False
         return True
 
     def __refresh_token_is_valid(self) -> bool:
         if self.auth["refresh"]["token"] is None:
             return False
-        if self.auth["refresh"]["expires"] <= self.__current_timestamp():
+        refresh_expires = self.auth["refresh"]["expires"]
+        if refresh_expires is None or not isinstance(refresh_expires, int | float):
+            return False
+        if refresh_expires <= self.__current_timestamp():
             return False
         return True
 
@@ -294,15 +309,22 @@ class EonNext:
         return False
 
     async def login_with_refresh_token(self, token: str) -> bool:
-        self.auth["refresh"]["token"] = token
-        return await self.__login_with_refresh_token(True)
+        return await self.__login_with_refresh_token(True, token)
 
-    async def __login_with_refresh_token(self, initialise: bool = False) -> bool:
+    async def __login_with_refresh_token(
+        self,
+        initialise: bool = False,
+        token: str | None = None,
+    ) -> bool:
+        refresh_token = token or self.auth["refresh"]["token"]
+        if refresh_token is None:
+            return False
+
         try:
             result = await self._graphql_post(
                 "refreshToken",
                 "mutation refreshToken($input: ObtainJSONWebTokenInput!) {  obtainKrakenToken(input: $input) {    payload    refreshExpiresIn    refreshToken    token    __typename  }}",
-                {"input": {"refreshToken": self.auth["refresh"]["token"]}},
+                {"input": {"refreshToken": refresh_token}},
                 False,
             )
         except (EonNextApiError, EonNextAuthError):
