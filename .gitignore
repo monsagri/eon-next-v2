@@ -3,4 +3,5 @@ test.py
 .vscode
 .claude
 .venv
+node_modules
 custom_components/eon_next/__pycache__

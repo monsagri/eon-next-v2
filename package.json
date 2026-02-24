@@ -1,0 +1,16 @@
+{
+  "name": "eon-next-v2-dev-tools",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Development tooling for commit conventions",
+  "scripts": {
+    "prepare": "husky",
+    "commitlint": "commitlint",
+    "commitlint:last": "commitlint --last"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7"
+  }
+}
