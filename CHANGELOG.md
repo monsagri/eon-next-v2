@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Added
+
+- External statistics import via `async_add_external_statistics` for the Energy Dashboard — consumption is now attributed to the correct time period even when data arrives late
+- Half-hourly consumption data support from the REST API (falls back to daily, then GraphQL)
+
+### Fixed
+
+- Fixed `DailyConsumptionSensor` warnings in the Energy Dashboard by changing `state_class` from `MEASUREMENT` to `TOTAL` and adding a data-driven `last_reset`
+- Daily consumption now filters to today's entries only instead of summing 7 days
+- `last_reset` is derived from actual consumption timestamps rather than computing midnight
+
 ## [1.1.1] - 2026-02-23
 
 ### Fixed
