@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -108,6 +110,8 @@ class EonNext:
         self.username = ""
         self.password = ""
         self._session: aiohttp.ClientSession | None = None
+        self._auth_lock = asyncio.Lock()
+        self._on_token_update: Callable[[str], None] | None = None
         self.__reset_authentication()
         self.__reset_accounts()
 
@@ -132,7 +136,6 @@ class EonNext:
             if (
                 "authentication" in message
                 or "authenticated" in message
-                or "token" in message
                 or "unauthor" in message
                 or "jwt" in message
                 or "unauthenticated" in code
@@ -152,17 +155,20 @@ class EonNext:
         }
 
     def __store_authentication(self, kraken_token: dict):
+        issued_at = kraken_token["payload"]["iat"]
         self.auth = {
-            "issued": kraken_token["payload"]["iat"],
+            "issued": issued_at,
             "token": {
                 "token": kraken_token["token"],
                 "expires": kraken_token["payload"]["exp"],
             },
             "refresh": {
                 "token": kraken_token["refreshToken"],
-                "expires": kraken_token["refreshExpiresIn"],
+                "expires": issued_at + kraken_token["refreshExpiresIn"],
             },
         }
+        if self._on_token_update is not None:
+            self._on_token_update(self.auth["refresh"]["token"])
 
     def __auth_token_is_valid(self) -> bool:
         if self.auth["token"]["token"] is None:
@@ -179,19 +185,21 @@ class EonNext:
         return True
 
     async def __auth_token(self) -> str:
-        if not self.__auth_token_is_valid():
-            if self.__refresh_token_is_valid():
-                await self.__login_with_refresh_token()
-            else:
-                await self.login_with_username_and_password(
-                    self.username,
-                    self.password,
-                )
+        async with self._auth_lock:
+            if not self.__auth_token_is_valid():
+                if self.__refresh_token_is_valid():
+                    await self.__login_with_refresh_token()
+                else:
+                    await self.login_with_username_and_password(
+                        self.username,
+                        self.password,
+                        initialise=False,
+                    )
 
-        if not self.__auth_token_is_valid():
-            raise EonNextAuthError("Unable to authenticate")
+            if not self.__auth_token_is_valid():
+                raise EonNextAuthError("Unable to authenticate")
 
-        return self.auth["token"]["token"]
+            return self.auth["token"]["token"]
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
