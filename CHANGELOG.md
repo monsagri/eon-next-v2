@@ -6,10 +6,16 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ## [Unreleased]
 
-Patch-only changes (backward-compatible bug fixes), intended for the next `1.1.x` release.
+### Added
+
+- External statistics import via `async_add_external_statistics` for the Energy Dashboard — consumption is now attributed to the correct time period even when data arrives late
+- Half-hourly consumption data support from the REST API (falls back to daily, then GraphQL)
 
 ### Fixed
 
+- Fixed `DailyConsumptionSensor` warnings in the Energy Dashboard by changing `state_class` from `MEASUREMENT` to `TOTAL` and adding a data-driven `last_reset`
+- Daily consumption now filters to today's entries only instead of summing 7 days
+- `last_reset` is derived from actual consumption timestamps rather than computing midnight
 - Treated JWT `refreshExpiresIn` as a relative duration and now store it as an absolute expiry (`iat + refreshExpiresIn`) so refresh tokens remain valid for their intended lifetime
 - Reused the refresh token obtained during config-flow validation in `async_setup_entry` to avoid an immediate second username/password login and reduce rate-limit risk
 - Ensured token-refresh fallback re-login does not reinitialize account state by using `initialise=False` in auth-only refresh paths

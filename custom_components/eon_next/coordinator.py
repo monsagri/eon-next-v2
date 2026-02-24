@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .eonnext import (
     EonNext,
@@ -16,6 +17,7 @@ from .eonnext import (
     GasMeter,
     METER_TYPE_GAS,
 )
+from .statistics import async_import_consumption_statistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,7 +71,25 @@ class EonNextCoordinator(DataUpdateCoordinator):
                     consumption = await self._fetch_consumption(meter)
                     if consumption is not None:
                         meter_data["consumption"] = consumption
-                        meter_data["daily_consumption"] = self._sum_consumption(consumption)
+                        daily = self._aggregate_daily_consumption(consumption)
+                        meter_data["daily_consumption"] = daily["total"]
+                        meter_data["daily_consumption_last_reset"] = daily[
+                            "last_reset"
+                        ]
+
+                        try:
+                            await async_import_consumption_statistics(
+                                self.hass,
+                                meter.serial,
+                                meter.type,
+                                consumption,
+                            )
+                        except Exception as err:  # pylint: disable=broad-except
+                            _LOGGER.debug(
+                                "Statistics import failed for meter %s: %s",
+                                meter.serial,
+                                err,
+                            )
 
                     data[meter_key] = meter_data
 
@@ -132,7 +152,33 @@ class EonNextCoordinator(DataUpdateCoordinator):
         return data
 
     async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
-        """Try to fetch daily consumption from REST, then GraphQL fallback."""
+        """Fetch consumption data, preferring half-hourly granularity.
+
+        Tries half-hourly REST data first (up to 48 half-hour slots,
+        approximately one day depending on availability), then falls back to
+        daily REST data, then to the GraphQL consumptionDataByMpxn query.
+        """
+        # Try half-hourly data first (up to 48 slots, ~1 day when available)
+        try:
+            result = await self.api.async_get_consumption(
+                meter.type,
+                meter.supply_point_id,
+                meter.serial,
+                group_by="half_hour",
+                page_size=48,
+            )
+            if result and "results" in result and len(result["results"]) > 0:
+                return result["results"]
+        except EonNextAuthError:
+            raise
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(
+                "REST half-hourly consumption unavailable for meter %s: %s",
+                meter.serial,
+                err,
+            )
+
+        # Fall back to daily-grouped REST data
         try:
             result = await self.api.async_get_consumption(
                 meter.type,
@@ -147,11 +193,12 @@ class EonNextCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(
-                "REST consumption unavailable for meter %s: %s",
+                "REST daily consumption unavailable for meter %s: %s",
                 meter.serial,
                 err,
             )
 
+        # Fall back to GraphQL
         try:
             fallback = await self.api.async_get_consumption_data_by_mpxn(
                 meter.supply_point_id,
@@ -171,26 +218,57 @@ class EonNextCoordinator(DataUpdateCoordinator):
         return None
 
     @staticmethod
-    def _sum_consumption(consumption_results: list[dict[str, Any]]) -> float | None:
-        """Sum consumption values from consumption results."""
-        if not consumption_results:
-            return None
+    def _aggregate_daily_consumption(
+        consumption_results: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Sum today's consumption and derive last_reset from the data.
+
+        Filters entries to today's date in Home Assistant local time and sums
+        their consumption values. Returns a dict with ``total`` (float | None)
+        and ``last_reset`` (str | None) — the original interval_start value
+        of the earliest entry included in the sum.
+        """
+        today = dt_util.now().date()
 
         total = 0.0
         has_value = False
+        earliest_start_utc: datetime | None = None
+        earliest_start: str | None = None
+
         for entry in consumption_results:
+            interval_start = entry.get("interval_start") or ""
+            parsed_start = dt_util.parse_datetime(str(interval_start))
+            if parsed_start is None:
+                continue
+
+            if parsed_start.tzinfo is None:
+                parsed_start = parsed_start.replace(tzinfo=timezone.utc)
+
+            local_start = dt_util.as_local(parsed_start)
+            parsed_start_utc = dt_util.as_utc(local_start)
+
+            # Keep entries whose local date falls on today.
+            if local_start.date() != today:
+                continue
+
             consumption = entry.get("consumption")
             if consumption is None:
                 continue
             try:
-                total += float(consumption)
-                has_value = True
+                val = float(consumption)
             except (TypeError, ValueError):
                 continue
 
-        if not has_value:
-            return None
-        return round(total, 3)
+            total += val
+            has_value = True
+            if earliest_start_utc is None or parsed_start_utc < earliest_start_utc:
+                earliest_start_utc = parsed_start_utc
+                earliest_start = interval_start
+
+        return {
+            "total": round(total, 3) if has_value else None,
+            "last_reset": earliest_start,
+        }
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:

@@ -3,7 +3,7 @@
     "name": "Eon Next",
     "codeowners": ["@monsagri"],
     "config_flow": true,
-    "dependencies": [],
+    "dependencies": ["recorder"],
     "documentation": "https://github.com/monsagri/eon-next-v2",
     "integration_type": "hub",
     "iot_class": "cloud_polling",
