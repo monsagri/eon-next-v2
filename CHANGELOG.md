@@ -10,6 +10,13 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 - Standing charge sensor (daily standing charge inc VAT in GBP) for electricity and gas meters
 - Previous day cost sensor (total daily cost inc VAT in GBP, including consumption and standing charge) for electricity and gas meters, with `cost_period` state attribute indicating which day the cost relates to
+- Configurable historical statistics backfill with conservative defaults, resumable progress persistence, and options-based throttling controls
+- Date-range GraphQL consumption fetch support to process historical backfill in small day-based chunks
+- Diagnostic `Historical Backfill Status` sensor with progress attributes (enabled, completed/pending meters, next backfill date)
+
+### Changed
+
+- Automatic coordinator statistics imports are paused only while a full-history backfill is active, then resume when backfill completes
 
 ## [1.2.0] - 2026-02-24
 

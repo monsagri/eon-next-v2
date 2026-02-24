@@ -18,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +35,18 @@ def _sanitize_id(value: str) -> str:
 def _hour_start(dt: datetime) -> datetime:
     """Round a datetime down to the start of its hour (UTC)."""
     return dt.replace(minute=0, second=0, microsecond=0)
+
+
+def statistic_id_for_meter(meter_serial: str, meter_type: str) -> str | None:
+    """Build statistic_id for a supported meter."""
+    sanitized_serial = _sanitize_id(meter_serial)
+    if meter_type == METER_TYPE_GAS:
+        fuel = "gas"
+    elif meter_type == METER_TYPE_ELECTRIC:
+        fuel = "electricity"
+    else:
+        return None
+    return f"{DOMAIN}:{fuel}_{sanitized_serial}_consumption"
 
 
 def _group_consumption_by_hour(
@@ -158,19 +171,15 @@ async def async_import_consumption_statistics(
     if not hourly:
         return
 
-    sanitized_serial = _sanitize_id(meter_serial)
-    if meter_type == "gas":
-        fuel = "gas"
-    elif meter_type == "electricity":
-        fuel = "electricity"
-    else:
+    statistic_id = statistic_id_for_meter(meter_serial, meter_type)
+    if statistic_id is None:
         _LOGGER.warning(
             "Unknown meter type '%s' for serial %s; skipping statistics import",
             meter_type,
             meter_serial,
         )
         return
-    statistic_id = f"{DOMAIN}:{fuel}_{sanitized_serial}_consumption"
+    fuel = "gas" if meter_type == METER_TYPE_GAS else "electricity"
 
     metadata_dict: dict[str, Any] = {
         "has_sum": True,

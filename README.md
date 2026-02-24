@@ -17,6 +17,7 @@ Custom integration for E.ON Next accounts in Home Assistant.
   - Next charge start/end.
   - Second charge start/end.
 - Home Assistant re-auth support for password changes.
+- Diagnostic status sensor for historical backfill progress.
 
 ## Requirements
 
@@ -48,6 +49,23 @@ If credentials expire or your password changes, Home Assistant will prompt for r
 ## Upgrade Note
 
 In `1.2.0`, the `Daily Consumption` sensor state class changed to `total` and now provides a data-driven `last_reset` for improved Energy Dashboard compatibility. If your instance still has long-term statistics from older semantics (such as `measurement` or `total_increasing`), you may need to recreate affected statistics/dashboard cards.
+
+## Historical Backfill (Configurable)
+
+The integration now supports a slow, resumable historical backfill for Energy Dashboard statistics.
+
+- Configure it in **Settings -> Devices & Services -> Eon Next -> Configure**.
+- Backfill progress is persisted and resumes across Home Assistant restarts.
+- To ensure a true full-history rebuild, enable the option to clear/rebuild existing Eon statistics first.
+
+Conservative defaults:
+
+- Backfill disabled by default.
+- Lookback: `3650` days.
+- Chunk size: `1` day per request.
+- Requests per run: `1`.
+- Run interval: `180` minutes.
+- Delay between requests: `300` seconds.
 
 ## Development And Releases
 

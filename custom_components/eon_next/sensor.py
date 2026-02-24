@@ -11,8 +11,8 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfEnergy, UnitOfVolume
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfVolume
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -38,6 +38,7 @@ async def async_setup_entry(
 
     coordinator = config_entry.runtime_data.coordinator
     api = config_entry.runtime_data.api
+    backfill = config_entry.runtime_data.backfill
 
     entities: list[SensorEntity] = []
     for account in api.accounts:
@@ -62,6 +63,8 @@ async def async_setup_entry(
             entities.append(NextChargeStartSlot2Sensor(coordinator, charger))
             entities.append(NextChargeEndSlot2Sensor(coordinator, charger))
 
+    entities.append(HistoricalBackfillStatusSensor(coordinator, backfill))
+
     async_add_entities(entities)
 
 
@@ -81,6 +84,46 @@ class EonNextSensorBase(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         return super().available and self._meter_data is not None
+
+
+class HistoricalBackfillStatusSensor(CoordinatorEntity, SensorEntity):
+    """Diagnostic sensor exposing historical backfill status."""
+
+    def __init__(self, coordinator, backfill_manager):
+        super().__init__(coordinator)
+        self._backfill = backfill_manager
+        self._attr_name = "Historical Backfill Status"
+        self._attr_icon = "mdi:database-clock-outline"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_unique_id = "eon_next__historical_backfill_status"
+
+    async def async_added_to_hass(self) -> None:
+        """Register status listener when entity is added."""
+        await super().async_added_to_hass()
+
+        @callback
+        def _handle_status_update() -> None:
+            self.async_write_ha_state()
+
+        self.async_on_remove(self._backfill.async_add_listener(_handle_status_update))
+
+    @property
+    def native_value(self):
+        return self._backfill.get_status()["state"]
+
+    @property
+    def extra_state_attributes(self):
+        status = self._backfill.get_status()
+        return {
+            "enabled": status["enabled"],
+            "initialized": status["initialized"],
+            "rebuild_done": status["rebuild_done"],
+            "lookback_days": status["lookback_days"],
+            "total_meters": status["total_meters"],
+            "completed_meters": status["completed_meters"],
+            "pending_meters": status["pending_meters"],
+            "next_start_date": status["next_start_date"],
+        }
 
 
 class LatestReadingDateSensor(EonNextSensorBase):

@@ -414,33 +414,11 @@ class EonNext:
             _LOGGER.debug("REST consumption request failed for %s: %s", serial, err)
             return None
 
-    async def async_get_consumption_data_by_mpxn(
-        self,
-        mpxn: str,
-        days: int = 7,
+    @staticmethod
+    def _normalize_graphql_consumption_items(
+        items: list[Any],
     ) -> list[dict[str, Any]] | None:
-        """Fetch daily consumption data via the GraphQL consumptionDataByMpxn query."""
-        if not mpxn:
-            return None
-
-        end_date = datetime.date.today()
-        start_date = end_date - datetime.timedelta(days=max(days - 1, 0))
-        variables = {
-            "startDate": start_date.isoformat(),
-            "endDate": end_date.isoformat(),
-            "limit": days,
-            "mpxn": mpxn,
-        }
-
-        result = await self._graphql_post(
-            "consumptionDataByMpxn",
-            CONSUMPTION_DATA_BY_MPXN_QUERY,
-            variables,
-        )
-        if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
-            return None
-
-        items = result["data"]["consumptionDataByMpxn"].get("items", [])
+        """Normalize GraphQL consumptionDataByMpxn items to interval_start/consumption."""
         normalized: list[dict[str, Any]] = []
         for item in items:
             if not isinstance(item, dict):
@@ -475,6 +453,53 @@ class EonNext:
             )
 
         return normalized or None
+
+    async def async_get_consumption_data_by_mpxn_range(
+        self,
+        mpxn: str,
+        start_date: datetime.date,
+        end_date: datetime.date,
+    ) -> list[dict[str, Any]] | None:
+        """Fetch daily consumption data for a specific date range via GraphQL."""
+        if not mpxn:
+            return None
+        if end_date < start_date:
+            return None
+
+        day_count = max((end_date - start_date).days + 1, 1)
+        variables = {
+            "startDate": start_date.isoformat(),
+            "endDate": end_date.isoformat(),
+            "limit": day_count,
+            "mpxn": mpxn,
+        }
+
+        result = await self._graphql_post(
+            "consumptionDataByMpxn",
+            CONSUMPTION_DATA_BY_MPXN_QUERY,
+            variables,
+        )
+        if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
+            return None
+
+        items = result["data"]["consumptionDataByMpxn"].get("items", [])
+        if not isinstance(items, list):
+            return None
+        return self._normalize_graphql_consumption_items(items)
+
+    async def async_get_consumption_data_by_mpxn(
+        self,
+        mpxn: str,
+        days: int = 7,
+    ) -> list[dict[str, Any]] | None:
+        """Fetch daily consumption data via the GraphQL consumptionDataByMpxn query."""
+        end_date = datetime.date.today()
+        start_date = end_date - datetime.timedelta(days=max(days - 1, 0))
+        return await self.async_get_consumption_data_by_mpxn_range(
+            mpxn,
+            start_date,
+            end_date,
+        )
 
     async def async_get_daily_costs(
         self,
