@@ -19,8 +19,10 @@ Use this before opening or finalizing a PR.
 ## Metadata and Release Hygiene
 
 - [ ] `manifest.json` and `hacs.json` remain valid and consistent.
+- [ ] `manifest.json` version matches latest `CHANGELOG.md` version (and `.release-please-manifest.json` when present).
 - [ ] `CHANGELOG.md` is updated for user-visible changes.
 - [ ] Release/tag requirements are captured for versioned changes.
+- [ ] If releasing, `release-please` draft PR has been reviewed before merge.
 
 ## Documentation
 

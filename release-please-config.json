@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "e00a177a0f27ba01aa8e9036473620a501d727d6",
+  "include-v-in-tag": true,
+  "draft-pull-request": true,
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "custom_components/eon_next/manifest.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}

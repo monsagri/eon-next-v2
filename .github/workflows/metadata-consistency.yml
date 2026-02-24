@@ -1,0 +1,18 @@
+name: Metadata Consistency
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release metadata version consistency
+        run: python3 .github/scripts/check_release_metadata.py
