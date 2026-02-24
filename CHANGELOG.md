@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Added
+
+- Standing charge sensor (daily standing charge inc VAT in GBP) for electricity and gas meters
+- Previous day cost sensor (total daily cost inc VAT in GBP, including consumption and standing charge) for electricity and gas meters, with `cost_period` state attribute indicating which day the cost relates to
+
 ## [1.2.0] - 2026-02-24
 
 ### Added
