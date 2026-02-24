@@ -75,10 +75,25 @@ async def _get_last_sum(
     try:
         from homeassistant.components.recorder import get_instance
         from homeassistant.components.recorder.statistics import (
+            get_last_statistics,
             statistics_during_period,
         )
 
+        # Prefer latest available sum regardless of age to preserve continuity
+        # across long data gaps.
         result = await get_instance(hass).async_add_executor_job(
+            get_last_statistics,
+            hass,
+            1,
+            statistic_id,
+            True,
+            {"sum"},
+        )
+        if statistic_id in result and result[statistic_id]:
+            return float(result[statistic_id][0].get("sum", 0.0) or 0.0)
+
+        # Backward-compatible fallback for older recorder implementations.
+        fallback = await get_instance(hass).async_add_executor_job(
             statistics_during_period,
             hass,
             before - timedelta(days=7),
@@ -88,8 +103,8 @@ async def _get_last_sum(
             None,
             {"sum"},
         )
-        if statistic_id in result and result[statistic_id]:
-            return result[statistic_id][-1].get("sum", 0.0) or 0.0
+        if statistic_id in fallback and fallback[statistic_id]:
+            return float(fallback[statistic_id][-1].get("sum", 0.0) or 0.0)
     except Exception as err:  # pylint: disable=broad-except
         _LOGGER.debug(
             "Could not retrieve last statistics sum for %s: %s",

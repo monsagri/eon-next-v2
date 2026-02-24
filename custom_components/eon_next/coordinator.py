@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .eonnext import (
     EonNext,
@@ -221,23 +222,33 @@ class EonNextCoordinator(DataUpdateCoordinator):
     ) -> dict[str, Any]:
         """Sum today's consumption and derive last_reset from the data.
 
-        Filters entries to today (by interval_start) and sums their
-        consumption values.  Returns a dict with ``total`` (float | None)
-        and ``last_reset`` (str | None) — the interval_start of the
-        earliest entry included in the sum.
+        Filters entries to today's date in Home Assistant local time and sums
+        their consumption values. Returns a dict with ``total`` (float | None)
+        and ``last_reset`` (str | None) — the original interval_start value
+        of the earliest entry included in the sum.
         """
-        today = date.today().isoformat()
+        today = dt_util.now().date()
 
         total = 0.0
         has_value = False
+        earliest_start_utc: datetime | None = None
         earliest_start: str | None = None
 
         for entry in consumption_results:
             interval_start = entry.get("interval_start") or ""
-            # Keep entries whose interval_start falls on today.
-            # interval_start is typically ISO-8601, e.g.
-            # "2026-02-24T00:00:00Z" or "2026-02-24".
-            if not interval_start.startswith(today):
+            parsed_start = dt_util.parse_datetime(str(interval_start))
+            if parsed_start is None:
+                continue
+
+            if parsed_start.tzinfo is None:
+                local_start = dt_util.as_local(parsed_start)
+                parsed_start_utc = dt_util.as_utc(local_start)
+            else:
+                local_start = dt_util.as_local(parsed_start)
+                parsed_start_utc = dt_util.as_utc(parsed_start)
+
+            # Keep entries whose local date falls on today.
+            if local_start.date() != today:
                 continue
 
             consumption = entry.get("consumption")
@@ -250,7 +261,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
 
             total += val
             has_value = True
-            if earliest_start is None or interval_start < earliest_start:
+            if earliest_start_utc is None or parsed_start_utc < earliest_start_utc:
+                earliest_start_utc = parsed_start_utc
                 earliest_start = interval_start
 
         return {
