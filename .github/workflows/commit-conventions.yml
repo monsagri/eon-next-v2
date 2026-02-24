@@ -1,0 +1,65 @@
+name: Commit Conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install commit tooling
+        run: npm ci
+      - name: Lint commits in pull request range
+        if: github.event_name == 'pull_request'
+        run: |
+          npx commitlint \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to "${{ github.event.pull_request.head.sha }}" \
+            --verbose
+      - name: Lint commits pushed to main
+        if: github.event_name == 'push'
+        run: |
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            npx commitlint --to "${{ github.sha }}" --verbose
+          else
+            npx commitlint \
+              --from "${{ github.event.before }}" \
+              --to "${{ github.sha }}" \
+              --verbose
+          fi
+
+  lint-pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Conventional Commit pull request title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test

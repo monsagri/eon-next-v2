@@ -50,3 +50,5 @@ In `1.1.0`, the `Daily Consumption` sensor state class changed to `measurement` 
 ## Development And Releases
 
 Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md).
+
+Contributors should use Conventional Commit messages (for example, `feat: ...`, `fix: ...`) and matching pull request titles because squash merges use PR titles as final commit subjects.
