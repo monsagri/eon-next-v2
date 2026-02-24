@@ -13,6 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
@@ -57,6 +58,10 @@ def _group_consumption_by_hour(
             continue
 
         if parsed.tzinfo is None:
+            _LOGGER.debug(
+                "Naive interval_start '%s' received; assuming UTC",
+                interval_start,
+            )
             parsed = parsed.replace(tzinfo=timezone.utc)
         else:
             parsed = dt_util.as_utc(parsed)
@@ -66,12 +71,12 @@ def _group_consumption_by_hour(
     return dict(hourly)
 
 
-async def _get_last_sum(
+async def _get_last_stat(
     hass: HomeAssistant,
     statistic_id: str,
     before: datetime,
-) -> float:
-    """Retrieve the last cumulative sum so new imports continue from it."""
+) -> tuple[datetime | None, float]:
+    """Retrieve latest timestamp and cumulative sum for a statistics ID."""
     try:
         from homeassistant.components.recorder import get_instance
         from homeassistant.components.recorder.statistics import (
@@ -90,7 +95,14 @@ async def _get_last_sum(
             {"sum"},
         )
         if statistic_id in result and result[statistic_id]:
-            return float(result[statistic_id][0].get("sum", 0.0) or 0.0)
+            latest = result[statistic_id][0]
+            start_ts = latest.get("start")
+            last_start = (
+                dt_util.utc_from_timestamp(float(start_ts))
+                if isinstance(start_ts, (int, float))
+                else None
+            )
+            return last_start, float(latest.get("sum", 0.0) or 0.0)
 
         # Backward-compatible fallback for older recorder implementations.
         fallback = await get_instance(hass).async_add_executor_job(
@@ -104,7 +116,14 @@ async def _get_last_sum(
             {"sum"},
         )
         if statistic_id in fallback and fallback[statistic_id]:
-            return float(fallback[statistic_id][-1].get("sum", 0.0) or 0.0)
+            latest = fallback[statistic_id][-1]
+            start_ts = latest.get("start")
+            last_start = (
+                dt_util.utc_from_timestamp(float(start_ts))
+                if isinstance(start_ts, (int, float))
+                else None
+            )
+            return last_start, float(latest.get("sum", 0.0) or 0.0)
     except Exception as err:  # pylint: disable=broad-except
         _LOGGER.debug(
             "Could not retrieve last statistics sum for %s: %s",
@@ -112,7 +131,7 @@ async def _get_last_sum(
             err,
         )
 
-    return 0.0
+    return None, 0.0
 
 
 async def async_import_consumption_statistics(
@@ -127,24 +146,30 @@ async def async_import_consumption_statistics(
     the last known cumulative sum, and calls ``async_add_external_statistics``
     so the Energy Dashboard shows consumption in the correct time period.
     """
-    try:
-        from homeassistant.components.recorder.models import (
-            StatisticData,
-            StatisticMetaData,
-        )
-        from homeassistant.components.recorder.statistics import (
-            async_add_external_statistics,
-        )
-    except ImportError:
-        _LOGGER.debug("Recorder not available, skipping statistics import")
-        return
+    from homeassistant.components.recorder.models import (
+        StatisticData,
+        StatisticMetaData,
+    )
+    from homeassistant.components.recorder.statistics import (
+        async_add_external_statistics,
+    )
 
     hourly = _group_consumption_by_hour(consumption_entries)
     if not hourly:
         return
 
     sanitized_serial = _sanitize_id(meter_serial)
-    fuel = "gas" if meter_type == "gas" else "electricity"
+    if meter_type == "gas":
+        fuel = "gas"
+    elif meter_type == "electricity":
+        fuel = "electricity"
+    else:
+        _LOGGER.warning(
+            "Unknown meter type '%s' for serial %s; skipping statistics import",
+            meter_type,
+            meter_serial,
+        )
+        return
     statistic_id = f"{DOMAIN}:{fuel}_{sanitized_serial}_consumption"
 
     metadata_dict: dict[str, Any] = {
@@ -152,7 +177,7 @@ async def async_import_consumption_statistics(
         "name": f"{meter_serial} {fuel.title()} Consumption",
         "source": DOMAIN,
         "statistic_id": statistic_id,
-        "unit_of_measurement": "kWh",
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "unit_class": "energy",
     }
 
@@ -165,11 +190,16 @@ async def async_import_consumption_statistics(
         metadata_dict["has_mean"] = False
 
     sorted_hours = sorted(hourly.keys())
-    last_sum = await _get_last_sum(hass, statistic_id, sorted_hours[0])
+    if not sorted_hours:
+        return
+    last_start, last_sum = await _get_last_stat(hass, statistic_id, sorted_hours[0])
 
     statistics: list[StatisticData] = []
     cumulative_sum = last_sum
     for hour in sorted_hours:
+        if last_start is not None and hour <= last_start:
+            continue
+
         kwh = round(hourly[hour], 3)
         cumulative_sum = round(cumulative_sum + kwh, 3)
         statistics.append(
@@ -179,6 +209,9 @@ async def async_import_consumption_statistics(
                 sum=cumulative_sum,
             )
         )
+
+    if not statistics:
+        return
 
     async_add_external_statistics(
         hass, StatisticMetaData(**metadata_dict), statistics

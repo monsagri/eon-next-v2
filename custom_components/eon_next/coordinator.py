@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -154,10 +154,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
     async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
         """Fetch consumption data, preferring half-hourly granularity.
 
-        Tries half-hourly REST data first (48 slots = 1 day), then falls back
-        to daily REST data, then to the GraphQL consumptionDataByMpxn query.
+        Tries half-hourly REST data first (up to 48 half-hour slots,
+        approximately one day depending on availability), then falls back to
+        daily REST data, then to the GraphQL consumptionDataByMpxn query.
         """
-        # Try half-hourly data first (48 half-hour slots covers one full day)
+        # Try half-hourly data first (up to 48 slots, ~1 day when available)
         try:
             result = await self.api.async_get_consumption(
                 meter.type,
@@ -241,11 +242,10 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 continue
 
             if parsed_start.tzinfo is None:
-                local_start = dt_util.as_local(parsed_start)
-                parsed_start_utc = dt_util.as_utc(local_start)
-            else:
-                local_start = dt_util.as_local(parsed_start)
-                parsed_start_utc = dt_util.as_utc(parsed_start)
+                parsed_start = parsed_start.replace(tzinfo=timezone.utc)
+
+            local_start = dt_util.as_local(parsed_start)
+            parsed_start_utc = dt_util.as_utc(local_start)
 
             # Keep entries whose local date falls on today.
             if local_start.date() != today:
