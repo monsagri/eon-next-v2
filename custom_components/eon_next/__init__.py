@@ -25,6 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Set up Eon Next from a config entry."""
     api = EonNext()
+    authenticated = False
 
     def _persist_refresh_token(refresh_token: str) -> None:
         """Save the latest refresh token to config entry data."""
@@ -40,18 +41,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
     # Try stored refresh token first to avoid a redundant username/password login.
     stored_refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
     if stored_refresh_token:
-        success = await api.login_with_refresh_token(stored_refresh_token)
-        if success:
+        authenticated = await api.login_with_refresh_token(stored_refresh_token)
+        if authenticated:
             _LOGGER.debug("Authenticated using stored refresh token")
         else:
             _LOGGER.debug("Stored refresh token expired, falling back to credentials")
 
     # Fall back to username/password if refresh token was unavailable or failed.
-    if not api.accounts:
-        success = await api.login_with_username_and_password(
+    if not authenticated:
+        authenticated = await api.login_with_username_and_password(
             entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]
         )
-        if not success:
+        if not authenticated:
             await api.async_close()
             raise ConfigEntryAuthFailed("Failed to authenticate with Eon Next")
 

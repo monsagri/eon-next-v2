@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+Patch-only changes (backward-compatible bug fixes), intended for the next `1.1.x` release.
+
+### Fixed
+
+- Treated JWT `refreshExpiresIn` as a relative duration and now store it as an absolute expiry (`iat + refreshExpiresIn`) so refresh tokens remain valid for their intended lifetime
+- Reused the refresh token obtained during config-flow validation in `async_setup_entry` to avoid an immediate second username/password login and reduce rate-limit risk
+- Ensured token-refresh fallback re-login does not reinitialize account state by using `initialise=False` in auth-only refresh paths
+- Added an auth refresh lock to prevent concurrent API calls from racing to refresh credentials at the same time
+- Persisted newly issued refresh tokens to config-entry data so auth sessions survive Home Assistant restarts
+- Tightened auth error detection by removing overly broad `"token"` message matching and keeping specific auth indicators (`jwt`, `unauthenticated`, etc.)
+- Used explicit authentication success tracking during setup instead of `api.accounts` presence, preventing unnecessary second login attempts when account discovery returns no entities
+
 ## [1.1.1] - 2026-02-23
 
 ### Fixed
