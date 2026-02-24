@@ -6,8 +6,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ## [Unreleased]
 
-Patch-only changes (backward-compatible bug fixes), intended for the next `1.1.x` release.
-
 ### Added
 
 - External statistics import via `async_add_external_statistics` for the Energy Dashboard — consumption is now attributed to the correct time period even when data arrives late
