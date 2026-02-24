@@ -45,7 +45,7 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry):
+    def async_get_options_flow(config_entry: ConfigEntry) -> EonNextOptionsFlow:
         """Return options flow for this handler."""
         return EonNextOptionsFlow(config_entry)
 
