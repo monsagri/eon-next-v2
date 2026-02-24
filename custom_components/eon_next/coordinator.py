@@ -16,6 +16,7 @@ from .eonnext import (
     GasMeter,
     METER_TYPE_GAS,
 )
+from .statistics import async_import_consumption_statistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +75,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["daily_consumption_last_reset"] = daily[
                             "last_reset"
                         ]
+
+                        try:
+                            await async_import_consumption_statistics(
+                                self.hass,
+                                meter.serial,
+                                meter.type,
+                                consumption,
+                            )
+                        except Exception as err:  # pylint: disable=broad-except
+                            _LOGGER.debug(
+                                "Statistics import failed for meter %s: %s",
+                                meter.serial,
+                                err,
+                            )
 
                     data[meter_key] = meter_data
 
