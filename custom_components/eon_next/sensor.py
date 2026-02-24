@@ -191,7 +191,7 @@ class StandingChargeSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Standing Charge"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_native_unit_of_measurement = "GBP"
-        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:cash-clock"
         self._attr_unique_id = f"{meter.serial}__standing_charge"
 
@@ -209,7 +209,7 @@ class PreviousDayCostSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Previous Day Cost"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_native_unit_of_measurement = "GBP"
-        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__previous_day_cost"
 
