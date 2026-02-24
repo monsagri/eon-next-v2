@@ -19,6 +19,16 @@ Install commit tooling:
 npm install
 ```
 
+## AI Contributor Guidance
+
+This repository keeps agent guidance in:
+
+- `AGENTS.md` (canonical entry point)
+- `docs/ai/context.md`
+- `docs/ai/conventions.md`
+- `docs/ai/workflows.md`
+- `docs/ai/checklist.md`
+
 ## Project Checks
 
 Run a basic syntax and typing pass before opening a PR:
@@ -46,7 +56,7 @@ This repository enforces Conventional Commits for semantic versioning.
 - Local commits are linted by a Husky `commit-msg` hook using `commitlint`.
 - Pull request titles are linted in CI and must also follow Conventional Commit format.
   - This is required because squash merges use the PR title as the final commit subject.
-- Commitlint is configured with `defaultIgnores: false` so merge commit messages are linted too.
+- Commitlint uses `@commitlint/config-conventional` with default ignore behavior and a 100-character header limit.
 
 Examples:
 

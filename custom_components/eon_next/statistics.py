@@ -78,7 +78,7 @@ async def _get_last_stat(
 ) -> tuple[datetime | None, float]:
     """Retrieve latest timestamp and cumulative sum for a statistics ID."""
     try:
-        from homeassistant.components.recorder import get_instance
+        from homeassistant.helpers.recorder import get_instance
         from homeassistant.components.recorder.statistics import (
             get_last_statistics,
             statistics_during_period,

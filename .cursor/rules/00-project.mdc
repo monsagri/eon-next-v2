@@ -1,0 +1,16 @@
+---
+description: Project-wide guidance for AI edits
+alwaysApply: true
+---
+
+# Cursor Adapter Rule
+
+Use repository guidance from:
+
+1. `AGENTS.md` (canonical)
+2. `docs/ai/context.md`
+3. `docs/ai/conventions.md`
+4. `docs/ai/workflows.md`
+5. `docs/ai/checklist.md`
+
+Keep changes small, preserve Home Assistant entity stability, and run local validation commands referenced in `docs/ai/workflows.md`.

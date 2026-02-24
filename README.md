@@ -45,7 +45,7 @@ If credentials expire or your password changes, Home Assistant will prompt for r
 
 ## Upgrade Note
 
-In `1.1.0`, the `Daily Consumption` sensor state class changed to `measurement` (from `total_increasing`) to reflect day-to-day values accurately. Existing long-term statistics or Energy Dashboard setups that relied on the previous state class may need to be recreated.
+In `1.2.0`, the `Daily Consumption` sensor state class changed to `total` and now provides a data-driven `last_reset` for improved Energy Dashboard compatibility. If your instance still has long-term statistics from older semantics (such as `measurement` or `total_increasing`), you may need to recreate affected statistics/dashboard cards.
 
 ## Development And Releases
 
