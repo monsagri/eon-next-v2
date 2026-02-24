@@ -91,6 +91,12 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 err,
                             )
 
+                    cost_data = await self._fetch_daily_costs(meter)
+                    if cost_data:
+                        meter_data["standing_charge"] = cost_data["standing_charge"]
+                        meter_data["previous_day_cost"] = cost_data["total_cost"]
+                        meter_data["cost_period"] = cost_data["period"]
+
                     data[meter_key] = meter_data
 
                 except EonNextAuthError as err:
@@ -150,6 +156,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Failed to fetch any data: {'; '.join(errors)}")
 
         return data
+
+    async def _fetch_daily_costs(self, meter) -> dict[str, Any] | None:
+        """Fetch daily cost data for the most recent complete day."""
+        try:
+            return await self.api.async_get_daily_costs(meter.supply_point_id)
+        except EonNextAuthError:
+            raise
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(
+                "Daily cost data unavailable for meter %s: %s",
+                meter.serial,
+                err,
+            )
+            return None
 
     async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
         """Fetch consumption data, preferring half-hourly granularity.

@@ -10,6 +10,8 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Daily consumption sensors with fallback:
   - REST consumption endpoint first.
   - `consumptionDataByMpxn` GraphQL fallback when REST data is unavailable.
+- Daily standing charge sensor (inc VAT) for electricity and gas.
+- Previous day total cost sensor (inc VAT) for electricity and gas.
 - EV smart charging sensors (when SmartFlex devices are available):
   - Smart charging schedule status.
   - Next charge start/end.

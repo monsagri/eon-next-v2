@@ -16,6 +16,7 @@
 - Coordinator entities should read from coordinator data keys; avoid direct API calls in entity properties.
 - Auth failures that require user action should raise `ConfigEntryAuthFailed`.
 - Recoverable API issues should degrade gracefully and preserve prior coordinator data where appropriate.
+- **Before implementing any feature or bug fix**, verify your approach against the Home Assistant developer documentation (https://developers.home-assistant.io/). HA enforces specific semantics and conventions that compile/type checks will not catch — validating against the docs first avoids subtle runtime issues.
 
 ## Data Key and Entity Stability
 
@@ -28,6 +29,11 @@
 ## Sensor Semantics
 
 - Keep unit, device class, state class, and timestamp parsing aligned with Home Assistant sensor expectations.
+- **State class selection rules** (these are enforced by HA's long-term statistics and Energy Dashboard):
+  - `MEASUREMENT`: Point-in-time or snapshot values that do not accumulate (e.g. current rate, daily standing charge, previous day cost, temperature).
+  - `TOTAL`: Cumulative values that grow over time and reset periodically — must pair with `last_reset` (e.g. daily consumption that resets at midnight).
+  - `TOTAL_INCREASING`: Monotonically increasing counters that never reset (e.g. lifetime meter readings).
+  - Do **not** use `TOTAL` for values that represent a fixed fee or a discrete period snapshot; use `MEASUREMENT`.
 - Any state class changes must include:
   - Code updates.
   - Documentation updates.
