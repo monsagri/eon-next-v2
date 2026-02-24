@@ -6,6 +6,8 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ## [Unreleased]
 
+Patch-only changes (backward-compatible bug fixes), intended for the next `1.1.x` release.
+
 ### Added
 
 - External statistics import via `async_add_external_statistics` for the Energy Dashboard — consumption is now attributed to the correct time period even when data arrives late
@@ -16,6 +18,16 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 - Fixed `DailyConsumptionSensor` warnings in the Energy Dashboard by changing `state_class` from `MEASUREMENT` to `TOTAL` and adding a data-driven `last_reset`
 - Daily consumption now filters to today's entries only instead of summing 7 days
 - `last_reset` is derived from actual consumption timestamps rather than computing midnight
+- Treated JWT `refreshExpiresIn` as a relative duration and now store it as an absolute expiry (`iat + refreshExpiresIn`) so refresh tokens remain valid for their intended lifetime
+- Reused the refresh token obtained during config-flow validation in `async_setup_entry` to avoid an immediate second username/password login and reduce rate-limit risk
+- Ensured token-refresh fallback re-login does not reinitialize account state by using `initialise=False` in auth-only refresh paths
+- Added an auth refresh lock to prevent concurrent API calls from racing to refresh credentials at the same time
+- Persisted newly issued refresh tokens to config-entry data so auth sessions survive Home Assistant restarts
+- Tightened auth error detection by removing overly broad `"token"` message matching and keeping specific auth indicators (`jwt`, `unauthenticated`, etc.)
+- Used explicit authentication success tracking during setup instead of `api.accounts` presence, preventing unnecessary second login attempts when account discovery returns no entities
+- Hardened token validation to treat missing/non-numeric expiry values as invalid (instead of raising `TypeError` in auth refresh checks)
+- Avoided no-op config-entry writes when refresh token value is unchanged and isolated token-update callback failures so successful auth is not downgraded by persistence callback errors
+- Exposed a public token-update callback setter on the API client to avoid external assignment to private internals
 
 ## [1.1.1] - 2026-02-23
 

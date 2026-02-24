@@ -3,6 +3,7 @@
 DOMAIN = "eon_next"
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
+CONF_REFRESH_TOKEN = "refresh_token"
 PLATFORMS = ["sensor"]
 DEFAULT_UPDATE_INTERVAL_MINUTES = 30
 API_BASE_URL = "https://api.eonnext-kraken.energy/v1"

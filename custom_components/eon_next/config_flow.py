@@ -12,7 +12,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 
-from .const import CONF_EMAIL, CONF_PASSWORD, DOMAIN
+from .const import CONF_EMAIL, CONF_PASSWORD, CONF_REFRESH_TOKEN, DOMAIN
 from .eonnext import EonNext
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,15 +26,21 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._reauth_entry: ConfigEntry | None = None
 
-    async def _validate_credentials(self, email: str, password: str) -> bool:
-        """Validate credentials against E.ON Next."""
+    async def _validate_credentials(self, email: str, password: str) -> str | None:
+        """Validate credentials against E.ON Next.
+
+        Returns the refresh token on success, or None on failure.
+        """
         api = EonNext()
         try:
-            return await api.login_with_username_and_password(
+            success = await api.login_with_username_and_password(
                 email,
                 password,
                 initialise=False,
             )
+            if success:
+                return api.auth["refresh"]["token"]
+            return None
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected error during authentication")
             raise
@@ -53,14 +59,18 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             try:
-                success = await self._validate_credentials(email, password)
+                refresh_token = await self._validate_credentials(email, password)
             except Exception:  # pylint: disable=broad-except
                 errors["base"] = "unknown"
             else:
-                if success:
+                if refresh_token is not None:
                     return self.async_create_entry(
                         title="Eon Next",
-                        data={CONF_EMAIL: email, CONF_PASSWORD: password},
+                        data={
+                            CONF_EMAIL: email,
+                            CONF_PASSWORD: password,
+                            CONF_REFRESH_TOKEN: refresh_token,
+                        },
                     )
                 errors["base"] = "invalid_auth"
 
@@ -101,16 +111,17 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             password = user_input[CONF_PASSWORD]
 
             try:
-                success = await self._validate_credentials(email, password)
+                refresh_token = await self._validate_credentials(email, password)
             except Exception:  # pylint: disable=broad-except
                 errors["base"] = "unknown"
             else:
-                if success:
+                if refresh_token is not None:
                     return self.async_update_reload_and_abort(
                         self._reauth_entry,
                         data_updates={
                             CONF_EMAIL: email,
                             CONF_PASSWORD: password,
+                            CONF_REFRESH_TOKEN: refresh_token,
                         },
                         reason="reauth_successful",
                     )
