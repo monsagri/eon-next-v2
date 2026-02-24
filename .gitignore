@@ -5,3 +5,5 @@ test.py
 .venv
 node_modules
 custom_components/eon_next/__pycache__
+__pycache__
+*.py[cod]
