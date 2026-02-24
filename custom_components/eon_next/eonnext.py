@@ -476,6 +476,75 @@ class EonNext:
 
         return normalized or None
 
+    async def async_get_daily_costs(
+        self,
+        mpxn: str,
+    ) -> dict[str, Any] | None:
+        """Fetch cost and standing charge data for the most recent complete day.
+
+        Queries the consumptionDataByMpxn GraphQL endpoint for yesterday's data
+        and extracts standing charge and total cost (both inc VAT).
+
+        Note: Kraken API returns cost values in pence; this method converts to
+        pounds (GBP) by dividing by 100.
+        """
+        if not mpxn:
+            return None
+
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        variables = {
+            "startDate": yesterday.isoformat(),
+            "endDate": yesterday.isoformat(),
+            "limit": 1,
+            "mpxn": mpxn,
+        }
+
+        result = await self._graphql_post(
+            "consumptionDataByMpxn",
+            CONSUMPTION_DATA_BY_MPXN_QUERY,
+            variables,
+        )
+        if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
+            return None
+
+        items = result["data"]["consumptionDataByMpxn"].get("items", [])
+        if not items:
+            return None
+
+        item = items[0]
+        if not isinstance(item, dict):
+            return None
+
+        item_data = item.get("data")
+        if not isinstance(item_data, dict):
+            return None
+
+        standing_raw = item_data.get("standingChargeIncVat")
+        total_raw = item_data.get("totalChargeIncVat")
+
+        standing = None
+        if standing_raw is not None:
+            try:
+                standing = round(float(standing_raw) / 100.0, 2)
+            except (TypeError, ValueError):
+                pass
+
+        total = None
+        if total_raw is not None:
+            try:
+                total = round(float(total_raw) / 100.0, 2)
+            except (TypeError, ValueError):
+                pass
+
+        if standing is None and total is None:
+            return None
+
+        return {
+            "standing_charge": standing,
+            "total_cost": total,
+            "period": item.get("period"),
+        }
+
     async def async_get_smart_charging_schedule(
         self,
         device_id: str,

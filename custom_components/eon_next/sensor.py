@@ -52,6 +52,8 @@ async def async_setup_entry(
                 entities.append(LatestGasKwhSensor(coordinator, meter))
 
             entities.append(DailyConsumptionSensor(coordinator, meter))
+            entities.append(StandingChargeSensor(coordinator, meter))
+            entities.append(PreviousDayCostSensor(coordinator, meter))
 
         for charger in account.ev_chargers:
             entities.append(SmartChargingScheduleSensor(coordinator, charger))
@@ -179,6 +181,50 @@ class DailyConsumptionSensor(EonNextSensorBase):
     def native_value(self):
         data = self._meter_data
         return data.get("daily_consumption") if data else None
+
+
+class StandingChargeSensor(EonNextSensorBase):
+    """Daily standing charge (inc VAT)."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Standing Charge"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = "GBP"
+        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_icon = "mdi:cash-clock"
+        self._attr_unique_id = f"{meter.serial}__standing_charge"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("standing_charge") if data else None
+
+
+class PreviousDayCostSensor(EonNextSensorBase):
+    """Previous day's total cost inc VAT (consumption + standing charge)."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Previous Day Cost"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = "GBP"
+        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_icon = "mdi:currency-gbp"
+        self._attr_unique_id = f"{meter.serial}__previous_day_cost"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("previous_day_cost") if data else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        period = data.get("cost_period")
+        if period:
+            return {"cost_period": period}
+        return {}
 
 
 class SmartChargingScheduleSensor(EonNextSensorBase):
