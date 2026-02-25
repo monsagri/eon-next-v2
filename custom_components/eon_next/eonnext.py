@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import errno
 import logging
-import socket
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -175,11 +173,10 @@ class SmartChargingDevice:
 class EonNext:
     """API client for E.ON Next."""
 
-    def __init__(self, session: aiohttp.ClientSession | None = None):
+    def __init__(self):
         self.username = ""
         self.password = ""
-        self._session: aiohttp.ClientSession | None = session
-        self._owns_session = session is None
+        self._session: aiohttp.ClientSession | None = None
         self._auth_lock = asyncio.Lock()
         self._on_token_update: Callable[[str], None] | None = None
         self.__reset_authentication()
@@ -288,85 +285,13 @@ class EonNext:
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30)
-            )
-            self._owns_session = True
+            self._session = aiohttp.ClientSession()
         return self._session
 
     async def async_close(self):
-        if self._owns_session and self._session and not self._session.closed:
+        if self._session and not self._session.closed:
             await self._session.close()
-        self._session = None
-
-    @staticmethod
-    def _is_ipv4_retryable_network_error(err: aiohttp.ClientConnectorError) -> bool:
-        """Return True when connector error is likely address-family specific."""
-        os_error = err.os_error
-        if os_error is None:
-            # Some connector failures surface without errno details.
-            return True
-
-        if getattr(os_error, "errno", None) in {
-            errno.EADDRNOTAVAIL,
-            errno.ENETDOWN,
-            errno.ENETUNREACH,
-            errno.EHOSTUNREACH,
-        }:
-            return True
-
-        return "network unreachable" in str(err).lower()
-
-    async def _graphql_post_with_session(
-        self,
-        session: aiohttp.ClientSession,
-        operation: str,
-        query: str,
-        variables: dict[str, Any],
-        headers: dict[str, str],
-    ) -> dict:
-        async with session.post(
-            f"{API_BASE_URL}/graphql/",
-            json={"operationName": operation, "variables": variables, "query": query},
-            headers=headers,
-        ) as response:
-            if headers and response.status in (401, 403):
-                raise EonNextAuthError("Authentication rejected by API")
-
-            try:
-                result = await response.json(content_type=None)
-            except aiohttp.ContentTypeError as err:
-                text = await response.text()
-                _LOGGER.debug(
-                    "Non-JSON response for %s (status %s): %s",
-                    operation,
-                    response.status,
-                    text[:500],
-                )
-                raise EonNextApiError("Invalid API response") from err
-
-            if self._has_auth_error(result.get("errors")):
-                raise EonNextAuthError("Authentication failed")
-
-            return result
-
-    async def _graphql_post_with_ipv4_fallback(
-        self,
-        operation: str,
-        query: str,
-        variables: dict[str, Any],
-        headers: dict[str, str],
-    ) -> dict:
-        connector = aiohttp.TCPConnector(family=socket.AF_INET)
-        timeout = aiohttp.ClientTimeout(total=30)
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-            return await self._graphql_post_with_session(
-                session=session,
-                operation=operation,
-                query=query,
-                variables=variables,
-                headers=headers,
-            )
+            self._session = None
 
     async def _graphql_post(
         self,
@@ -384,38 +309,31 @@ class EonNext:
 
         session = await self._get_session()
         try:
-            return await self._graphql_post_with_session(
-                session=session,
-                operation=operation,
-                query=query,
-                variables=variables,
+            async with session.post(
+                f"{API_BASE_URL}/graphql/",
+                json={"operationName": operation, "variables": variables, "query": query},
                 headers=headers,
-            )
-        except aiohttp.ClientConnectorError as err:
-            if self._is_ipv4_retryable_network_error(err):
-                _LOGGER.debug(
-                    "Connector error for %s; retrying over IPv4 once: %s",
-                    operation,
-                    err,
-                )
+            ) as response:
+                if authenticated and response.status in (401, 403):
+                    raise EonNextAuthError("Authentication rejected by API")
+
                 try:
-                    return await self._graphql_post_with_ipv4_fallback(
-                        operation=operation,
-                        query=query,
-                        variables=variables,
-                        headers=headers,
-                    )
-                except aiohttp.ClientError as fallback_err:
-                    _LOGGER.error(
-                        "GraphQL request failed for %s after IPv4 retry: %s",
+                    result = await response.json(content_type=None)
+                except aiohttp.ContentTypeError as err:
+                    text = await response.text()
+                    _LOGGER.debug(
+                        "Non-JSON response for %s (status %s): %s",
                         operation,
-                        fallback_err,
+                        response.status,
+                        text[:500],
                     )
-                    raise EonNextApiError(
-                        f"API request failed: {fallback_err}"
-                    ) from fallback_err
-            _LOGGER.error("GraphQL request failed for %s: %s", operation, err)
-            raise EonNextApiError(f"API request failed: {err}") from err
+                    raise EonNextApiError("Invalid API response") from err
+
+                if self._has_auth_error(result.get("errors")):
+                    raise EonNextAuthError("Authentication failed")
+
+                return result
+
         except aiohttp.ClientError as err:
             _LOGGER.error("GraphQL request failed for %s: %s", operation, err)
             raise EonNextApiError(f"API request failed: {err}") from err

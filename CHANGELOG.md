@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.5.2](https://github.com/monsagri/eon-next-v2/compare/v1.5.1...v1.5.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* revert auth retry and IPv4 fallback that caused connection failures ([#22](https://github.com/monsagri/eon-next-v2/issues/22))
+
 ## [1.5.1](https://github.com/monsagri/eon-next-v2/compare/v1.5.0...v1.5.1) (2026-02-25)
 
 
@@ -41,7 +48,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 - Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
 - Frontend websocket data controller now restores loading state during reconnect/manual refresh instead of continuing to show stale data
-- Auth/login GraphQL requests now retry once over IPv4 after connector-level network-unreachable errors, reducing setup failures on IPv4-only Home Assistant hosts
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 

@@ -11,7 +11,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
 from .const import (
@@ -62,7 +61,7 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         Returns the refresh token on success, or None on failure.
         """
-        api = EonNext(session=async_get_clientsession(self.hass))
+        api = EonNext()
         try:
             success = await api.login_with_username_and_password(
                 email,
