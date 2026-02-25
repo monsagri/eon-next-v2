@@ -573,6 +573,28 @@ Add a GitHub Actions workflow to verify the frontend build:
 
 ---
 
+## Future Direction: Standalone Energy UI Integration
+
+The embedded approach (cards shipped inside this integration) is the right choice today — it keeps everything co-versioned and gives users a single install. However, the shared view components (consumption charts, cost breakdowns, EV schedules, etc.) are designed with reusability in mind and are not inherently tied to the EON Next API.
+
+**Long-term vision**: Extract the frontend components into a **separate, provider-agnostic HACS "Dashboard" integration** (e.g., `energy-dashboard-cards`) that works with any energy provider — EON Next, Octopus Energy, Hildebrand Glow, or even the built-in HA Energy platform. This would:
+
+- Accept generic entity IDs for consumption, cost, meter readings, and EV schedules (rather than being hard-wired to EON Next entities)
+- Ship as a standalone HACS Frontend repo, installable independently
+- Be discoverable in the HACS "Frontend" category for broader adoption
+- Support multiple providers on a single dashboard (e.g., electricity from one provider, gas from another)
+
+**How to prepare now** (without over-engineering):
+
+1. Keep shared view components in `frontend/src/components/` decoupled from EON Next–specific WebSocket commands — they should accept data via properties, not fetch it themselves
+2. Use the WebSocket API layer (`api.ts`) as the only place that knows about `eon_next/*` command names
+3. Design card configs to accept arbitrary entity IDs alongside the current auto-discovery from EON Next entities
+4. When the standalone repo is eventually created, the shared components can be extracted with minimal refactoring, and this integration's cards can become thin wrappers that auto-configure entity IDs from the EON Next config entry
+
+This is not planned work — just a guiding principle for how we structure the frontend code today so that the option remains open.
+
+---
+
 ## Definition of Done
 
 ### Panel
