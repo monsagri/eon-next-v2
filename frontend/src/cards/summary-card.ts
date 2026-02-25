@@ -56,10 +56,7 @@ class EonNextSummaryCard extends LitElement {
     return html`
       <ha-card>
         <div class="title">
-          <ha-icon
-            icon="mdi:lightning-bolt"
-            style="--mdc-icon-size: 18px;"
-          ></ha-icon>
+          <ha-icon icon="mdi:lightning-bolt" style="--mdc-icon-size: 18px;"></ha-icon>
           EON Next Summary
         </div>
 
@@ -67,28 +64,19 @@ class EonNextSummaryCard extends LitElement {
           renderMeterSummary(m, "Electricity", "mdi:flash", showCosts),
         )}
         ${showGas
-          ? gas.map((m) =>
-              renderMeterSummary(m, "Gas", "mdi:fire", showCosts),
-            )
+          ? gas.map((m) => renderMeterSummary(m, "Gas", "mdi:fire", showCosts))
           : nothing}
         ${showEv && ev_chargers.length > 0
           ? html`<div class="meter-section">
               <div class="meter-label">
-                <ha-icon
-                  icon="mdi:ev-station"
-                  style="--mdc-icon-size: 16px;"
-                ></ha-icon>
+                <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 16px;"></ha-icon>
                 EV Charging
               </div>
               ${ev_chargers.map(
                 (ev) => html`
                   <div class="stat-row">
                     <span class="stat-label">Status</span>
-                    <span
-                      >${ev.schedule_slots > 0
-                        ? "Scheduled"
-                        : "Idle"}</span
-                    >
+                    <span>${ev.schedule_slots > 0 ? "Scheduled" : "Idle"}</span>
                   </div>
                 `,
               )}

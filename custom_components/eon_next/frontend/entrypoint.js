@@ -22,9 +22,7 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
       ${null!=t.standing_charge?W`<div class="meter-row">
             <span class="label">Standing charge</span>
             <span class="value"
-              >£${t.standing_charge.toFixed(2)}<span class="unit"
-                >/day</span
-              ></span
+              >£${t.standing_charge.toFixed(2)}<span class="unit">/day</span></span
             >
           </div>`:V}
       ${null!=t.previous_day_cost?W`<div class="meter-row">
@@ -34,9 +32,7 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
       ${null!=t.unit_rate?W`<div class="meter-row">
             <span class="label">Unit rate</span>
             <span class="value"
-              >£${t.unit_rate.toFixed(4)}<span class="unit"
-                >/kWh</span
-              ></span
+              >£${t.unit_rate.toFixed(4)}<span class="unit">/kWh</span></span
             >
           </div>`:V}
       ${t.tariff_name?W`<div class="meter-row">
@@ -53,9 +49,7 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
 
     <div class="meter-row">
       <span class="label">Schedule</span>
-      <span class="value"
-        >${t.schedule_slots>0?"Active":"No schedule"}</span
-      >
+      <span class="value">${t.schedule_slots>0?"Active":"No schedule"}</span>
     </div>
 
     ${t.next_charge_start?W`<div class="meter-row">
@@ -198,7 +192,6 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
       </div>
 
       ${t?.meters.length||t?.ev_chargers.length?V:W`<div class="empty">
-            No meter or EV data available. Check your integration
-            configuration.
+            No meter or EV data available. Check your integration configuration.
           </div>`}
     `}}mt.styles=[$t,ft],t([dt({attribute:!1})],mt.prototype,"hass",void 0),t([dt({type:Boolean})],mt.prototype,"narrow",void 0),t([dt({attribute:!1})],mt.prototype,"route",void 0),t([dt({attribute:!1})],mt.prototype,"panel",void 0),customElements.define("eon-next-panel",mt);

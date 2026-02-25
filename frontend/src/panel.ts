@@ -23,9 +23,7 @@ class EonNextPanel extends LitElement {
   @property({ attribute: false }) route!: PanelRoute;
   @property({ attribute: false }) panel!: PanelInfo;
 
-  private _version = new WsDataController<VersionResponse>(this, (h) =>
-    getVersion(h),
-  );
+  private _version = new WsDataController<VersionResponse>(this, (h) => getVersion(h));
   private _summary = new WsDataController<DashboardSummary>(this, (h) =>
     getDashboardSummary(h),
   );
@@ -45,9 +43,7 @@ class EonNextPanel extends LitElement {
     return html`
       <div class="header">
         <h1>EON Next Energy</h1>
-        ${version
-          ? html`<span class="version-badge">v${version}</span>`
-          : nothing}
+        ${version ? html`<span class="version-badge">v${version}</span>` : nothing}
       </div>
 
       <div class="grid">
@@ -57,8 +53,7 @@ class EonNextPanel extends LitElement {
 
       ${!data?.meters.length && !data?.ev_chargers.length
         ? html`<div class="empty">
-            No meter or EV data available. Check your integration
-            configuration.
+            No meter or EV data available. Check your integration configuration.
           </div>`
         : nothing}
     `;

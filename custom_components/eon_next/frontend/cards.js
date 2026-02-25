@@ -101,10 +101,7 @@ function t(t,e,s,i){var r,o=arguments.length,n=o<3?e:null===i?i=Object.getOwnPro
       </ha-card>`;const{meters:t,ev_chargers:e}=this._data.data,s=t.filter(t=>"electricity"===t.type),i=t.filter(t=>"gas"===t.type),r=!1!==this._config.show_gas,o=!1!==this._config.show_ev,n=!1!==this._config.show_costs;return W`
       <ha-card>
         <div class="title">
-          <ha-icon
-            icon="mdi:lightning-bolt"
-            style="--mdc-icon-size: 18px;"
-          ></ha-icon>
+          <ha-icon icon="mdi:lightning-bolt" style="--mdc-icon-size: 18px;"></ha-icon>
           EON Next Summary
         </div>
 
@@ -112,18 +109,13 @@ function t(t,e,s,i){var r,o=arguments.length,n=o<3?e:null===i?i=Object.getOwnPro
         ${r?i.map(t=>ut(t,"Gas","mdi:fire",n)):V}
         ${o&&e.length>0?W`<div class="meter-section">
               <div class="meter-label">
-                <ha-icon
-                  icon="mdi:ev-station"
-                  style="--mdc-icon-size: 16px;"
-                ></ha-icon>
+                <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 16px;"></ha-icon>
                 EV Charging
               </div>
               ${e.map(t=>W`
                   <div class="stat-row">
                     <span class="stat-label">Status</span>
-                    <span
-                      >${t.schedule_slots>0?"Scheduled":"Idle"}</span
-                    >
+                    <span>${t.schedule_slots>0?"Scheduled":"Idle"}</span>
                   </div>
                 `)}
             </div>`:V}

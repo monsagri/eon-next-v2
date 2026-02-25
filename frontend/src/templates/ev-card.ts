@@ -11,9 +11,7 @@ export const renderEvCard = (ev: EvChargerSummary) => html`
 
     <div class="meter-row">
       <span class="label">Schedule</span>
-      <span class="value"
-        >${ev.schedule_slots > 0 ? "Active" : "No schedule"}</span
-      >
+      <span class="value">${ev.schedule_slots > 0 ? "Active" : "No schedule"}</span>
     </div>
 
     ${ev.next_charge_start

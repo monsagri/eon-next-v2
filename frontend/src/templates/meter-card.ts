@@ -37,9 +37,7 @@ export const renderMeterCard = (meter: MeterSummary) => {
         ? html`<div class="meter-row">
             <span class="label">Standing charge</span>
             <span class="value"
-              >£${meter.standing_charge.toFixed(2)}<span class="unit"
-                >/day</span
-              ></span
+              >£${meter.standing_charge.toFixed(2)}<span class="unit">/day</span></span
             >
           </div>`
         : nothing}
@@ -53,9 +51,7 @@ export const renderMeterCard = (meter: MeterSummary) => {
         ? html`<div class="meter-row">
             <span class="label">Unit rate</span>
             <span class="value"
-              >£${meter.unit_rate.toFixed(4)}<span class="unit"
-                >/kWh</span
-              ></span
+              >£${meter.unit_rate.toFixed(4)}<span class="unit">/kWh</span></span
             >
           </div>`
         : nothing}
