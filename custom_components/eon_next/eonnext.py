@@ -754,7 +754,10 @@ class EonNext:
             valid_from = agreement.get("validFrom") or ""
             valid_to = agreement.get("validTo") or ""
 
-            if valid_from and valid_from > today_iso:
+            # Skip agreements with no known start date.
+            if not valid_from:
+                continue
+            if valid_from > today_iso:
                 continue
             if valid_to and valid_to < today_iso:
                 continue

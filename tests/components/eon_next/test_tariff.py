@@ -184,6 +184,41 @@ class TestFindActiveAgreement:
         assert result is not None
         assert result["tariff_name"] == "Full Name Only"
 
+    def test_skips_agreement_with_missing_valid_from(self) -> None:
+        """Agreement without validFrom should be skipped (unknown validity)."""
+        agreements = [
+            {
+                "id": "no-start",
+                "validTo": _NEXT_YEAR,
+                "tariff": {
+                    "__typename": "StandardTariff",
+                    "displayName": "No Start",
+                    "tariffCode": "NS-01",
+                    "unitRate": "22.00",
+                    "standingCharge": "50.00",
+                },
+            },
+        ]
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
+
+    def test_skips_agreement_with_null_valid_from(self) -> None:
+        """Agreement with null validFrom should be skipped."""
+        agreements = [
+            {
+                "id": "null-start",
+                "validFrom": None,
+                "validTo": _NEXT_YEAR,
+                "tariff": {
+                    "__typename": "StandardTariff",
+                    "displayName": "Null Start",
+                    "tariffCode": "NS-02",
+                    "unitRate": "22.00",
+                    "standingCharge": "50.00",
+                },
+            },
+        ]
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
+
     def test_skips_non_dict_agreements(self) -> None:
         agreements: list[Any] = ["bad", None, 123]
         assert EonNext._find_active_agreement(agreements, _TODAY) is None

@@ -318,7 +318,7 @@ class CurrentTariffSensor(EonNextSensorBase):
             "tariff_valid_to",
         ):
             val = data.get(key)
-            if val is not None:
+            if val is not None and val != "":
                 attrs[key] = val
         return attrs
 

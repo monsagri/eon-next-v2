@@ -188,8 +188,10 @@ class EonNextCoordinator(DataUpdateCoordinator):
         """Fetch tariff agreement data for all meter points on an account."""
         try:
             return await self.api.async_get_tariff_data(account.account_number)
-        except EonNextAuthError:
-            raise
+        except EonNextAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"Authentication failed fetching tariffs: {err}"
+            ) from err
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(
                 "Tariff data unavailable for account %s: %s",
