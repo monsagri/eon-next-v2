@@ -29,11 +29,13 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_dashboard_summary)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "eon_next/version"})
+@websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
+    {vol.Required("type"): "eon_next/version"}
+)
 @callback
 def ws_version(
     hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
+    connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
     msg: dict[str, Any],
 ) -> None:
     """Return the integration version."""
@@ -43,13 +45,13 @@ def ws_version(
     )
 
 
-@websocket_api.websocket_command(
+@websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
     {vol.Required("type"): "eon_next/dashboard_summary"}
 )
-@websocket_api.async_response
+@websocket_api.async_response  # pyright: ignore[reportPrivateImportUsage]
 async def ws_dashboard_summary(
     hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
+    connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
     msg: dict[str, Any],
 ) -> None:
     """Return an aggregated summary of all meters and EV chargers."""
