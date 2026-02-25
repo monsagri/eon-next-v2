@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 
-from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
@@ -18,10 +17,16 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     """Register the EON Next sidebar panel.
 
     Guarded so that only the first config entry triggers registration.
-    Subsequent entries share the same panel.
+    Requires the ``panel_custom`` component; silently skips if unavailable.
     """
     if DOMAIN in hass.data.get("frontend_panels", {}):
         return
+
+    if "panel_custom" not in hass.config.components:
+        _LOGGER.debug("panel_custom not available; skipping panel registration")
+        return
+
+    from homeassistant.components import panel_custom  # noqa: E402
 
     panel_path = os.path.join(os.path.dirname(__file__), "frontend", "entrypoint.js")
 
@@ -50,6 +55,11 @@ async def async_unregister_panel(hass: HomeAssistant) -> None:
     """
     if DOMAIN not in hass.data.get("frontend_panels", {}):
         return
+
+    if "frontend" not in hass.config.components:
+        return
+
+    from homeassistant.components import frontend  # noqa: E402
 
     frontend.async_remove_panel(hass, DOMAIN)
     _LOGGER.debug("EON Next sidebar panel removed")

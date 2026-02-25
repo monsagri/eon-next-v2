@@ -7,7 +7,9 @@
     "config_flow": true,
     "dependencies": [
         "recorder",
-        "http",
+        "http"
+    ],
+    "after_dependencies": [
         "frontend",
         "panel_custom",
         "lovelace"
