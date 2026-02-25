@@ -1,19 +1,15 @@
-import type { HomeAssistant, VersionResponse, DashboardSummary } from "./types";
-
 /**
  * WebSocket API client for the EON Next integration.
  *
- * This is the only module that knows about eon_next/* command names.
- * Shared view components receive data via properties, not by calling
- * the API directly — keeping them provider-agnostic.
+ * All types, constants, and functions are generated from the Python schemas.
+ * This module re-exports them so existing import paths keep working.
+ *
+ * Source of truth: custom_components/eon_next/schemas.py
+ * Regenerate:      python scripts/generate_ts_api.py
  */
-
-export async function getVersion(hass: HomeAssistant): Promise<VersionResponse> {
-  return hass.callWS<VersionResponse>({ type: "eon_next/version" });
-}
-
-export async function getDashboardSummary(
-  hass: HomeAssistant,
-): Promise<DashboardSummary> {
-  return hass.callWS<DashboardSummary>({ type: "eon_next/dashboard_summary" });
-}
+export {
+  getVersion,
+  getDashboardSummary,
+  WS_VERSION,
+  WS_DASHBOARD_SUMMARY,
+} from "./api.generated";

@@ -40,33 +40,13 @@ export interface PanelInfo {
   title: string | null;
 }
 
-/** Response from eon_next/version WebSocket command. */
-export interface VersionResponse {
-  version: string;
-}
-
-/** Response from eon_next/dashboard_summary WebSocket command. */
-export interface DashboardSummary {
-  meters: MeterSummary[];
-  ev_chargers: EvChargerSummary[];
-}
-
-export interface MeterSummary {
-  serial: string;
-  type: string;
-  latest_reading: number | null;
-  latest_reading_date: string | null;
-  daily_consumption: number | null;
-  standing_charge: number | null;
-  previous_day_cost: number | null;
-  unit_rate: number | null;
-  tariff_name: string | null;
-}
-
-export interface EvChargerSummary {
-  device_id: string;
-  serial: string;
-  schedule_slots: number;
-  next_charge_start: string | null;
-  next_charge_end: string | null;
-}
+/**
+ * API response types — re-exported from the generated file so that existing
+ * ``import { MeterSummary } from "../types"`` paths keep working.
+ */
+export type {
+  VersionResponse,
+  DashboardSummary,
+  MeterSummary,
+  EvChargerSummary,
+} from "./api.generated";

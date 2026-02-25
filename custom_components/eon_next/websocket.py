@@ -5,6 +5,7 @@ Shared by both the sidebar panel and standalone Lovelace cards.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any
 
 import voluptuous as vol
@@ -14,6 +15,12 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN, INTEGRATION_VERSION
 from .models import EonNextConfigEntry
+from .schemas import (
+    DashboardSummary,
+    EvChargerSummary,
+    MeterSummary,
+    VersionResponse,
+)
 
 
 def async_setup_websocket(hass: HomeAssistant) -> None:
@@ -30,7 +37,10 @@ def ws_version(
     msg: dict[str, Any],
 ) -> None:
     """Return the integration version."""
-    connection.send_result(msg["id"], {"version": INTEGRATION_VERSION})
+    connection.send_result(
+        msg["id"],
+        dataclasses.asdict(VersionResponse(version=INTEGRATION_VERSION)),
+    )
 
 
 @websocket_api.websocket_command(
@@ -43,8 +53,8 @@ async def ws_dashboard_summary(
     msg: dict[str, Any],
 ) -> None:
     """Return an aggregated summary of all meters and EV chargers."""
-    meters: list[dict[str, Any]] = []
-    ev_chargers: list[dict[str, Any]] = []
+    meters: list[MeterSummary] = []
+    ev_chargers: list[EvChargerSummary] = []
 
     entries: list[EonNextConfigEntry] = (
         hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
@@ -64,32 +74,32 @@ async def ws_dashboard_summary(
 
             if data_type in ("electricity", "gas"):
                 meters.append(
-                    {
-                        "serial": data.get("serial"),
-                        "type": data_type,
-                        "latest_reading": data.get("latest_reading"),
-                        "latest_reading_date": data.get("latest_reading_date"),
-                        "daily_consumption": data.get("daily_consumption"),
-                        "standing_charge": data.get("standing_charge"),
-                        "previous_day_cost": data.get("previous_day_cost"),
-                        "unit_rate": data.get("unit_rate"),
-                        "tariff_name": data.get("tariff_name"),
-                    }
+                    MeterSummary(
+                        serial=data.get("serial"),
+                        type=data_type,
+                        latest_reading=data.get("latest_reading"),
+                        latest_reading_date=data.get("latest_reading_date"),
+                        daily_consumption=data.get("daily_consumption"),
+                        standing_charge=data.get("standing_charge"),
+                        previous_day_cost=data.get("previous_day_cost"),
+                        unit_rate=data.get("unit_rate"),
+                        tariff_name=data.get("tariff_name"),
+                    )
                 )
 
             elif data_type == "ev_charger":
                 schedule = data.get("schedule", [])
                 ev_chargers.append(
-                    {
-                        "device_id": data.get("device_id"),
-                        "serial": data.get("serial"),
-                        "schedule_slots": len(schedule),
-                        "next_charge_start": data.get("next_charge_start"),
-                        "next_charge_end": data.get("next_charge_end"),
-                    }
+                    EvChargerSummary(
+                        device_id=data.get("device_id"),
+                        serial=data.get("serial"),
+                        schedule_slots=len(schedule),
+                        next_charge_start=data.get("next_charge_start"),
+                        next_charge_end=data.get("next_charge_end"),
+                    )
                 )
 
     connection.send_result(
         msg["id"],
-        {"meters": meters, "ev_chargers": ev_chargers},
+        dataclasses.asdict(DashboardSummary(meters=meters, ev_chargers=ev_chargers)),
     )

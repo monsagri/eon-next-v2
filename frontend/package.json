@@ -11,7 +11,9 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
     "format:check": "prettier --check 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "codegen": "python3 ../scripts/generate_ts_api.py",
+    "codegen:check": "python3 ../scripts/generate_ts_api.py && git diff --exit-code src/api.generated.ts"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.0",
