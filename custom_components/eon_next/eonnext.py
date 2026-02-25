@@ -86,6 +86,73 @@ query getSmartChargingSchedule($deviceId: String!) {
 }
 """
 
+GET_ACCOUNT_AGREEMENTS_QUERY = """
+query getAccountAgreements($accountNumber: String!) {
+  properties(accountNumber: $accountNumber) {
+    electricityMeterPoints {
+      mpan
+      agreements {
+        id
+        validFrom
+        validTo
+        tariff {
+          __typename
+          ... on TariffType {
+            displayName
+            fullName
+            tariffCode
+          }
+          ... on StandardTariff {
+            unitRate
+            standingCharge
+          }
+          ... on PrepayTariff {
+            unitRate
+            standingCharge
+          }
+          ... on HalfHourlyTariff {
+            unitRates {
+              value
+            }
+            standingCharge
+          }
+        }
+      }
+    }
+    gasMeterPoints {
+      mprn
+      agreements {
+        id
+        validFrom
+        validTo
+        tariff {
+          __typename
+          ... on TariffType {
+            displayName
+            fullName
+            tariffCode
+          }
+          ... on StandardTariff {
+            unitRate
+            standingCharge
+          }
+          ... on PrepayTariff {
+            unitRate
+            standingCharge
+          }
+          ... on HalfHourlyTariff {
+            unitRates {
+              value
+            }
+            standingCharge
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
 
 class EonNextAuthError(Exception):
     """Raised when authentication fails."""
@@ -611,6 +678,120 @@ class EonNext:
         schedule = result["data"]["flexPlannedDispatches"]
         if isinstance(schedule, list):
             return schedule
+        return None
+
+    async def async_get_tariff_data(
+        self,
+        account_number: str,
+    ) -> dict[str, dict[str, Any]] | None:
+        """Fetch active tariff agreements for all meter points on an account.
+
+        Returns a dict keyed by supply point ID (MPAN/MPRN) with the
+        currently active tariff details for each meter point.  Agreements
+        are filtered so only the one whose validity window contains today
+        is returned per meter point.
+
+        Tariff values (unit rate, standing charge) are returned as-is from
+        the API — callers should interpret them as pence/kWh or pence/day.
+        """
+        if not account_number:
+            return None
+
+        result = await self._graphql_post(
+            "getAccountAgreements",
+            GET_ACCOUNT_AGREEMENTS_QUERY,
+            {"accountNumber": account_number},
+        )
+        if not self._json_contains_key_chain(result, ["data", "properties"]):
+            return None
+
+        tariffs: dict[str, dict[str, Any]] = {}
+        today = datetime.date.today().isoformat()
+
+        for prop in result["data"]["properties"]:
+            if not isinstance(prop, dict):
+                continue
+
+            for elec_point in prop.get("electricityMeterPoints", []):
+                mpan = elec_point.get("mpan")
+                if not mpan:
+                    continue
+                active = self._find_active_agreement(
+                    elec_point.get("agreements", []), today
+                )
+                if active:
+                    tariffs[mpan] = active
+
+            for gas_point in prop.get("gasMeterPoints", []):
+                mprn = gas_point.get("mprn")
+                if not mprn:
+                    continue
+                active = self._find_active_agreement(
+                    gas_point.get("agreements", []), today
+                )
+                if active:
+                    tariffs[mprn] = active
+
+        return tariffs or None
+
+    @staticmethod
+    def _find_active_agreement(
+        agreements: list[Any],
+        today_iso: str,
+    ) -> dict[str, Any] | None:
+        """Return the currently active agreement from a list.
+
+        An agreement is active when ``validFrom <= today`` and either
+        ``validTo`` is null/empty or ``validTo >= today``.
+        """
+        if not isinstance(agreements, list):
+            return None
+
+        for agreement in agreements:
+            if not isinstance(agreement, dict):
+                continue
+
+            valid_from = agreement.get("validFrom") or ""
+            valid_to = agreement.get("validTo") or ""
+
+            if valid_from and valid_from > today_iso:
+                continue
+            if valid_to and valid_to < today_iso:
+                continue
+
+            tariff = agreement.get("tariff")
+            if not isinstance(tariff, dict):
+                continue
+
+            unit_rate = tariff.get("unitRate")
+            if unit_rate is None:
+                # HalfHourlyTariff stores rates in unitRates list
+                unit_rates = tariff.get("unitRates")
+                if isinstance(unit_rates, list) and unit_rates:
+                    float_values: list[float] = []
+                    for r in unit_rates:
+                        if not isinstance(r, dict):
+                            continue
+                        val = r.get("value")
+                        if val is None:
+                            continue
+                        try:
+                            float_values.append(float(val))
+                        except (TypeError, ValueError):
+                            continue
+                    if float_values:
+                        unit_rate = sum(float_values) / len(float_values)
+
+            return {
+                "tariff_name": tariff.get("displayName") or tariff.get("fullName"),
+                "tariff_code": tariff.get("tariffCode"),
+                "tariff_type": tariff.get("__typename"),
+                "unit_rate": unit_rate,
+                "standing_charge": tariff.get("standingCharge"),
+                "valid_from": valid_from,
+                "valid_to": valid_to,
+            }
+
         return None
 
 

@@ -11,18 +11,19 @@ Evolve the integration from core monitoring into a richer energy-management inte
 
 ### Tier 1: Confirmed Feasible (API data already validated)
 
-- Standing charge sensors (electricity and gas)
-- Previous-day cost sensors (electricity and gas)
+- ~~Standing charge sensors (electricity and gas)~~ **Done (v1.3.0)**
+- ~~Previous-day cost sensors (electricity and gas)~~ **Done (v1.3.0)**
 - Previous-day consumption sensors (explicit day-based presentation)
 - Gas daily consumption parity improvements
 - EV dispatching binary/state indicators derived from planned dispatches
-- Diagnostics for data freshness and retrieval timestamps
-- Basic local cost tracker logic
+- ~~Diagnostics for data freshness and retrieval timestamps~~ **Done (v1.3.0)**
+- ~~Basic local cost tracker logic~~ **Done (v1.3.0)**
 
 ### Tier 2: Likely Feasible (Kraken schema suggests support, requires validation)
 
-- Current/previous/next electricity and gas unit rate sensors
-- Tariff metadata sensors (tariff code/product/agreement windows)
+- ~~Current electricity and gas unit rate sensors~~ **Done (v1.4.0)**
+- ~~Tariff metadata sensors (tariff code/product/agreement windows)~~ **Done (v1.4.0)**
+- Previous/next unit rate sensors
 - Day-rate event-style data entities for time-of-use tariffs
 - Off-peak indicator sensors for supported tariff patterns
 - Export tariff rate/consumption/earnings sensors
@@ -51,10 +52,11 @@ Evolve the integration from core monitoring into a richer energy-management inte
 - Add diagnostics for freshness and retrieval health
 - Improve Energy Dashboard readiness for consumption/cost metrics
 
-### Phase 2: Tariff and Time-of-Use Awareness
+### Phase 2: Tariff and Time-of-Use Awareness (In Progress)
 
-- Implement tariff and unit-rate query layer
-- Add current/previous/next rate sensors
+- ~~Implement tariff and unit-rate query layer~~ **Done**
+- ~~Add current rate sensors~~ **Done**
+- Add previous/next rate sensors
 - Add off-peak indicators and day-rate data entities
 - Add export tariff support where account data exists
 
