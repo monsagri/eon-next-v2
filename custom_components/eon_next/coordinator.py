@@ -102,6 +102,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["standing_charge"] = cost_data["standing_charge"]
                         meter_data["previous_day_cost"] = cost_data["total_cost"]
                         meter_data["cost_period"] = cost_data["period"]
+                        meter_data["unit_rate"] = cost_data.get("unit_rate")
 
                     data[meter_key] = meter_data
 

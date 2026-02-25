@@ -561,12 +561,34 @@ class EonNext:
             except (TypeError, ValueError):
                 pass
 
-        if standing is None and total is None:
+        # Derive effective unit rate from cost entries.
+        unit_rate = None
+        costs = item_data.get("costs", [])
+        if isinstance(costs, list):
+            total_cost_pence = 0.0
+            total_consumption = 0.0
+            for cost_entry in costs:
+                if not isinstance(cost_entry, dict):
+                    continue
+                entry_cost = cost_entry.get("costIncVat")
+                entry_consumption = cost_entry.get("consumption")
+                if entry_cost is None or entry_consumption is None:
+                    continue
+                try:
+                    total_cost_pence += float(entry_cost)
+                    total_consumption += float(entry_consumption)
+                except (TypeError, ValueError):
+                    continue
+            if total_consumption > 0:
+                unit_rate = round(total_cost_pence / total_consumption / 100.0, 4)
+
+        if standing is None and total is None and unit_rate is None:
             return None
 
         return {
             "standing_charge": standing,
             "total_cost": total,
+            "unit_rate": unit_rate,
             "period": item.get("period"),
         }
 

@@ -55,6 +55,7 @@ async def async_setup_entry(
             entities.append(DailyConsumptionSensor(coordinator, meter))
             entities.append(StandingChargeSensor(coordinator, meter))
             entities.append(PreviousDayCostSensor(coordinator, meter))
+            entities.append(CurrentUnitRateSensor(coordinator, meter))
 
         for charger in account.ev_chargers:
             entities.append(SmartChargingScheduleSensor(coordinator, charger))
@@ -268,6 +269,24 @@ class PreviousDayCostSensor(EonNextSensorBase):
         if period:
             return {"cost_period": period}
         return {}
+
+
+class CurrentUnitRateSensor(EonNextSensorBase):
+    """Current energy unit rate (inc VAT) for use with the HA Energy Dashboard."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Current Unit Rate"
+        self._attr_native_unit_of_measurement = "GBP/kWh"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:currency-gbp"
+        self._attr_unique_id = f"{meter.serial}__current_unit_rate"
+        self._attr_suggested_display_precision = 4
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("unit_rate") if data else None
 
 
 class SmartChargingScheduleSensor(EonNextSensorBase):
