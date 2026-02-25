@@ -6,7 +6,12 @@ Scope: Plan for adding a custom dashboard/panel to the `eon-next-v2` HACS integr
 
 ## Goal
 
-Add a dedicated sidebar panel to the EON Next integration that gives users a single-pane-of-glass energy overview, removing the need for manual Lovelace card configuration or template sensors. The panel should surface the integration's existing entity data in an opinionated, polished UI.
+Provide two complementary frontend experiences, shipped from this single repo:
+
+1. **Sidebar panel** - An opinionated, single-pane-of-glass energy overview for users who want a zero-config dashboard out of the box.
+2. **Embeddable Lovelace cards** - Modular, configurable card components that power users can drop into their own custom dashboards alongside cards from other integrations.
+
+Both the panel and the cards share the same WebSocket API, the same TypeScript source tree, and the same build pipeline. Users get both automatically on install; either can be ignored without affecting the other.
 
 ---
 
@@ -138,7 +143,7 @@ We use LitElement, so `embed_iframe` is not needed (simpler, lighter weight, dir
 **Manifest dependencies required**:
 ```json
 {
-  "dependencies": ["recorder", "http", "frontend", "panel_custom"]
+  "dependencies": ["recorder", "http", "frontend", "panel_custom", "lovelace"]
 }
 ```
 
@@ -146,27 +151,37 @@ We use LitElement, so `embed_iframe` is not needed (simpler, lighter weight, dir
 
 ## Recommended Approach
 
-**Ship a sidebar panel within the integration itself** (not a separate repo).
+**Ship both a sidebar panel and embeddable Lovelace cards within the integration itself** (single repo, single install).
 
 ### Rationale
 
-1. **Single install** - Users install one HACS integration and get both data + dashboard
-2. **Tight coupling** - The dashboard is purpose-built for our entities and coordinator data
-3. **No configuration** - Panel auto-registers on integration setup; no YAML or manual card config
-4. **Precedent** - HACS itself uses this exact pattern successfully
-5. **Simpler maintenance** - One repo, one release cycle, one version to track
-6. **Octopus Energy gap** - The closest comparable integration has no dashboard; this is a differentiator
+1. **Single install** - Users install one HACS integration and get data + dashboard + cards
+2. **Two audiences** - The panel serves casual users; the cards serve power users who curate their own dashboards
+3. **No configuration** - Panel auto-registers in the sidebar; cards auto-register in the Lovelace card picker
+4. **Shared code** - Panel sections and standalone cards share the same components (consumption chart, cost breakdown, EV schedule, etc.)
+5. **Precedent** - HACS ships a sidebar panel; many integrations embed Lovelace cards; combining both is a natural extension
+6. **Octopus Energy gap** - The closest comparable integration has neither; this is a major differentiator
+7. **Simpler maintenance** - One repo, one release cycle, one version to track
+
+### User Experience
+
+| User Type | What They Get | How |
+|---|---|---|
+| **Casual user** | Full energy overview in sidebar | Panel auto-registers; click "EON Next" in sidebar |
+| **Power user** | Individual cards on their own dashboards | Cards appear in the Lovelace card picker; search "EON Next" |
+| **Minimalist** | Sensors only, no UI clutter | Disable panel via options flow; ignore cards |
 
 ### Trade-offs
 
 | Pro | Con |
 |---|---|
-| Zero-config user experience | Increases integration bundle size |
+| Zero-config for both audiences | Increases integration bundle size |
 | Data and UI co-versioned | Frontend build adds development complexity |
-| Sidebar visibility (always one click away) | Users who prefer their own dashboards can't remove the sidebar entry easily |
-| Direct access to coordinator data via WebSocket | Requires maintaining JS/TS tooling alongside Python |
+| Cards reusable across any dashboard | Must maintain card config schemas and editor UIs |
+| Sidebar panel for quick overview | Users who don't want the sidebar entry must toggle it off |
+| Shared components reduce duplication | Slightly larger initial JS payload (mitigated by lazy loading) |
 
-The sidebar entry concern can be mitigated with an options flow toggle to enable/disable the panel.
+The sidebar entry concern is mitigated by an options flow toggle to enable/disable the panel (default: enabled).
 
 ---
 
@@ -219,37 +234,170 @@ Based on current entities, API capabilities, and what would differentiate this f
 
 ---
 
+## Lovelace Card Design (Power Users)
+
+The same visual components used inside the sidebar panel are also registered as standalone Lovelace cards. Power users add them to any dashboard via the card picker or YAML.
+
+### Cards to Ship
+
+| Card | Element Name | Description | Config Options |
+|---|---|---|---|
+| **Consumption Card** | `eon-next-consumption-card` | Daily electricity/gas consumption with sparkline trend | `meter_type`, `days`, `show_chart` |
+| **Cost Card** | `eon-next-cost-card` | Cost breakdown with standing charges and daily total | `meter_type`, `show_standing_charge`, `show_chart` |
+| **Meter Card** | `eon-next-meter-card` | Latest meter reading with date and reading history | `meter_type`, `show_history` |
+| **EV Schedule Card** | `eon-next-ev-card` | Smart charging schedule timeline | `show_second_slot` |
+| **Summary Card** | `eon-next-summary-card` | Compact all-in-one overview (mini version of the panel) | `show_gas`, `show_ev`, `show_costs` |
+
+### Card Configuration Example (YAML)
+
+```yaml
+type: custom:eon-next-consumption-card
+meter_type: electricity
+days: 7
+show_chart: true
+```
+
+### Card Registration Pattern
+
+Cards are auto-registered in the Lovelace card picker so users can find them via the UI editor:
+
+```javascript
+// Register cards in the HA card picker
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "eon-next-consumption-card",
+  name: "EON Next Consumption",
+  preview: true,
+  description: "Shows daily electricity or gas consumption with trend chart",
+});
+```
+
+### Card vs Panel: Shared Components
+
+```
+┌──────────────────────────────────────────────────┐
+│  Frontend Source (frontend/src/)                  │
+│                                                   │
+│  ┌─────────────────────────────────────────────┐ │
+│  │  Shared Components (components/)             │ │
+│  │  ├── consumption-view.ts                     │ │
+│  │  ├── cost-view.ts                            │ │
+│  │  ├── meter-view.ts                           │ │
+│  │  ├── ev-schedule-view.ts                     │ │
+│  │  └── sparkline-chart.ts                      │ │
+│  └─────────────────────────────────────────────┘ │
+│         ▲                        ▲                │
+│         │                        │                │
+│  ┌──────┴──────┐   ┌────────────┴────────────┐  │
+│  │ Panel       │   │ Cards                    │  │
+│  │ (panel.ts)  │   │ ├── consumption-card.ts  │  │
+│  │ Composes    │   │ ├── cost-card.ts         │  │
+│  │ all views   │   │ ├── meter-card.ts        │  │
+│  │ into one    │   │ ├── ev-card.ts           │  │
+│  │ full page   │   │ └── summary-card.ts      │  │
+│  └─────────────┘   └─────────────────────────┘  │
+│                                                   │
+│  Build Output:                                    │
+│  ├── entrypoint.js  (panel bundle)               │
+│  └── cards.js       (card bundle)                │
+└──────────────────────────────────────────────────┘
+```
+
+The panel composes all shared view components into a single full-page layout. Each card wraps a single shared view component in an `<ha-card>` element with `setConfig()` and card picker registration. This means improvements to a chart or view component benefit both the panel and the cards simultaneously.
+
+### Embedded Card Registration (Python)
+
+Cards are registered via `async_register_static_paths` + Lovelace resource auto-registration (storage mode). This happens in `async_setup()` (not `async_setup_entry()`) so it runs once per integration:
+
+```python
+from homeassistant.components.http import StaticPathConfig
+
+CARDS_URL = f"/{DOMAIN}/cards"
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register frontend resources (once per integration, not per entry)."""
+    # Serve card JS
+    cards_path = os.path.join(os.path.dirname(__file__), "frontend", "cards.js")
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(CARDS_URL, cards_path, cache_headers=False)
+    ])
+
+    # Auto-register as Lovelace resource (storage mode only)
+    lovelace = hass.data.get("lovelace")
+    if lovelace and lovelace.mode == "storage":
+        await lovelace.resources.async_get_info()
+        resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
+        existing = [r for r in lovelace.resources.async_items()
+                    if r["url"].startswith(CARDS_URL)]
+        if not existing:
+            await lovelace.resources.async_create_item(
+                {"res_type": "module", "url": resource_url}
+            )
+        else:
+            # Update version if changed
+            for r in existing:
+                if f"v={INTEGRATION_VERSION}" not in r["url"]:
+                    await lovelace.resources.async_update_item(
+                        r["id"],
+                        {"res_type": "module", "url": resource_url}
+                    )
+
+    # Register WebSocket commands (shared by panel and cards)
+    from .websocket import async_setup_websocket
+    async_setup_websocket(hass)
+
+    return True
+```
+
+For YAML-mode users, cards remain accessible by manually adding:
+```yaml
+resources:
+  - url: /eon_next/cards.js
+    type: module
+```
+
+---
+
 ## Technical Architecture
 
 ### File Structure
 
 ```
 custom_components/eon_next/
-├── __init__.py              # Modified: add panel registration
-├── const.py                 # Modified: add panel constants
-├── manifest.json            # Modified: add frontend/http dependencies
-├── websocket.py             # New: WebSocket API commands
-├── frontend/                # New: compiled frontend assets
-│   ├── entrypoint.js        # Compiled panel bundle (checked in)
-│   └── entrypoint.js.gz     # Gzipped variant (optional)
+├── __init__.py              # Modified: async_setup for cards; async_setup_entry for panel
+├── const.py                 # Modified: add frontend constants + INTEGRATION_VERSION
+├── manifest.json            # Modified: add frontend/http/panel_custom/lovelace deps
+├── panel.py                 # New: panel registration/unregistration helpers
+├── websocket.py             # New: WebSocket API commands (shared by panel + cards)
+├── frontend/                # New: compiled frontend assets (checked in, not source)
+│   ├── __init__.py          # Required for static path registration
+│   ├── entrypoint.js        # Compiled panel bundle
+│   └── cards.js             # Compiled Lovelace card bundle
 └── ...existing files...
 
-frontend/                    # New: frontend source (project root, not distributed)
+frontend/                    # New: frontend source (project root, not distributed via HACS)
 ├── src/
-│   ├── eon-next-panel.ts    # Main panel web component
-│   ├── components/
+│   ├── panel.ts             # Main panel web component (composes views)
+│   ├── cards/               # Standalone Lovelace card wrappers
 │   │   ├── consumption-card.ts
 │   │   ├── cost-card.ts
 │   │   ├── meter-card.ts
-│   │   ├── ev-schedule-card.ts
+│   │   ├── ev-card.ts
+│   │   ├── summary-card.ts
+│   │   └── register.ts      # Card picker registration (window.customCards)
+│   ├── components/          # Shared view components (used by both panel and cards)
+│   │   ├── consumption-view.ts
+│   │   ├── cost-view.ts
+│   │   ├── meter-view.ts
+│   │   ├── ev-schedule-view.ts
 │   │   ├── backfill-status.ts
 │   │   └── sparkline-chart.ts
-│   ├── api.ts               # WebSocket API client
-│   ├── types.ts              # TypeScript type definitions
-│   └── styles.ts             # Shared styles / HA CSS variable usage
-├── rollup.config.mjs        # Rollup bundler config
-├── tsconfig.json             # TypeScript config
-├── package.json              # Node dependencies
+│   ├── api.ts               # WebSocket API client (shared)
+│   ├── types.ts             # TypeScript type definitions
+│   └── styles.ts            # Shared styles / HA CSS variable usage
+├── rollup.config.mjs        # Rollup config (two entry points: panel + cards)
+├── tsconfig.json
+├── package.json
 └── package-lock.json
 ```
 
@@ -269,7 +417,11 @@ frontend/                    # New: frontend source (project root, not distribut
 The panel needs data beyond what entity states provide. Define WebSocket commands in `websocket.py`:
 
 ```python
-# Commands to register:
+# Commands to register (used by both the panel and standalone cards):
+
+"eon_next/version"
+# Returns: { version: "1.4.0" }
+# Used by cards for frontend/backend version mismatch detection
 
 "eon_next/dashboard_summary"
 # Returns: aggregated consumption, cost, and meter data for the dashboard
@@ -292,25 +444,45 @@ The panel needs data beyond what entity states provide. Define WebSocket command
 
 ### Backend Changes
 
-1. **`manifest.json`**: Add `"http"`, `"frontend"`, and `"panel_custom"` to `dependencies`
-2. **`const.py`**: Add panel-related constants (`PANEL_TITLE`, `PANEL_ICON`, `PANEL_URL`)
-3. **`__init__.py`**: Call `panel_custom.async_register_panel()` in `async_setup_entry`; call `frontend.async_remove_panel()` in `async_unload_entry`
-4. **`websocket.py`** (new): Register WebSocket command handlers
-5. **`coordinator.py`**: Possibly expose aggregation helpers consumed by WebSocket handlers
+1. **`manifest.json`**: Add `"http"`, `"frontend"`, `"panel_custom"`, and `"lovelace"` to `dependencies`
+2. **`const.py`**: Add frontend constants (`PANEL_TITLE`, `PANEL_ICON`, `PANEL_URL`, `CARDS_URL`, `INTEGRATION_VERSION`)
+3. **`__init__.py`**: Two registration points:
+   - `async_setup()` - Register card JS, Lovelace resources, and WebSocket commands (once per integration)
+   - `async_setup_entry()` - Register sidebar panel (guarded, once per first entry)
+   - `async_unload_entry()` - Remove panel (only when last entry unloads)
+4. **`panel.py`** (new): Panel registration/unregistration helpers (following Alarmo pattern)
+5. **`websocket.py`** (new): Register WebSocket command handlers (shared by panel + cards)
+6. **`coordinator.py`**: Possibly expose aggregation helpers consumed by WebSocket handlers
 
 ### Frontend Build Process
+
+Rollup is configured with **two entry points** that produce separate bundles:
+
+```javascript
+// rollup.config.mjs (simplified)
+export default [
+  {
+    input: "src/panel.ts",
+    output: { file: "../custom_components/eon_next/frontend/entrypoint.js", format: "es" },
+  },
+  {
+    input: "src/cards/register.ts",
+    output: { file: "../custom_components/eon_next/frontend/cards.js", format: "es" },
+  },
+];
+```
 
 ```bash
 # Development
 cd frontend/
 npm install
-npm run dev          # Rollup watch mode
+npm run dev          # Rollup watch mode (both bundles)
 
 # Production build (output goes to custom_components/eon_next/frontend/)
 npm run build        # Rollup production build with terser minification
 ```
 
-The compiled `entrypoint.js` is checked into the repo under `custom_components/eon_next/frontend/` so that HACS users don't need Node.js. This matches the pattern used by HACS itself.
+The compiled `entrypoint.js` and `cards.js` are checked into the repo under `custom_components/eon_next/frontend/` so that HACS users don't need Node.js. This matches the pattern used by HACS itself. Shared components are tree-shaken into each bundle by Rollup.
 
 ### CI Integration
 
@@ -326,36 +498,45 @@ Add a GitHub Actions workflow to verify the frontend build:
 
 ## Implementation Phases
 
-### Phase 1: Skeleton Panel
-- Add `frontend/` source scaffold (Lit + Rollup + TypeScript)
-- Register the panel in `__init__.py`
+### Phase 1: Skeleton (Panel + Card Infrastructure)
+- Add `frontend/` source scaffold (Lit + Rollup + TypeScript, two entry points)
+- Add `panel.py` with panel registration/unregistration helpers
+- Add `websocket.py` with `eon_next/version` and `eon_next/dashboard_summary` commands
+- Register panel in `async_setup_entry`; register card JS + Lovelace resource in `async_setup`
+- Update `manifest.json` dependencies (`http`, `frontend`, `panel_custom`, `lovelace`)
 - Serve a minimal "Hello from EON Next" panel
-- Add `websocket.py` with a single `eon_next/dashboard_summary` command
-- Update `manifest.json` dependencies
+- Ship one skeleton card (`eon-next-summary-card`) registered in the card picker
 - Add options flow toggle to show/hide panel (default: enabled)
 - Verify HACS validation and hassfest still pass
 
-### Phase 2: Core Dashboard Content
-- Build consumption overview cards (electricity + gas)
-- Build cost overview cards with standing charge breakdown
-- Build meter readings section
+### Phase 2: Core Dashboard Content + First Cards
+- Build shared `consumption-view` and `cost-view` components
+- Compose them into the sidebar panel layout
+- Wrap them as standalone `eon-next-consumption-card` and `eon-next-cost-card` Lovelace cards
+- Add `setConfig()`, card picker metadata, and basic config editor for each card
+- Build `meter-view` component + `eon-next-meter-card`
 - Implement `eon_next/consumption_history` and `eon_next/cost_history` WebSocket commands
 - Add daily bar chart (consumption + cost)
 - Apply HA theming (light/dark, CSS variables)
-- Responsive layout (desktop + mobile/narrow mode)
+- Responsive layout for panel (desktop + mobile/narrow mode)
+- Card sizing (`getCardSize()` / `getGridOptions()`) for Lovelace layout engines
 
-### Phase 3: EV and Diagnostics
-- Build EV smart charging schedule visualization (conditional section)
-- Build backfill status indicator (conditional section)
-- Add sparkline trend charts for quick overview
+### Phase 3: EV, Diagnostics, and Summary Card
+- Build `ev-schedule-view` + `eon-next-ev-card` (conditional on SmartFlex devices)
+- Build `backfill-status` panel section (panel-only, not a standalone card)
+- Build `eon-next-summary-card` (compact all-in-one for power users)
+- Add sparkline trend charts to shared components
 - Polish loading states, error states, empty states
+- Version mismatch detection (frontend/backend) with user notification
 
-### Phase 4: Polish and Charts
+### Phase 4: Polish, Charts, and Card Editors
 - Add time-range picker for charts (7d / 30d / 90d / 1y)
 - Add month-to-date cost running total
+- Build visual config editors for each card (so power users can configure via the UI)
 - Refine chart interactions (tooltips, zoom)
 - Accessibility audit (keyboard navigation, screen readers, contrast)
 - Performance optimization (lazy loading, bundle size audit)
+- YAML-mode documentation for manual card resource registration
 
 ---
 
@@ -367,7 +548,9 @@ Add a GitHub Actions workflow to verify the frontend build:
 | Bundle size bloat via charting library | Increases download for all users | Use lightweight chart lib (uPlot ~45KB vs Chart.js ~200KB); lazy-load chart code |
 | HA breaking changes to panel API | Panel stops working on HA update | Pin to documented APIs only; `panel_custom.async_register_panel` is stable and used by Alarmo, HACS |
 | `register_static_path` deprecation | Must use `async_register_static_paths` | Already planned; use `StaticPathConfig` from the start |
-| Users don't want the sidebar entry | Clutters sidebar for users who prefer their own dashboards | Options flow toggle to disable the panel |
+| Users don't want the sidebar entry | Clutters sidebar for users who prefer their own dashboards | Options flow toggle to disable panel; cards work independently |
+| Card caching issues on update | Users see stale card JS after integration update | Version-tagged URLs (`?v=X.X.X`) + WebSocket version check + cache-bust on mismatch |
+| Lovelace YAML mode users miss cards | Auto-registration only works in storage mode | Document manual resource URL in README; static path remains accessible |
 | WebSocket commands expose sensitive data | Security concern | Only expose aggregated consumption/cost data; no auth tokens or credentials; validate connection user |
 | HACS validation failures | Can't release | Run `hacs/action@main` validation in CI before merge |
 | Coordinator data not sufficient for charts | Need history queries | Leverage HA's recorder/statistics API for historical data, or add summary caching to coordinator |
@@ -380,16 +563,19 @@ Add a GitHub Actions workflow to verify the frontend build:
 
 2. **Historical data source**: Should charts pull from the coordinator's cached data, the HA recorder/statistics database, or the EON Next API directly? Recommendation: prefer HA statistics (already populated by our external statistics import), fall back to coordinator cache for current-day data.
 
-3. **Panel vs card long-term**: Should we eventually also offer standalone Lovelace cards in a companion HACS Frontend repo? Could extract chart components into cards later. Keep as a future option, not a Phase 1 concern.
+3. **Sidebar icon and title**: Use `mdi:lightning-bolt` and "EON Next"? Or something more specific like `mdi:home-lightning-bolt` and "Energy"? Should be configurable in options flow.
 
-4. **Sidebar icon and title**: Use `mdi:lightning-bolt` and "EON Next"? Or something more specific like `mdi:home-lightning-bolt` and "Energy"? Should be configurable in options flow.
+4. **Multi-account support**: The integration supports multiple config entries (accounts). Should the panel show data for all accounts or have an account selector? Cards could accept a config entry ID. Recommendation: account selector dropdown in panel; optional `account` config key in cards.
 
-5. **Multi-account support**: The integration supports multiple config entries (accounts). Should the panel show data for all accounts or have an account selector? Recommendation: account selector dropdown if more than one entry exists.
+5. **Card config editors**: Should we ship visual editors (`getConfigElement()`) from Phase 2, or defer to Phase 4? Editors are important for power users who use the UI dashboard editor, but add development effort. Recommendation: ship basic editors in Phase 2 for the core cards.
+
+6. **Shared component bundling**: Should the panel and card bundles share code via import maps, or should Rollup tree-shake shared code into each bundle independently? Independent bundles are simpler but slightly larger. Recommendation: independent bundles initially; optimize later if bundle size becomes a concern.
 
 ---
 
 ## Definition of Done
 
+### Panel
 - [ ] Panel auto-registers in HA sidebar when integration is loaded
 - [ ] Panel shows electricity and gas consumption overview
 - [ ] Panel shows cost breakdown with standing charges
@@ -398,7 +584,17 @@ Add a GitHub Actions workflow to verify the frontend build:
 - [ ] Panel respects HA theme (light/dark)
 - [ ] Panel is responsive (desktop and mobile)
 - [ ] Options flow toggle to enable/disable sidebar panel
-- [ ] Frontend source builds cleanly with `npm run build`
+
+### Lovelace Cards
+- [ ] Cards auto-register as Lovelace resources (storage mode)
+- [ ] Cards appear in the Lovelace card picker with name, description, and preview
+- [ ] Each card accepts configuration via `setConfig()` and the visual editor
+- [ ] Cards work independently of the sidebar panel (no panel required)
+- [ ] Cards display correctly in masonry, grid, and panel dashboard layouts
+- [ ] Frontend/backend version mismatch detection with user notification
+
+### Infrastructure
+- [ ] Frontend source builds cleanly with `npm run build` (two bundles: panel + cards)
 - [ ] CI validates frontend build on PRs
 - [ ] HACS validation passes
 - [ ] hassfest validation passes
@@ -420,3 +616,5 @@ Add a GitHub Actions workflow to verify the frontend build:
 - [Detailed Charts Panel (example)](https://github.com/jayjojayson/detailed-charts-panel)
 - [Octopus Energy Integration](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy)
 - [Lunar Phase Integration](https://github.com/ngocjohn/lunar-phase)
+- [Community Guide: Embedded Lovelace Card in an Integration](https://community.home-assistant.io/t/developer-guide-embedded-lovelace-card-in-a-home-assistant-integration/974909)
+- [HA Developer Docs: Custom Card](https://developers.home-assistant.io/docs/frontend/custom-ui/custom-card/)
