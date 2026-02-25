@@ -1,5 +1,6 @@
 ha-card {
   padding: 16px;
+  color: var(--eon-text-primary);
 }
 
 .title {
@@ -27,6 +28,10 @@ ha-card {
   justify-content: space-between;
   padding: 4px 0;
   font-size: 0.9em;
+}
+
+.stat-row > span:last-child {
+  color: var(--eon-text-primary);
 }
 
 .stat-label {

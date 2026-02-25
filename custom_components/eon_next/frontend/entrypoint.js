@@ -130,6 +130,7 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
 
 .card {
   background: var(--eon-background);
+  color: var(--eon-text-primary);
   border-radius: var(--ha-card-border-radius, 12px);
   box-shadow: var(
     --ha-card-box-shadow,
@@ -151,6 +152,7 @@ function t(t,e,s,i){var r,n=arguments.length,o=n<3?e:null===i?i=Object.getOwnPro
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--eon-divider);
+  color: var(--eon-text-primary);
 }
 
 .meter-row:last-child {
