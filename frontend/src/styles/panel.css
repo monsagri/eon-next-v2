@@ -1,0 +1,88 @@
+:host {
+  display: block;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5em;
+  color: var(--eon-text-primary);
+}
+
+.version-badge {
+  font-size: 0.75em;
+  color: var(--eon-text-secondary);
+  background: var(--eon-divider);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--eon-background);
+  color: var(--eon-text-primary);
+  border-radius: var(--ha-card-border-radius, 12px);
+  box-shadow: var(
+    --ha-card-box-shadow,
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2)
+  );
+  padding: 16px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1em;
+  color: var(--eon-text-primary);
+}
+
+.meter-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--eon-divider);
+  color: var(--eon-text-primary);
+}
+
+.meter-row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: var(--eon-text-secondary);
+  font-size: 0.9em;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--eon-text-secondary);
+}
+
+.error {
+  color: var(--error-color, #db4437);
+  padding: 16px;
+  text-align: center;
+}
+
+.empty {
+  color: var(--eon-text-secondary);
+  padding: 16px;
+  text-align: center;
+  font-style: italic;
+}

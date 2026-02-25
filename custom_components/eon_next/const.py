@@ -1,9 +1,24 @@
 """Constants for the Eon Next integration."""
 
 DOMAIN = "eon_next"
+INTEGRATION_VERSION = "1.4.0"
+
+# Authentication
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_REFRESH_TOKEN = "refresh_token"
+
+# Frontend / dashboard
+CONF_SHOW_PANEL = "show_panel"
+CONF_SHOW_CARD = "show_card"
+DEFAULT_SHOW_PANEL = True
+DEFAULT_SHOW_CARD = False
+PANEL_TITLE = "EON Next"
+PANEL_ICON = "mdi:lightning-bolt"
+PANEL_URL = f"/api/{DOMAIN}/panel"
+CARDS_URL = f"/{DOMAIN}/cards"
+
+# Backfill
 CONF_BACKFILL_ENABLED = "backfill_enabled"
 CONF_BACKFILL_LOOKBACK_DAYS = "backfill_lookback_days"
 CONF_BACKFILL_CHUNK_DAYS = "backfill_chunk_days"

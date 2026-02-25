@@ -21,6 +21,8 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Home Assistant re-auth support for password changes.
 - Automatic retry on API outages — transient connectivity failures during login defer setup instead of invalidating stored credentials.
 - Diagnostic status sensor for historical backfill progress.
+- **EON Next Dashboard**: A sidebar panel providing a single-pane energy overview (consumption, costs, meter readings, EV schedule).
+- **Lovelace cards**: Embeddable cards (starting with `eon-next-summary-card`) for power users to add to their own dashboards.
 
 ## Requirements
 
@@ -70,6 +72,34 @@ Conservative defaults:
 - Run interval: `180` minutes.
 - Delay between requests: `300` seconds.
 
+## Energy Dashboard Panel
+
+After installation, an **EON Next** entry appears in the Home Assistant sidebar. It provides a zero-config overview of your meters, consumption, costs, and EV charging status.
+
+- To hide the sidebar entry, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
+- The panel uses data already fetched by the integration's coordinator — no extra API calls.
+- "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
+- EV charging schedule timestamps are displayed in a readable local date/time format.
+- Panel and card text colors adapt to Home Assistant theme variables for improved dark-mode readability.
+- Panel and card components now return to a loading state during reconnect/manual refresh cycles instead of showing stale values.
+
+### Lovelace Cards
+
+The integration ships Lovelace cards that power users can add to any dashboard:
+
+- **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
+- Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
+
+To enable the card, go to **Settings -> Devices & Services -> Eon Next -> Configure** and enable "Register EON Next summary card for Lovelace dashboards". The card will then appear in the Lovelace card picker (storage mode).
+
+For YAML-mode dashboards, add the resource manually instead:
+
+```yaml
+resources:
+  - url: /eon_next/cards
+    type: module
+```
+
 ## Development And Releases
 
 Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md).
@@ -77,3 +107,8 @@ Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md
 Contributors should use Conventional Commit messages (for example, `feat: ...`, `fix: ...`) and matching pull request titles because squash merges use PR titles as final commit subjects.
 
 Releases use a draft release-PR flow (`release-please`) so merges to `main` prepare release metadata, and maintainers explicitly approve/merge the release PR to publish.
+
+For local development consistency:
+
+- Node.js version is pinned in `.nvmrc` (`24.13.1`) for `nvm use`.
+- Python version is pinned in `.python-version` (`3.13`) for pyenv/asdf-compatible tooling.

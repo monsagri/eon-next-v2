@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Added
+
+- Sidebar dashboard panel: auto-registers an EON Next energy overview in the HA sidebar showing consumption, costs, meter readings, and EV charging status
+- Lovelace card: `eon-next-summary-card` for embedding on custom dashboards, opt-in via integration options
+- WebSocket API (`eon_next/version`, `eon_next/dashboard_summary`) shared by both the panel and cards
+- Options flow toggle to show or hide the sidebar panel (default: enabled)
+- Options flow toggle to register the Lovelace summary card (default: disabled)
+- Frontend CI workflow for lint, format check, type check, and build
+- Derived "Today's cost" rows in panel and summary card, calculated as `(today's kWh * unit rate) + daily standing charge`
+- EV next-charge schedule timestamps now render in a human-friendly local date/time format
+- Added runtime pinning files for contributors: `.nvmrc` (Node `24.13.1`) and `.python-version` (Python `3.13`)
+
+### Fixed
+
+- Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
+- Frontend websocket data controller now restores loading state during reconnect/manual refresh instead of continuing to show stale data
+
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 
 
@@ -31,29 +50,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * harden integration tests and add missing type annotations ([#12](https://github.com/monsagri/eon-next-v2/issues/12)) ([3a9ea7b](https://github.com/monsagri/eon-next-v2/commit/3a9ea7bd40880ca8963ea13f2d5a0ae3be16edd5))
-
-## [Unreleased]
-
-### Fixed
-
-- API outages during authentication no longer reset stored refresh tokens or auth state, allowing automatic recovery when the API recovers
-- Setup now raises `ConfigEntryNotReady` (retry later) when E.ON Next API is unreachable during login, instead of treating connectivity failures as invalid credentials
-- Config flow surfaces API connectivity errors as `cannot_connect` instead of `unknown`
-- Narrowed exception logging in config flow so expected API/connection errors are logged at debug level instead of emitting misleading "Unexpected error" stack traces
-
-### Added
-
-- Current unit rate sensor (`£/kWh`, inc VAT) for electricity and gas meters — compatible with the Energy Dashboard's "use an entity with current price" option
-- Standing charge sensor (daily standing charge inc VAT in GBP) for electricity and gas meters
-- Previous day cost sensor (total daily cost inc VAT in GBP, including consumption and standing charge) for electricity and gas meters, with `cost_period` state attribute indicating which day the cost relates to
-- Configurable historical statistics backfill with conservative defaults, resumable progress persistence, and options-based throttling controls
-- Date-range GraphQL consumption fetch support to process historical backfill in small day-based chunks
-- Diagnostic `Historical Backfill Status` sensor with progress attributes (enabled, completed/pending meters, next backfill date)
-- Current tariff sensor showing the active tariff display name per meter point, with `tariff_code`, `tariff_type`, `tariff_unit_rate`, `tariff_standing_charge`, `tariff_valid_from`, and `tariff_valid_to` as state attributes; supports standard, prepay, and half-hourly tariff types
-
-### Changed
-
-- Automatic coordinator statistics imports are paused only while a full-history backfill is active, then resume when backfill completes
 
 ## [1.2.0] - 2026-02-24
 

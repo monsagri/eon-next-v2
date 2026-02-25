@@ -22,12 +22,21 @@ npm install
 
 ## Local Validation Commands
 
-Minimum required:
+Minimum required (Python):
 
 ```bash
 python -m compileall custom_components/eon_next
 basedpyright -p pyrightconfig.json
 python3 .github/scripts/check_release_metadata.py
+```
+
+Frontend (run from `frontend/`):
+
+```bash
+npm run lint
+npm run format:check
+npm run typecheck
+npm run build
 ```
 
 Commit/PR convention sanity:
@@ -66,5 +75,6 @@ Notes:
 - `commit-conventions.yml`: commit message and PR title conventional checks.
 - `metadata-consistency.yml`: manifest/changelog/release-manifest version lockstep validation.
 - `release-please.yml`: release PR orchestration and release publication.
+- `frontend.yml`: frontend lint, format, typecheck, and build (triggers on `frontend/` changes).
 
 Agents should not bypass these workflows; local success is necessary but not sufficient.

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EON Next – Dev Harness</title>
+    <style>
+      /* Simulate HA theme custom properties */
+      :root {
+        --primary-color: #03a9f4;
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --card-background-color: #fff;
+        --divider-color: #e0e0e0;
+        --error-color: #db4437;
+        --ha-card-border-radius: 12px;
+        --ha-card-box-shadow:
+          0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12),
+          0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      }
+
+      body {
+        font-family: Roboto, 'Noto Sans', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #fafafa;
+      }
+
+      body.dark {
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9e9e9e;
+        --card-background-color: #1c1c1c;
+        --divider-color: #3c3c3c;
+        background: #111;
+      }
+
+      /* Stub for <ha-icon> — shows the icon name as text */
+      ha-icon {
+        display: inline-flex;
+        align-items: center;
+        font-size: var(--mdc-icon-size, 24px);
+        width: var(--mdc-icon-size, 24px);
+        height: var(--mdc-icon-size, 24px);
+      }
+      ha-icon::before {
+        content: attr(icon);
+        font-size: 10px;
+        color: var(--secondary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+
+      /* Stub for <ha-card> */
+      ha-card {
+        display: block;
+        background: var(--card-background-color);
+        border-radius: var(--ha-card-border-radius);
+        box-shadow: var(--ha-card-box-shadow);
+      }
+
+      /* --- Toolbar --- */
+      .toolbar {
+        background: #1976d2;
+        color: #fff;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.9em;
+      }
+      .toolbar h1 {
+        margin: 0;
+        font-size: 1.2em;
+      }
+      .toolbar button {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85em;
+      }
+      .toolbar button:hover {
+        background: rgba(255, 255, 255, 0.35);
+      }
+      .toolbar .controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      /* --- Sections --- */
+      .section {
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .section h2 {
+        margin: 0 0 16px;
+        font-size: 1.1em;
+        color: var(--primary-text-color);
+        border-bottom: 2px solid var(--divider-color);
+        padding-bottom: 8px;
+      }
+      .card-container {
+        max-width: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <h1>EON Next Dev Harness</h1>
+      <div class="controls">
+        <button id="btn-dark">Toggle Dark</button>
+        <button id="btn-error">Simulate Error</button>
+        <button id="btn-empty">Simulate Empty</button>
+        <button id="btn-reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Sidebar Panel</h2>
+      <eon-next-panel id="panel"></eon-next-panel>
+    </div>
+
+    <div class="section">
+      <h2>Summary Card</h2>
+      <div class="card-container">
+        <eon-next-summary-card id="card"></eon-next-summary-card>
+      </div>
+    </div>
+
+    <!-- Load compiled bundles (rollup outputs here in dev mode) -->
+    <script type="module" src="./entrypoint.js"></script>
+    <script type="module" src="./cards.js"></script>
+
+    <script type="module" src="./mock-hass.js"></script>
+  </body>
+</html>

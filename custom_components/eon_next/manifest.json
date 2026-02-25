@@ -1,12 +1,18 @@
 {
     "domain": "eon_next",
     "name": "Eon Next",
+    "after_dependencies": [
+        "frontend",
+        "panel_custom",
+        "lovelace"
+    ],
     "codeowners": [
         "@monsagri"
     ],
     "config_flow": true,
     "dependencies": [
-        "recorder"
+        "recorder",
+        "http"
     ],
     "documentation": "https://github.com/monsagri/eon-next-v2",
     "integration_type": "hub",

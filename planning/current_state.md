@@ -8,8 +8,9 @@ Scope: Implemented capabilities in this repository (`eon-next-v2`)
 The integration currently provides cloud-polled monitoring for EON Next accounts through Home Assistant `sensor` entities.
 
 - Platform support: `sensor` only
+- Frontend: sidebar panel + Lovelace card(s)
 - Services exposed: none
-- Options flow: backfill configuration
+- Options flow: panel visibility, card visibility, backfill configuration
 - Default polling interval: 30 minutes
 - Auth: email/password with refresh token persistence
 
@@ -19,7 +20,7 @@ The integration currently provides cloud-polled monitoring for EON Next accounts
 - Re-auth flow for credential refresh
 - Multiple account support (all discovered accounts are loaded)
 - Refresh token persistence to reduce full re-login frequency
-- Options flow for historical backfill configuration
+- Options flow for panel visibility, card registration visibility, and historical backfill configuration
 
 ## Implemented Sensor Features
 
@@ -64,6 +65,18 @@ Gas meters add:
 - External statistics import for Energy Dashboard
 - Resilience: reuses previous coordinator data on transient update failures
 - Resilience: raises re-auth when auth failure is detected
+
+## Implemented Frontend Features
+
+- Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow, default: enabled)
+- WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`
+- Lovelace card: `eon-next-summary-card` registered as a Lovelace resource when enabled in options (default: disabled)
+- Panel and cards share compiled JS bundles served via `async_register_static_paths`
+- Panel meter rows include a derived "Today's cost" value: `(today's consumption * current unit rate) + daily standing charge`
+- Summary card meter rows include the same derived "Today's cost" value when costs are enabled
+- EV next-charge timestamps in the panel are rendered as human-friendly local date/time strings
+- Panel and summary-card foreground text colors are explicitly theme-driven for improved dark-mode contrast
+- Frontend CI: ESLint, Prettier format check, TypeScript type check, Rollup build (`.github/workflows/frontend.yml`)
 
 ## Current Gaps (Not Yet Implemented)
 

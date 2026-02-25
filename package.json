@@ -11,6 +11,19 @@
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  },
+  "lint-staged": {
+    "frontend/src/**/*.ts": [
+      "npx --prefix frontend eslint --config frontend/eslint.config.js --fix",
+      "npx --prefix frontend prettier --write"
+    ],
+    "frontend/src/**/*.css": [
+      "npx --prefix frontend prettier --write"
+    ],
+    "frontend/dev/**/*.{html,js}": [
+      "npx --prefix frontend prettier --write"
+    ]
   }
 }

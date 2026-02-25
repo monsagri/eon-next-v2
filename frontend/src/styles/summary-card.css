@@ -1,0 +1,44 @@
+ha-card {
+  padding: 16px;
+  color: var(--eon-text-primary);
+}
+
+.title {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--eon-text-primary);
+}
+
+.meter-section {
+  margin-bottom: 12px;
+}
+
+.meter-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--eon-text-primary);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.9em;
+}
+
+.stat-row > span:last-child {
+  color: var(--eon-text-primary);
+}
+
+.stat-label {
+  color: var(--eon-text-secondary);
+}
+
+.error {
+  color: var(--error-color, #db4437);
+  font-size: 0.9em;
+}
