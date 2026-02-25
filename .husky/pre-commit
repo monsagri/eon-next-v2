@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+# Run lint-staged (eslint --fix + prettier --write on staged frontend files)
+npx lint-staged
+
+# TypeScript type-check (needs full project context, can't run per-file)
+# Only run if any frontend/src TS files are staged
+if git diff --cached --name-only | grep -q '^frontend/src/.*\.ts$'; then
+  cd frontend && npx tsc --noEmit
+fi

@@ -10,7 +10,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
-    "format:check": "prettier --check 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'"
+    "format:check": "prettier --check 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.0",
