@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from custom_components.eon_next.statistics import (
     _group_consumption_by_hour,
     statistic_id_for_meter,
 )
+
+# Dynamic reference date so tests remain valid regardless of when they run.
+_REF_DT = datetime.now(tz=timezone.utc).replace(
+    hour=0, minute=0, second=0, microsecond=0,
+) - timedelta(days=1)  # yesterday midnight UTC
+_REF_DATE_STR = _REF_DT.strftime("%Y-%m-%d")
 
 
 def test_statistic_id_for_meter_supported_types() -> None:
@@ -27,19 +33,19 @@ def test_statistic_id_for_meter_unknown_type() -> None:
 def test_group_consumption_by_hour_handles_mixed_timestamps() -> None:
     """Hourly grouping normalizes timezone-aware and naive timestamps."""
     entries = [
-        {"interval_start": "2026-02-24T00:10:00Z", "consumption": 1.25},
-        {"interval_start": "2026-02-24T00:45:00Z", "consumption": "2.0"},
+        {"interval_start": f"{_REF_DATE_STR}T00:10:00Z", "consumption": 1.25},
+        {"interval_start": f"{_REF_DATE_STR}T00:45:00Z", "consumption": "2.0"},
         # 01:15+01:00 is 00:15 UTC -> same UTC hour bucket
-        {"interval_start": "2026-02-24T01:15:00+01:00", "consumption": 0.75},
+        {"interval_start": f"{_REF_DATE_STR}T01:15:00+01:00", "consumption": 0.75},
         # Naive timestamps are treated as UTC in this integration.
-        {"interval_start": "2026-02-24T02:00:00", "consumption": 3},
+        {"interval_start": f"{_REF_DATE_STR}T02:00:00", "consumption": 3},
         {"interval_start": "not-a-date", "consumption": 100},
-        {"interval_start": "2026-02-24T03:00:00Z", "consumption": "bad"},
+        {"interval_start": f"{_REF_DATE_STR}T03:00:00Z", "consumption": "bad"},
     ]
 
     grouped = _group_consumption_by_hour(entries)
 
     assert grouped == {
-        datetime(2026, 2, 24, 0, 0, tzinfo=timezone.utc): 4.0,
-        datetime(2026, 2, 24, 2, 0, tzinfo=timezone.utc): 3.0,
+        _REF_DT.replace(hour=0): 4.0,
+        _REF_DT.replace(hour=2): 3.0,
     }

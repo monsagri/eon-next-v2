@@ -66,9 +66,31 @@ For user-visible changes, verify:
 
 - All new public functions MUST have type annotations.
 - Files MUST include `from __future__ import annotations`.
-- No hardcoded dates in tests — use `datetime.date.today()` or relative offsets.
 - No `__pycache__/` or `.pyc` files committed.
 - Commit messages MUST follow Conventional Commits format (`feat:`, `fix:`, `chore:`, etc.).
+
+### Test Date Hygiene (BLOCKING)
+
+**No hardcoded calendar dates in test files.** This is a blocking issue — tests with literal dates like `"2026-02-25"` or `datetime(2026, 1, 10)` will silently break when those dates pass.
+
+Scan every test file for:
+- ISO date strings: patterns like `"20XX-XX-XX"` or `"XXXX-XX-XX"` in assertions, fixtures, or mock data.
+- `datetime(YYYY, ...)` literals used as reference times (including monkeypatched `dt_util.now`).
+
+Required pattern — use dynamic references:
+```python
+import datetime
+_TODAY = datetime.date.today()
+_YESTERDAY = (_TODAY - datetime.timedelta(days=1)).isoformat()
+```
+Or for datetime-aware tests:
+```python
+from datetime import datetime, timedelta, timezone
+_REF_DT = datetime.now(tz=timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+_REF_DATE_ISO = _REF_DT.date().isoformat()
+```
+
+Exceptions: Dates that represent **historical facts** (e.g. a fixed API schema version date) may be hardcoded with a comment explaining why.
 
 ## Security
 
