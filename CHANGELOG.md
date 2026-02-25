@@ -9,9 +9,11 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Added
 
 - Sidebar dashboard panel: auto-registers an EON Next energy overview in the HA sidebar showing consumption, costs, meter readings, and EV charging status
-- Lovelace card infrastructure: `eon-next-summary-card` auto-registered in the card picker for power users to embed on custom dashboards
+- Lovelace card: `eon-next-summary-card` for embedding on custom dashboards, opt-in via integration options
 - WebSocket API (`eon_next/version`, `eon_next/dashboard_summary`) shared by both the panel and cards
 - Options flow toggle to show or hide the sidebar panel (default: enabled)
+- Options flow toggle to register the Lovelace summary card (default: disabled)
+- Frontend CI workflow for lint, format check, type check, and build
 
 ## [1.3.1](https://github.com/monsagri/eon-next-v2/compare/v1.3.0...v1.3.1) (2026-02-25)
 
@@ -32,22 +34,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * harden integration tests and add missing type annotations ([#12](https://github.com/monsagri/eon-next-v2/issues/12)) ([3a9ea7b](https://github.com/monsagri/eon-next-v2/commit/3a9ea7bd40880ca8963ea13f2d5a0ae3be16edd5))
-
-## [Unreleased]
-
-### Added
-
-- Current unit rate sensor (`£/kWh`, inc VAT) for electricity and gas meters — compatible with the Energy Dashboard's "use an entity with current price" option
-- Standing charge sensor (daily standing charge inc VAT in GBP) for electricity and gas meters
-- Previous day cost sensor (total daily cost inc VAT in GBP, including consumption and standing charge) for electricity and gas meters, with `cost_period` state attribute indicating which day the cost relates to
-- Configurable historical statistics backfill with conservative defaults, resumable progress persistence, and options-based throttling controls
-- Date-range GraphQL consumption fetch support to process historical backfill in small day-based chunks
-- Diagnostic `Historical Backfill Status` sensor with progress attributes (enabled, completed/pending meters, next backfill date)
-- Current tariff sensor showing the active tariff display name per meter point, with `tariff_code`, `tariff_type`, `tariff_unit_rate`, `tariff_standing_charge`, `tariff_valid_from`, and `tariff_valid_to` as state attributes; supports standard, prepay, and half-hourly tariff types
-
-### Changed
-
-- Automatic coordinator statistics imports are paused only while a full-history backfill is active, then resume when backfill completes
 
 ## [1.2.0] - 2026-02-24
 

@@ -14,8 +14,9 @@ Core outcomes:
 
 - `custom_components/eon_next/`: integration source code.
 - `custom_components/eon_next/manifest.json`: HA integration metadata.
+- `frontend/`: Lit + TypeScript frontend (sidebar panel and Lovelace cards), built with Rollup.
 - `hacs.json`: HACS metadata.
-- `.github/workflows/`: CI validation (hassfest, HACS checks, commit conventions, metadata consistency, release-please).
+- `.github/workflows/`: CI validation (hassfest, HACS checks, commit conventions, metadata consistency, release-please, frontend lint/build).
 - `README.md`: user-facing install and usage docs.
 - `DEVELOPMENT.md`: maintainer workflow summary.
 - `planning/README.md`: planning index.
@@ -31,6 +32,7 @@ Core outcomes:
 - API interaction and auth/token lifecycle are in `eonnext.py`.
 - Entities are exposed via `sensor.py`.
 - External statistics import for Energy Dashboard is in `statistics.py`.
+- Frontend panel and cards are built from `frontend/src/` and output to `custom_components/eon_next/frontend/`.
 
 ## Domain-Specific Data Flow
 

@@ -80,11 +80,13 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 
 ### Lovelace Cards
 
-The integration also registers Lovelace cards that power users can add to any dashboard:
+The integration ships Lovelace cards that power users can add to any dashboard:
 
 - **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
 
-Cards appear in the Lovelace card picker automatically (storage mode). For YAML-mode dashboards, add the resource manually:
+To enable the card, go to **Settings -> Devices & Services -> Eon Next -> Configure** and enable "Register EON Next summary card for Lovelace dashboards". The card will then appear in the Lovelace card picker (storage mode).
+
+For YAML-mode dashboards, add the resource manually instead:
 
 ```yaml
 resources:

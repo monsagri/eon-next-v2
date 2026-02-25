@@ -16,6 +16,7 @@ If instructions conflict and precedence does not resolve it, ask the user before
 - Project type: Home Assistant custom integration (HACS-distributed).
 - Integration domain: `eon_next`.
 - Code location: `custom_components/eon_next/`.
+- Frontend location: `frontend/` (Lit + TypeScript, Rollup build).
 - Primary platform: `sensor`.
 - Polling model: `DataUpdateCoordinator` (default 30 minutes).
 - Supported Home Assistant version floor: see `hacs.json`.
@@ -26,6 +27,7 @@ If instructions conflict and precedence does not resolve it, ask the user before
 - `docs/ai/conventions.md`: coding and architecture conventions.
 - `docs/ai/workflows.md`: development, validation, and release workflows.
 - `docs/ai/checklist.md`: pre-PR completion checklist.
+- `frontend/AGENTS.md`: frontend-specific conventions and tooling.
 - `planning/README.md`: index of planning references.
 - `planning/current_state.md`: currently implemented capabilities snapshot.
 - `planning/eon_next_capabilities.md`: API capability map and constraints.
@@ -61,12 +63,22 @@ basedpyright -p pyrightconfig.json
 python3 .github/scripts/check_release_metadata.py
 ```
 
+For frontend changes, also run from the `frontend/` directory:
+
+```bash
+npm run lint
+npm run format:check
+npm run typecheck
+npm run build
+```
+
 Also ensure CI-relevant constraints still hold:
 
 - Conventional Commits for commits and PR titles.
 - HACS metadata remains valid.
 - Hassfest metadata checks remain valid.
 - Metadata consistency check remains valid (`manifest.json`/`CHANGELOG.md`/release manifest versions).
+- Frontend lint, format, typecheck, and build pass (`.github/workflows/frontend.yml`).
 
 ## Tool-Specific Adapters
 

@@ -10,7 +10,7 @@ The integration currently provides cloud-polled monitoring for EON Next accounts
 - Platform support: `sensor` only
 - Frontend: sidebar panel + Lovelace card(s)
 - Services exposed: none
-- Options flow: panel visibility, backfill configuration
+- Options flow: panel visibility, card visibility, backfill configuration
 - Default polling interval: 30 minutes
 - Auth: email/password with refresh token persistence
 
@@ -68,10 +68,11 @@ Gas meters add:
 
 ## Implemented Frontend Features
 
-- Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow)
+- Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow, default: enabled)
 - WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`
-- Lovelace card: `eon-next-summary-card` auto-registered as a Lovelace resource (storage mode)
+- Lovelace card: `eon-next-summary-card` registered as a Lovelace resource when enabled in options (default: disabled)
 - Panel and cards share compiled JS bundles served via `async_register_static_paths`
+- Frontend CI: ESLint, Prettier format check, TypeScript type check, Rollup build (`.github/workflows/frontend.yml`)
 
 ## Current Gaps (Not Yet Implemented)
 
