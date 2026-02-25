@@ -6,7 +6,7 @@ from collections.abc import Generator
 from dataclasses import dataclass, field
 import logging
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -29,7 +29,7 @@ from homeassistant.setup import async_setup_component
 
 
 @pytest.fixture(autouse=True)
-def _quiet_sqlalchemy_engine_logs() -> Generator[None]:
+def _quiet_sqlalchemy_engine_logs() -> Generator[None, None, None]:
     """Keep recorder-backed tests from flooding output with SQL logs."""
     logger = logging.getLogger("sqlalchemy.engine")
     previous_level = logger.level
@@ -108,8 +108,7 @@ class FakeApi:
 
 async def _fake_first_refresh(self: EonNextCoordinator) -> None:
     """Avoid network update during setup while marking coordinator healthy."""
-    self.data = {}
-    self.last_update_success = True
+    self.async_set_updated_data({})
 
 
 async def _fake_backfill_run(self: EonNextBackfillManager) -> None:
@@ -235,7 +234,8 @@ async def test_status_sensor_updates_when_backfill_state_changes(
     assert state.state == "initializing"
 
     manager = entry.runtime_data.backfill
-    manager._state = {  # noqa: SLF001 - private state mutation for test control
+    manager._store.async_save = AsyncMock()  # noqa: SLF001 - mock store to avoid I/O
+    manager._state = {  # noqa: SLF001 - set desired test state
         "initialized": True,
         "rebuild_done": True,
         "lookback_days": 3650,
@@ -246,7 +246,7 @@ async def test_status_sensor_updates_when_backfill_state_changes(
             }
         },
     }
-    manager._notify_listeners()  # noqa: SLF001 - private hook used for state push
+    await manager._save_state()  # noqa: SLF001 - exercises save + notify codepath
     await hass.async_block_till_done()
 
     updated = hass.states.get(entity_id)
