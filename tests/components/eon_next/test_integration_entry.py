@@ -164,7 +164,7 @@ def _patch_integration(
     monkeypatch: pytest.MonkeyPatch,
     fake_api: FakeApi,
 ) -> None:
-    monkeypatch.setattr(integration, "EonNext", lambda: fake_api)
+    monkeypatch.setattr(integration, "EonNext", lambda *args, **kwargs: fake_api)
     monkeypatch.setattr(
         EonNextCoordinator,
         "async_config_entry_first_refresh",

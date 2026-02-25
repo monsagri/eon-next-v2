@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import datetime
+import errno
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
 
+import aiohttp
 import pytest
 
 from custom_components.eon_next.eonnext import EonNext, EonNextApiError
@@ -199,3 +202,72 @@ async def test_daily_costs_unit_rate_skips_invalid_entries() -> None:
     assert result is not None
     # 50p / 2 kWh = 25p/kWh = 0.25 £/kWh
     assert result["unit_rate"] == 0.25
+
+
+@pytest.mark.asyncio
+async def test_graphql_post_retries_over_ipv4_after_connector_error() -> None:
+    """GraphQL calls retry over IPv4 once after connector-level network errors."""
+    api = EonNext()
+    api._get_session = AsyncMock(return_value=object())  # type: ignore[method-assign]
+    api._graphql_post_with_session = AsyncMock(  # type: ignore[method-assign]
+        side_effect=aiohttp.ClientConnectorError(
+            SimpleNamespace(host="api.eonnext-kraken.energy", port=443, ssl=True),
+            OSError(errno.ENETUNREACH, "Network unreachable"),
+        ),
+    )
+    api._graphql_post_with_ipv4_fallback = AsyncMock(  # type: ignore[method-assign]
+        return_value={"data": {"ok": True}},
+    )
+
+    result = await api._graphql_post(
+        "refreshToken",
+        "mutation refreshToken { __typename }",
+        authenticated=False,
+    )
+
+    assert result == {"data": {"ok": True}}
+    api._graphql_post_with_ipv4_fallback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_graphql_post_raises_api_error_when_ipv4_retry_fails() -> None:
+    """A failed IPv4 retry should still surface as EonNextApiError."""
+    api = EonNext()
+    api._get_session = AsyncMock(return_value=object())  # type: ignore[method-assign]
+    api._graphql_post_with_session = AsyncMock(  # type: ignore[method-assign]
+        side_effect=aiohttp.ClientConnectorError(
+            SimpleNamespace(host="api.eonnext-kraken.energy", port=443, ssl=True),
+            OSError(errno.ENETUNREACH, "Network unreachable"),
+        ),
+    )
+    api._graphql_post_with_ipv4_fallback = AsyncMock(  # type: ignore[method-assign]
+        side_effect=aiohttp.ClientConnectionError("ipv4 failed"),
+    )
+
+    with pytest.raises(EonNextApiError, match="ipv4 failed"):
+        await api._graphql_post(
+            "refreshToken",
+            "mutation refreshToken { __typename }",
+            authenticated=False,
+        )
+
+
+@pytest.mark.asyncio
+async def test_async_close_does_not_close_injected_session() -> None:
+    """Externally managed sessions should not be closed by the API client."""
+
+    class _SharedSession:
+        def __init__(self) -> None:
+            self.closed = False
+            self.close_calls = 0
+
+        async def close(self) -> None:
+            self.close_calls += 1
+            self.closed = True
+
+    shared_session: Any = _SharedSession()
+    api = EonNext(session=shared_session)
+
+    await api.async_close()
+
+    assert shared_session.close_calls == 0
