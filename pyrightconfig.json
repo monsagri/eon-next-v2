@@ -2,5 +2,6 @@
   "include": ["custom_components"],
   "exclude": ["**/__pycache__", ".git", ".venv", ".venv39"],
   "pythonVersion": "3.13",
-  "typeCheckingMode": "basic"
+  "typeCheckingMode": "basic",
+  "reportPrivateImportUsage": false
 }
