@@ -1,15 +1,17 @@
 #!/usr/bin/env sh
 
+set -e
+
 # Run lint-staged (eslint --fix + prettier --write on staged frontend files)
-npx lint-staged
+npx lint-staged || exit 1
 
 # TypeScript type-check (needs full project context, can't run per-file)
 # Only run if any frontend/src TS files are staged
 if git diff --cached --name-only | grep -q '^frontend/src/.*\.ts$'; then
-  cd frontend && npx tsc --noEmit
+  (cd frontend && npx tsc --noEmit) || exit 1
 fi
 
 # Hassfest compliance (manifest key order, CONFIG_SCHEMA, etc.)
 if git diff --cached --name-only | grep -qE '(manifest\.json|__init__\.py)$'; then
-  python3 .github/scripts/check_hassfest_compliance.py
+  python3 .github/scripts/check_hassfest_compliance.py || exit 1
 fi

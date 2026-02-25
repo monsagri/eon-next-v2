@@ -91,7 +91,7 @@ For YAML-mode dashboards, add the resource manually instead:
 
 ```yaml
 resources:
-  - url: /eon_next/cards.js
+  - url: /eon_next/cards
     type: module
 ```
 

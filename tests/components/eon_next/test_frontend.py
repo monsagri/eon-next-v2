@@ -146,6 +146,32 @@ async def _setup_entry(
     await hass.async_block_till_done()
 
 
+# ── Integration setup tests ───────────────────────────────────────
+
+
+class TestIntegrationSetup:
+    """Tests for integration-wide setup behavior."""
+
+    @pytest.mark.asyncio
+    async def test_async_setup_registers_websocket_once(
+        self,
+        hass: HomeAssistant,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """WebSocket commands should only be registered once per Home Assistant."""
+        mock_setup_websocket = MagicMock()
+        monkeypatch.setattr(
+            "custom_components.eon_next.websocket.async_setup_websocket",
+            mock_setup_websocket,
+        )
+        monkeypatch.setattr(integration.os.path, "isfile", lambda _: False)
+
+        assert await integration.async_setup(hass, {})
+        assert await integration.async_setup(hass, {})
+
+        mock_setup_websocket.assert_called_once_with(hass)
+
+
 # ── WebSocket handler tests ───────────────────────────────────────
 
 

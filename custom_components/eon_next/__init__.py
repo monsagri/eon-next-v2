@@ -34,56 +34,86 @@ from .models import EonNextConfigEntry, EonNextRuntimeData
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
+_WEBSOCKET_REGISTERED_KEY = f"{DOMAIN}_websocket_registered"
+
+
+def _get_lovelace_resources(
+    hass: HomeAssistant,
+    *,
+    operation: str,
+    required_methods: tuple[str, ...],
+) -> Any | None:
+    """Return Lovelace resources manager when available for storage dashboards."""
+    lovelace = hass.data.get("lovelace")
+    if lovelace is None:
+        _LOGGER.debug("Lovelace data not available; skipping card resource %s", operation)
+        return None
+
+    mode = getattr(lovelace, "mode", None)
+    resources = getattr(lovelace, "resources", None)
+    if mode is None or resources is None:
+        _LOGGER.debug(
+            "Lovelace storage API unavailable; skipping card resource %s", operation
+        )
+        return None
+
+    if mode != "storage":
+        return None
+
+    if any(not callable(getattr(resources, method, None)) for method in required_methods):
+        _LOGGER.debug(
+            "Lovelace resources API incomplete; skipping card resource %s", operation
+        )
+        return None
+
+    return resources
 
 
 async def _async_ensure_card_resource(hass: HomeAssistant) -> None:
     """Register or update the Lovelace card resource (storage mode only)."""
-    try:
-        lovelace = hass.data.get("lovelace")
-        if not lovelace or lovelace.mode != "storage":
-            return
+    resources = _get_lovelace_resources(
+        hass,
+        operation="registration",
+        required_methods=("async_items", "async_create_item", "async_update_item"),
+    )
+    if resources is None:
+        return
 
-        resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
-        existing = [
-            r
-            for r in lovelace.resources.async_items()
-            if r["url"].startswith(CARDS_URL)
-        ]
-        if not existing:
-            await lovelace.resources.async_create_item(
-                {"res_type": "module", "url": resource_url}
+    resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
+    existing = [
+        resource
+        for resource in resources.async_items()
+        if str(resource.get("url", "")).startswith(CARDS_URL)
+    ]
+    if not existing:
+        await resources.async_create_item({"res_type": "module", "url": resource_url})
+        return
+
+    for resource in existing:
+        if f"v={INTEGRATION_VERSION}" not in str(resource.get("url", "")):
+            await resources.async_update_item(
+                resource["id"],
+                {"res_type": "module", "url": resource_url},
             )
-        else:
-            for r in existing:
-                if f"v={INTEGRATION_VERSION}" not in r["url"]:
-                    await lovelace.resources.async_update_item(
-                        r["id"],
-                        {"res_type": "module", "url": resource_url},
-                    )
-    except AttributeError:
-        _LOGGER.debug(
-            "Lovelace storage API unavailable; skipping card resource registration"
-        )
 
 
 async def _async_remove_card_resource(hass: HomeAssistant) -> None:
     """Remove the Lovelace card resource (storage mode only)."""
-    try:
-        lovelace = hass.data.get("lovelace")
-        if not lovelace or lovelace.mode != "storage":
-            return
+    resources = _get_lovelace_resources(
+        hass,
+        operation="removal",
+        required_methods=("async_items", "async_delete_item"),
+    )
+    if resources is None:
+        return
 
-        existing = [
-            r
-            for r in lovelace.resources.async_items()
-            if r["url"].startswith(CARDS_URL)
-        ]
-        for r in existing:
-            await lovelace.resources.async_delete_item(r["id"])
-    except AttributeError:
-        _LOGGER.debug(
-            "Lovelace storage API unavailable; skipping card resource removal"
-        )
+    existing = [
+        resource
+        for resource in resources.async_items()
+        if str(resource.get("url", "")).startswith(CARDS_URL)
+    ]
+    for resource in existing:
+        await resources.async_delete_item(resource["id"])
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -99,10 +129,12 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
             [StaticPathConfig(CARDS_URL, cards_path, cache_headers=False)]
         )
 
-    # Register WebSocket commands (shared by panel and cards)
-    from .websocket import async_setup_websocket  # noqa: E402
+    # Register WebSocket commands (shared by panel and cards), once per hass.
+    if not hass.data.get(_WEBSOCKET_REGISTERED_KEY):
+        from .websocket import async_setup_websocket  # noqa: E402
 
-    async_setup_websocket(hass)
+        async_setup_websocket(hass)
+        hass.data[_WEBSOCKET_REGISTERED_KEY] = True
 
     return True
 
