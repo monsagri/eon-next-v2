@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .backfill import EonNextBackfillManager
 from .const import (
@@ -17,7 +17,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import EonNextCoordinator
-from .eonnext import EonNext
+from .eonnext import EonNext, EonNextApiError
 from .models import EonNextConfigEntry, EonNextRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,7 +51,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
     # Try stored refresh token first to avoid a redundant username/password login.
     stored_refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
     if stored_refresh_token:
-        authenticated = await api.login_with_refresh_token(stored_refresh_token)
+        try:
+            authenticated = await api.login_with_refresh_token(stored_refresh_token)
+        except EonNextApiError as err:
+            await api.async_close()
+            raise ConfigEntryNotReady(
+                f"Unable to reach E.ON Next API: {err}"
+            ) from err
         if authenticated:
             _LOGGER.debug("Authenticated using stored refresh token")
         else:
@@ -59,9 +65,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
 
     # Fall back to username/password if refresh token was unavailable or failed.
     if not authenticated:
-        authenticated = await api.login_with_username_and_password(
-            entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]
-        )
+        try:
+            authenticated = await api.login_with_username_and_password(
+                entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]
+            )
+        except EonNextApiError as err:
+            await api.async_close()
+            raise ConfigEntryNotReady(
+                f"Unable to reach E.ON Next API: {err}"
+            ) from err
         if not authenticated:
             await api.async_close()
             raise ConfigEntryAuthFailed("Failed to authenticate with Eon Next")

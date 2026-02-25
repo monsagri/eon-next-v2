@@ -361,9 +361,12 @@ class EonNext:
                 },
                 False,
             )
-        except (EonNextApiError, EonNextAuthError):
+        except EonNextAuthError:
             self.__reset_authentication()
             return False
+        except EonNextApiError:
+            # API/transient error — don't destroy auth state.
+            raise
 
         if self._json_contains_key_chain(result, ["data", "obtainKrakenToken", "token"]):
             self.__store_authentication(result["data"]["obtainKrakenToken"])
@@ -394,9 +397,14 @@ class EonNext:
                 {"input": {"refreshToken": refresh_token}},
                 False,
             )
-        except (EonNextApiError, EonNextAuthError):
+        except EonNextAuthError:
             self.__reset_authentication()
             return False
+        except EonNextApiError as err:
+            # API/transient error — don't destroy the refresh token so it
+            # can be retried once the API recovers.
+            _LOGGER.debug("API error during token refresh, will retry later: %s", err)
+            raise
 
         if self._json_contains_key_chain(result, ["data", "obtainKrakenToken", "token"]):
             self.__store_authentication(result["data"]["obtainKrakenToken"])

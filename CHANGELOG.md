@@ -34,6 +34,13 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ## [Unreleased]
 
+### Fixed
+
+- API outages during authentication no longer reset stored refresh tokens or auth state, allowing automatic recovery when the API recovers
+- Setup now raises `ConfigEntryNotReady` (retry later) when E.ON Next API is unreachable during login, instead of treating connectivity failures as invalid credentials
+- Config flow surfaces API connectivity errors as `cannot_connect` instead of `unknown`
+- Narrowed exception logging in config flow so expected API/connection errors are logged at debug level instead of emitting misleading "Unexpected error" stack traces
+
 ### Added
 
 - Current unit rate sensor (`£/kWh`, inc VAT) for electricity and gas meters — compatible with the Energy Dashboard's "use an entity with current price" option

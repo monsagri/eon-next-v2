@@ -33,7 +33,7 @@ from .const import (
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
     DOMAIN,
 )
-from .eonnext import EonNext
+from .eonnext import EonNext, EonNextApiError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,6 +67,9 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if success:
                 return api.auth["refresh"]["token"]
             return None
+        except EonNextApiError as err:
+            _LOGGER.debug("API/connection error during credential validation: %s", err)
+            raise
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected error during authentication")
             raise
@@ -86,6 +89,8 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 refresh_token = await self._validate_credentials(email, password)
+            except EonNextApiError:
+                errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 errors["base"] = "unknown"
             else:
@@ -138,6 +143,8 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 refresh_token = await self._validate_credentials(email, password)
+            except EonNextApiError:
+                errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 errors["base"] = "unknown"
             else:
