@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.3.0](https://github.com/monsagri/eon-next-v2/compare/v1.2.0...v1.3.0) (2026-02-25)
+
+
+### Features
+
+* add cost tracking ([#9](https://github.com/monsagri/eon-next-v2/issues/9)) ([a6b7c2e](https://github.com/monsagri/eon-next-v2/commit/a6b7c2e8b7b2aa45a2736c04b1203dcfc524f370))
+* add history backfill with diagnostic sensor ([94c498a](https://github.com/monsagri/eon-next-v2/commit/94c498ae9052af804c5eab5949a125e26ae798b1))
+
+
+### Bug Fixes
+
+* harden integration tests and add missing type annotations ([#12](https://github.com/monsagri/eon-next-v2/issues/12)) ([3a9ea7b](https://github.com/monsagri/eon-next-v2/commit/3a9ea7bd40880ca8963ea13f2d5a0ae3be16edd5))
+
 ## [Unreleased]
 
 ### Added
