@@ -8,3 +8,8 @@ node_modules
 custom_components/eon_next/__pycache__
 __pycache__
 *.py[cod]
+# Dev server build artifacts (mock-hass.js is source, not build output)
+frontend/dev/entrypoint.js
+frontend/dev/entrypoint.js.map
+frontend/dev/cards.js
+frontend/dev/cards.js.map
