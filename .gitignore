@@ -1,7 +1,8 @@
 notes
 test.py
 .vscode
-.claude
+.claude/*
+!.claude/commands/
 .venv
 node_modules
 custom_components/eon_next/__pycache__

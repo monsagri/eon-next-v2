@@ -14,3 +14,4 @@ Key constraints:
 - Avoid credential/token leakage in logs or code.
 - Keep release metadata strictly aligned: `manifest.json` version must match latest `CHANGELOG.md` version and `.release-please-manifest.json` when present.
 - Use Conventional Commit format for commits and PR titles.
+- Before pushing, run a code review against the checklist in `docs/ai/checklist.md` and the conventions in `.claude/commands/review.md`.
