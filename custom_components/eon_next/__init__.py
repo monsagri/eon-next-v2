@@ -17,7 +17,9 @@ from .const import (
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_REFRESH_TOKEN,
+    CONF_SHOW_CARD,
     CONF_SHOW_PANEL,
+    DEFAULT_SHOW_CARD,
     DEFAULT_SHOW_PANEL,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
@@ -31,40 +33,58 @@ from .models import EonNextConfigEntry, EonNextRuntimeData
 _LOGGER = logging.getLogger(__name__)
 
 
+async def _async_ensure_card_resource(hass: HomeAssistant) -> None:
+    """Register or update the Lovelace card resource (storage mode only)."""
+    lovelace = hass.data.get("lovelace")
+    if not lovelace or lovelace.mode != "storage":
+        return
+
+    resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
+    existing = [
+        r
+        for r in lovelace.resources.async_items()
+        if r["url"].startswith(CARDS_URL)
+    ]
+    if not existing:
+        await lovelace.resources.async_create_item(
+            {"res_type": "module", "url": resource_url}
+        )
+    else:
+        for r in existing:
+            if f"v={INTEGRATION_VERSION}" not in r["url"]:
+                await lovelace.resources.async_update_item(
+                    r["id"],
+                    {"res_type": "module", "url": resource_url},
+                )
+
+
+async def _async_remove_card_resource(hass: HomeAssistant) -> None:
+    """Remove the Lovelace card resource (storage mode only)."""
+    lovelace = hass.data.get("lovelace")
+    if not lovelace or lovelace.mode != "storage":
+        return
+
+    existing = [
+        r
+        for r in lovelace.resources.async_items()
+        if r["url"].startswith(CARDS_URL)
+    ]
+    for r in existing:
+        await lovelace.resources.async_delete_item(r["id"])
+
+
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Set up integration-wide resources (once, not per config entry).
 
-    Registers the Lovelace card JS bundle as a static path and as a
-    Lovelace resource (storage mode).  Also registers the WebSocket
-    commands shared by the sidebar panel and standalone cards.
+    Registers the Lovelace card JS bundle as a static path and the
+    WebSocket commands shared by the sidebar panel and standalone cards.
     """
-    # Serve the compiled card JS bundle
+    # Serve the compiled card JS bundle (always, so the URL is resolvable)
     cards_path = os.path.join(os.path.dirname(__file__), "frontend", "cards.js")
     if os.path.isfile(cards_path):
         await hass.http.async_register_static_paths(
             [StaticPathConfig(CARDS_URL, cards_path, cache_headers=False)]
         )
-
-        # Auto-register as a Lovelace resource (storage mode only)
-        lovelace = hass.data.get("lovelace")
-        if lovelace and lovelace.mode == "storage":
-            resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
-            existing = [
-                r
-                for r in lovelace.resources.async_items()
-                if r["url"].startswith(CARDS_URL)
-            ]
-            if not existing:
-                await lovelace.resources.async_create_item(
-                    {"res_type": "module", "url": resource_url}
-                )
-            else:
-                for r in existing:
-                    if f"v={INTEGRATION_VERSION}" not in r["url"]:
-                        await lovelace.resources.async_update_item(
-                            r["id"],
-                            {"res_type": "module", "url": resource_url},
-                        )
 
     # Register WebSocket commands (shared by panel and cards)
     from .websocket import async_setup_websocket  # noqa: E402
@@ -142,6 +162,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
 
         await async_register_panel(hass)
 
+    # Register / remove the Lovelace card resource based on the user option
+    if entry.options.get(CONF_SHOW_CARD, DEFAULT_SHOW_CARD):
+        await _async_ensure_card_resource(hass)
+    else:
+        await _async_remove_card_resource(hass)
+
     return True
 
 
@@ -152,7 +178,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> 
         await entry.runtime_data.backfill.async_stop()
         await entry.runtime_data.api.async_close()
 
-        # Remove the sidebar panel only when the last entry is being unloaded
+        # Clean up integration-wide resources when the last entry is unloaded
         remaining = [
             e
             for e in hass.config_entries.async_entries(DOMAIN)
@@ -162,5 +188,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> 
             from .panel import async_unregister_panel  # noqa: E402
 
             await async_unregister_panel(hass)
+            await _async_remove_card_resource(hass)
 
     return unload_ok

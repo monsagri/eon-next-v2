@@ -13,6 +13,7 @@ from custom_components.eon_next.const import (
     CONF_BACKFILL_REBUILD_STATISTICS,
     CONF_BACKFILL_REQUESTS_PER_RUN,
     CONF_BACKFILL_RUN_INTERVAL_MINUTES,
+    CONF_SHOW_CARD,
     DEFAULT_BACKFILL_CHUNK_DAYS,
     DEFAULT_BACKFILL_DELAY_SECONDS,
     DEFAULT_BACKFILL_ENABLED,
@@ -20,6 +21,7 @@ from custom_components.eon_next.const import (
     DEFAULT_BACKFILL_REBUILD_STATISTICS,
     DEFAULT_BACKFILL_REQUESTS_PER_RUN,
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
+    DEFAULT_SHOW_CARD,
 )
 
 
@@ -38,6 +40,7 @@ async def test_options_flow_uses_defaults() -> None:
         for marker in schema.schema
         if hasattr(marker, "default")
     }
+    assert defaults[CONF_SHOW_CARD] == DEFAULT_SHOW_CARD
     assert defaults[CONF_BACKFILL_ENABLED] == DEFAULT_BACKFILL_ENABLED
     assert defaults[CONF_BACKFILL_REBUILD_STATISTICS] == DEFAULT_BACKFILL_REBUILD_STATISTICS
     assert defaults[CONF_BACKFILL_LOOKBACK_DAYS] == DEFAULT_BACKFILL_LOOKBACK_DAYS

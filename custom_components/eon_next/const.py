@@ -10,7 +10,9 @@ CONF_REFRESH_TOKEN = "refresh_token"
 
 # Frontend / dashboard
 CONF_SHOW_PANEL = "show_panel"
+CONF_SHOW_CARD = "show_card"
 DEFAULT_SHOW_PANEL = True
+DEFAULT_SHOW_CARD = False
 PANEL_TITLE = "EON Next"
 PANEL_ICON = "mdi:lightning-bolt"
 PANEL_URL = f"/api/{DOMAIN}/panel"
