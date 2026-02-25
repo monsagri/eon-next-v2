@@ -1,10 +1,10 @@
-import { html, nothing } from "lit";
-import type { MeterSummary } from "../types";
+import { html, nothing } from 'lit'
+import type { MeterSummary } from '../types'
 
 /** Render a full meter card (used by the panel grid). */
 export const renderMeterCard = (meter: MeterSummary) => {
-  const icon = meter.type === "gas" ? "mdi:fire" : "mdi:flash";
-  const label = meter.type === "gas" ? "Gas" : "Electricity";
+  const icon = meter.type === 'gas' ? 'mdi:fire' : 'mdi:flash'
+  const label = meter.type === 'gas' ? 'Gas' : 'Electricity'
 
   return html`
     <div class="card">
@@ -62,5 +62,5 @@ export const renderMeterCard = (meter: MeterSummary) => {
           </div>`
         : nothing}
     </div>
-  `;
-};
+  `
+}

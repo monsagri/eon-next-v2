@@ -11,5 +11,5 @@ export {
   getVersion,
   getDashboardSummary,
   WS_VERSION,
-  WS_DASHBOARD_SUMMARY,
-} from "./api.generated";
+  WS_DASHBOARD_SUMMARY
+} from './api.generated'

@@ -1,18 +1,10 @@
 {
-  "singleQuote": false,
-  "trailingComma": "all",
+  "singleQuote": true,
+  "trailingComma": "none",
   "printWidth": 90,
   "tabWidth": 2,
-  "semi": true,
+  "semi": false,
   "bracketSpacing": true,
   "arrowParens": "always",
-  "endOfLine": "lf",
-  "overrides": [
-    {
-      "files": "*.css",
-      "options": {
-        "singleQuote": false
-      }
-    }
-  ]
+  "endOfLine": "lf"
 }

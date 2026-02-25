@@ -1,12 +1,12 @@
-import { html, nothing } from "lit";
-import type { MeterSummary } from "../types";
+import { html, nothing } from 'lit'
+import type { MeterSummary } from '../types'
 
 /** Render a compact meter summary row (used by the summary card). */
 export const renderMeterSummary = (
   meter: MeterSummary,
   label: string,
   icon: string,
-  showCosts: boolean,
+  showCosts: boolean
 ) => html`
   <div class="meter-section">
     <div class="meter-label">
@@ -33,4 +33,4 @@ export const renderMeterSummary = (
         </div>`
       : nothing}
   </div>
-`;
+`
