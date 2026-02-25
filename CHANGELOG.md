@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.5.1](https://github.com/monsagri/eon-next-v2/compare/v1.5.0...v1.5.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* auth retry behaviour and networking issues ([#22](https://github.com/monsagri/eon-next-v2/issues/22)) ([8d9dd57](https://github.com/monsagri/eon-next-v2/commit/8d9dd57a863574797fb530eb6eb59267e0c3cb6c))
+
 ## [1.5.0](https://github.com/monsagri/eon-next-v2/compare/v1.4.0...v1.5.0) (2026-02-25)
 
 
