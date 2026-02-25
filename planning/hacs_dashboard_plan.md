@@ -16,7 +16,7 @@ Add a dedicated sidebar panel to the EON Next integration that gives users a sin
 
 | Approach | Description | Examples | Suitability |
 |---|---|---|---|
-| **Sidebar Panel** | Full-page view registered in HA sidebar via `async_register_built_in_panel` | HACS integration, Detailed Charts Panel | Best fit for a comprehensive energy dashboard |
+| **Sidebar Panel** | Full-page view registered in HA sidebar via `panel_custom.async_register_panel` or `async_register_built_in_panel` | HACS integration, Alarmo, Detailed Charts Panel | Best fit for a comprehensive energy dashboard |
 | **Custom Lovelace Card(s)** | Reusable cards users add to their own dashboards; distributed as a separate HACS Frontend repo | Lunar Phase Card, Octopus Energy Rates Card, Sunsynk Power Flow Card | Good for modular, embeddable components |
 | **Dashboard Strategy** | Auto-generating a complete Lovelace dashboard | HA Energy Dashboard (built-in) | Over-engineered for a custom integration |
 | **Integration + Companion Card** | Backend integration ships data; separate repo ships card(s) | Lunar Phase (integration) + Lunar Phase Card (frontend) | Clean separation but higher maintenance |
@@ -42,44 +42,60 @@ Add a dedicated sidebar panel to the EON Next integration that gives users a sin
    - Separate HACS Frontend repo ships the visual card
    - Clean separation of concerns
 
-4. **Octopus Energy** ([BottlecapDave/HomeAssistant-OctopusEnergy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy))
+4. **Alarmo** ([nielsfaber/alarmo](https://github.com/nielsfaber/alarmo))
+   - Ships a configuration sidebar panel bundled directly in the integration directory
+   - Uses the simpler `panel_custom.async_register_panel()` API
+   - Properly unregisters panel via `frontend.async_remove_panel()` on unload
+   - Manifest dependencies: `http`, `frontend`, `panel_custom`
+   - Best reference for our use case (simpler than HACS's PyPI-published frontend)
+
+5. **Octopus Energy** ([BottlecapDave/HomeAssistant-OctopusEnergy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy))
    - Closest comparable integration (UK energy provider, Kraken API)
    - Pure backend - no custom panel, relies on HA's native Energy Dashboard
    - Companion Lovelace cards exist as separate community projects
 
+### Panel Registration APIs
+
+There are two APIs for registering sidebar panels. We should use the simpler one:
+
+| API | Complexity | Used By | Recommendation |
+|---|---|---|---|
+| `panel_custom.async_register_panel()` | Simple, high-level | Alarmo, community integrations | **Use this** |
+| `frontend.async_register_built_in_panel()` | Low-level, more control | HACS, HA core integrations | Overkill for our needs |
+
 ### Technical Foundation
 
-**Panel registration API** (modern, non-deprecated):
+**Panel registration** (recommended pattern, following Alarmo):
 ```python
+from homeassistant.components import panel_custom, frontend
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.components.frontend import async_register_built_in_panel
 
-# Serve the compiled frontend
+PANEL_URL = f"/api/{DOMAIN}/panel"
+
+# Serve the compiled frontend JS file
+panel_path = os.path.join(os.path.dirname(__file__), "frontend", "entrypoint.js")
 await hass.http.async_register_static_paths([
-    StaticPathConfig(
-        url_path=f"/{DOMAIN}/frontend",
-        path=str(Path(__file__).parent / "frontend"),
-        cache_headers=False,
-    )
+    StaticPathConfig(PANEL_URL, panel_path, cache_headers=False)
 ])
 
 # Register the sidebar panel
-async_register_built_in_panel(
+await panel_custom.async_register_panel(
     hass,
-    component_name="custom",
+    webcomponent_name="eon-next-panel",
+    frontend_url_path=DOMAIN,
+    module_url=PANEL_URL,
     sidebar_title="EON Next",
     sidebar_icon="mdi:lightning-bolt",
-    frontend_url_path=DOMAIN,
-    config={
-        "_panel_custom": {
-            "name": "eon-next-panel",
-            "embed_iframe": False,
-            "trust_external": False,
-            "js_url": f"/{DOMAIN}/frontend/entrypoint.js",
-        }
-    },
     require_admin=False,
+    config={},
 )
+```
+
+**Panel cleanup on unload**:
+```python
+async def async_unload_entry(hass, entry):
+    # ... existing unload logic ...
+    frontend.async_remove_panel(hass, DOMAIN)
 ```
 
 **Panel custom element** (Lit):
@@ -101,10 +117,19 @@ class EonNextPanel extends LitElement {
 customElements.define("eon-next-panel", EonNextPanel);
 ```
 
+**`embed_iframe` guidance**:
+| Scenario | `embed_iframe` | Reason |
+|---|---|---|
+| LitElement / vanilla web component | `false` | Direct DOM access, native HA integration |
+| React / Vue / Angular panel | `true` | Prevents framework conflicts |
+| Large isolated app (like HACS) | `true` | Full isolation, separate lifecycle |
+
+We use LitElement, so `embed_iframe` is not needed (simpler, lighter weight, direct `hass` object access).
+
 **Manifest dependencies required**:
 ```json
 {
-  "dependencies": ["recorder", "http", "frontend"]
+  "dependencies": ["recorder", "http", "frontend", "panel_custom"]
 }
 ```
 
@@ -258,9 +283,9 @@ The panel needs data beyond what entity states provide. Define WebSocket command
 
 ### Backend Changes
 
-1. **`manifest.json`**: Add `"http"` and `"frontend"` to `dependencies`
+1. **`manifest.json`**: Add `"http"`, `"frontend"`, and `"panel_custom"` to `dependencies`
 2. **`const.py`**: Add panel-related constants (`PANEL_TITLE`, `PANEL_ICON`, `PANEL_URL`)
-3. **`__init__.py`**: Call panel registration in `async_setup_entry`; deregister in `async_unload_entry`
+3. **`__init__.py`**: Call `panel_custom.async_register_panel()` in `async_setup_entry`; call `frontend.async_remove_panel()` in `async_unload_entry`
 4. **`websocket.py`** (new): Register WebSocket command handlers
 5. **`coordinator.py`**: Possibly expose aggregation helpers consumed by WebSocket handlers
 
@@ -331,7 +356,7 @@ Add a GitHub Actions workflow to verify the frontend build:
 |---|---|---|
 | Frontend build complexity | Slows development velocity | Keep build minimal (Rollup + Lit only); avoid heavy frameworks |
 | Bundle size bloat via charting library | Increases download for all users | Use lightweight chart lib (uPlot ~45KB vs Chart.js ~200KB); lazy-load chart code |
-| HA breaking changes to panel API | Panel stops working on HA update | Pin to documented APIs only; `async_register_built_in_panel` is stable and used by HACS |
+| HA breaking changes to panel API | Panel stops working on HA update | Pin to documented APIs only; `panel_custom.async_register_panel` is stable and used by Alarmo, HACS |
 | `register_static_path` deprecation | Must use `async_register_static_paths` | Already planned; use `StaticPathConfig` from the start |
 | Users don't want the sidebar entry | Clutters sidebar for users who prefer their own dashboards | Options flow toggle to disable the panel |
 | WebSocket commands expose sensitive data | Security concern | Only expose aggregated consumption/cost data; no auth tokens or credentials; validate connection user |
@@ -379,6 +404,7 @@ Add a GitHub Actions workflow to verify the frontend build:
 - [HA Integration: panel_custom](https://www.home-assistant.io/integrations/panel_custom/)
 - [HA Developer Blog: async_register_static_paths migration](https://developers.home-assistant.io/blog/2024/06/18/async_register_static_paths/)
 - [HACS Integration frontend.py](https://github.com/hacs/integration/blob/main/custom_components/hacs/frontend.py)
+- [Alarmo panel.py (simpler pattern)](https://github.com/nielsfaber/alarmo/blob/main/custom_components/alarmo/panel.py)
 - [Lit Web Components](https://lit.dev/)
 - [HA Custom Card Rollup+TS+Lit Starter](https://github.com/grillp/ha-custom-card-rollup-ts-lit-starter)
 - [Community Guide: Adding a Sidebar Panel](https://community.home-assistant.io/t/how-to-add-a-sidebar-panel-to-a-home-assistant-integration/981585)
