@@ -8,3 +8,8 @@ npx lint-staged
 if git diff --cached --name-only | grep -q '^frontend/src/.*\.ts$'; then
   cd frontend && npx tsc --noEmit
 fi
+
+# Hassfest compliance (manifest key order, CONFIG_SCHEMA, etc.)
+if git diff --cached --name-only | grep -qE '(manifest\.json|__init__\.py)$'; then
+  python3 .github/scripts/check_hassfest_compliance.py
+fi

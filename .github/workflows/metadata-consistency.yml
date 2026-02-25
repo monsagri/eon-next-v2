@@ -16,3 +16,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check release metadata version consistency
         run: python3 .github/scripts/check_release_metadata.py
+      - name: Check hassfest compliance
+        run: python3 .github/scripts/check_hassfest_compliance.py

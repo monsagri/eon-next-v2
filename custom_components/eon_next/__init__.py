@@ -10,6 +10,7 @@ from typing import Any
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 
 from .backfill import EonNextBackfillManager
 from .const import (
@@ -29,6 +30,8 @@ from .const import (
 from .coordinator import EonNextCoordinator
 from .eonnext import EonNext, EonNextApiError
 from .models import EonNextConfigEntry, EonNextRuntimeData
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _LOGGER = logging.getLogger(__name__)
 

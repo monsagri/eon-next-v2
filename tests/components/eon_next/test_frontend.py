@@ -215,9 +215,10 @@ class TestWsDashboardSummary:
         from custom_components.eon_next.websocket import ws_dashboard_summary
 
         mock_connection = MagicMock()
-        await ws_dashboard_summary(
+        ws_dashboard_summary(
             hass, mock_connection, {"id": 2, "type": "eon_next/dashboard_summary"}
         )
+        await hass.async_block_till_done()
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
@@ -243,9 +244,10 @@ class TestWsDashboardSummary:
         from custom_components.eon_next.websocket import ws_dashboard_summary
 
         mock_connection = MagicMock()
-        await ws_dashboard_summary(
+        ws_dashboard_summary(
             hass, mock_connection, {"id": 3, "type": "eon_next/dashboard_summary"}
         )
+        await hass.async_block_till_done()
 
         result = mock_connection.send_result.call_args[0][1]
         assert result["meters"] == []
