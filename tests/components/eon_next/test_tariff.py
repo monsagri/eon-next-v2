@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -9,22 +10,29 @@ import pytest
 
 from custom_components.eon_next.eonnext import EonNext
 
+# Dynamic reference dates so tests remain valid regardless of when they run.
+_TODAY = datetime.date.today().isoformat()
+_LAST_YEAR = (datetime.date.today() - datetime.timedelta(days=365)).isoformat()
+_TWO_YEARS_AGO = (datetime.date.today() - datetime.timedelta(days=730)).isoformat()
+_NEXT_YEAR = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+_TWO_YEARS_AHEAD = (datetime.date.today() + datetime.timedelta(days=730)).isoformat()
+
 
 class TestFindActiveAgreement:
     """Tests for EonNext._find_active_agreement static method."""
 
     def test_returns_none_for_empty_list(self) -> None:
-        assert EonNext._find_active_agreement([], "2026-02-25") is None
+        assert EonNext._find_active_agreement([], _TODAY) is None
 
     def test_returns_none_for_non_list(self) -> None:
-        assert EonNext._find_active_agreement("bad", "2026-02-25") is None  # type: ignore[arg-type]
+        assert EonNext._find_active_agreement("bad", _TODAY) is None  # type: ignore[arg-type]
 
     def test_selects_active_standard_tariff(self) -> None:
         agreements = [
             {
                 "id": "old",
-                "validFrom": "2024-01-01",
-                "validTo": "2024-12-31",
+                "validFrom": _TWO_YEARS_AGO,
+                "validTo": _LAST_YEAR,
                 "tariff": {
                     "__typename": "StandardTariff",
                     "displayName": "Old Tariff",
@@ -35,8 +43,8 @@ class TestFindActiveAgreement:
             },
             {
                 "id": "current",
-                "validFrom": "2025-01-01",
-                "validTo": "2027-01-01",
+                "validFrom": _LAST_YEAR,
+                "validTo": _NEXT_YEAR,
                 "tariff": {
                     "__typename": "StandardTariff",
                     "displayName": "Next Flex",
@@ -47,7 +55,7 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        result = EonNext._find_active_agreement(agreements, "2026-02-25")
+        result = EonNext._find_active_agreement(agreements, _TODAY)
 
         assert result is not None
         assert result["tariff_name"] == "Next Flex"
@@ -55,15 +63,15 @@ class TestFindActiveAgreement:
         assert result["tariff_type"] == "StandardTariff"
         assert result["unit_rate"] == "22.36"
         assert result["standing_charge"] == "53.35"
-        assert result["valid_from"] == "2025-01-01"
-        assert result["valid_to"] == "2027-01-01"
+        assert result["valid_from"] == _LAST_YEAR
+        assert result["valid_to"] == _NEXT_YEAR
 
     def test_skips_future_agreement(self) -> None:
         agreements = [
             {
                 "id": "future",
-                "validFrom": "2027-01-01",
-                "validTo": "2028-01-01",
+                "validFrom": _NEXT_YEAR,
+                "validTo": _TWO_YEARS_AHEAD,
                 "tariff": {
                     "__typename": "StandardTariff",
                     "displayName": "Future Tariff",
@@ -73,14 +81,14 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        assert EonNext._find_active_agreement(agreements, "2026-02-25") is None
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
 
     def test_skips_expired_agreement(self) -> None:
         agreements = [
             {
                 "id": "expired",
-                "validFrom": "2023-01-01",
-                "validTo": "2024-01-01",
+                "validFrom": _TWO_YEARS_AGO,
+                "validTo": _LAST_YEAR,
                 "tariff": {
                     "__typename": "StandardTariff",
                     "displayName": "Expired Tariff",
@@ -90,14 +98,14 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        assert EonNext._find_active_agreement(agreements, "2026-02-25") is None
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
 
     def test_open_ended_agreement(self) -> None:
         """Agreement with empty validTo should be considered active."""
         agreements = [
             {
                 "id": "open",
-                "validFrom": "2025-01-01",
+                "validFrom": _LAST_YEAR,
                 "validTo": "",
                 "tariff": {
                     "__typename": "StandardTariff",
@@ -108,7 +116,7 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        result = EonNext._find_active_agreement(agreements, "2026-02-25")
+        result = EonNext._find_active_agreement(agreements, _TODAY)
         assert result is not None
         assert result["tariff_name"] == "Open Ended"
 
@@ -117,7 +125,7 @@ class TestFindActiveAgreement:
         agreements = [
             {
                 "id": "null-end",
-                "validFrom": "2025-01-01",
+                "validFrom": _LAST_YEAR,
                 "validTo": None,
                 "tariff": {
                     "__typename": "StandardTariff",
@@ -128,7 +136,7 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        result = EonNext._find_active_agreement(agreements, "2026-02-25")
+        result = EonNext._find_active_agreement(agreements, _TODAY)
         assert result is not None
         assert result["tariff_name"] == "No End Date"
 
@@ -137,8 +145,8 @@ class TestFindActiveAgreement:
         agreements = [
             {
                 "id": "hh",
-                "validFrom": "2025-01-01",
-                "validTo": "2027-01-01",
+                "validFrom": _LAST_YEAR,
+                "validTo": _NEXT_YEAR,
                 "tariff": {
                     "__typename": "HalfHourlyTariff",
                     "displayName": "Next Solar Max",
@@ -152,7 +160,7 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        result = EonNext._find_active_agreement(agreements, "2026-02-25")
+        result = EonNext._find_active_agreement(agreements, _TODAY)
         assert result is not None
         assert result["tariff_name"] == "Next Solar Max"
         assert result["unit_rate"] == pytest.approx(20.0)
@@ -161,8 +169,8 @@ class TestFindActiveAgreement:
         agreements = [
             {
                 "id": "no-display",
-                "validFrom": "2025-01-01",
-                "validTo": "2027-01-01",
+                "validFrom": _LAST_YEAR,
+                "validTo": _NEXT_YEAR,
                 "tariff": {
                     "__typename": "StandardTariff",
                     "fullName": "Full Name Only",
@@ -172,24 +180,24 @@ class TestFindActiveAgreement:
                 },
             },
         ]
-        result = EonNext._find_active_agreement(agreements, "2026-02-25")
+        result = EonNext._find_active_agreement(agreements, _TODAY)
         assert result is not None
         assert result["tariff_name"] == "Full Name Only"
 
     def test_skips_non_dict_agreements(self) -> None:
         agreements: list[Any] = ["bad", None, 123]
-        assert EonNext._find_active_agreement(agreements, "2026-02-25") is None
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
 
     def test_skips_agreement_with_non_dict_tariff(self) -> None:
         agreements = [
             {
                 "id": "bad-tariff",
-                "validFrom": "2025-01-01",
-                "validTo": "2027-01-01",
+                "validFrom": _LAST_YEAR,
+                "validTo": _NEXT_YEAR,
                 "tariff": "not-a-dict",
             },
         ]
-        assert EonNext._find_active_agreement(agreements, "2026-02-25") is None
+        assert EonNext._find_active_agreement(agreements, _TODAY) is None
 
 
 @pytest.mark.asyncio
@@ -207,7 +215,7 @@ async def test_async_get_tariff_data_maps_by_supply_point() -> None:
                                 "agreements": [
                                     {
                                         "id": "elec",
-                                        "validFrom": "2025-01-01",
+                                        "validFrom": _LAST_YEAR,
                                         "validTo": "",
                                         "tariff": {
                                             "__typename": "StandardTariff",
@@ -226,7 +234,7 @@ async def test_async_get_tariff_data_maps_by_supply_point() -> None:
                                 "agreements": [
                                     {
                                         "id": "gas",
-                                        "validFrom": "2025-01-01",
+                                        "validFrom": _LAST_YEAR,
                                         "validTo": "",
                                         "tariff": {
                                             "__typename": "StandardTariff",
@@ -287,8 +295,8 @@ async def test_async_get_tariff_data_returns_none_when_no_active_agreements() ->
                                 "agreements": [
                                     {
                                         "id": "expired",
-                                        "validFrom": "2020-01-01",
-                                        "validTo": "2021-01-01",
+                                        "validFrom": _TWO_YEARS_AGO,
+                                        "validTo": _LAST_YEAR,
                                         "tariff": {
                                             "__typename": "StandardTariff",
                                             "displayName": "Old",

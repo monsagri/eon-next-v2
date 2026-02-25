@@ -115,9 +115,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["tariff_name"] = tariff.get("tariff_name")
                         meter_data["tariff_code"] = tariff.get("tariff_code")
                         meter_data["tariff_type"] = tariff.get("tariff_type")
-                        meter_data["tariff_unit_rate"] = tariff.get("unit_rate")
-                        meter_data["tariff_standing_charge"] = tariff.get(
-                            "standing_charge"
+                        meter_data["tariff_unit_rate"] = self._pence_to_pounds(
+                            tariff.get("unit_rate")
+                        )
+                        meter_data["tariff_standing_charge"] = self._pence_to_pounds(
+                            tariff.get("standing_charge")
                         )
                         meter_data["tariff_valid_from"] = tariff.get("valid_from")
                         meter_data["tariff_valid_to"] = tariff.get("valid_to")
@@ -275,6 +277,16 @@ class EonNextCoordinator(DataUpdateCoordinator):
             )
 
         return None
+
+    @staticmethod
+    def _pence_to_pounds(value: Any) -> float | None:
+        """Convert a pence value to pounds, returning None on failure."""
+        if value is None:
+            return None
+        try:
+            return round(float(value) / 100.0, 4)
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _aggregate_daily_consumption(

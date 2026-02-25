@@ -30,7 +30,7 @@ The integration currently provides cloud-polled monitoring for EON Next accounts
 - Daily consumption total (kWh-equivalent rollup)
 - Standing charge (daily, inc VAT, GBP)
 - Previous day cost (total inc VAT, GBP)
-- Current tariff name (with tariff code, type, validity period as attributes)
+- Current tariff name (with tariff code, type, unit rate, standing charge, and validity period as attributes)
 - Current unit rate (GBP/kWh, converted from pence)
 
 Electricity meters add:
