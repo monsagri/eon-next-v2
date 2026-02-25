@@ -67,6 +67,9 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if success:
                 return api.auth["refresh"]["token"]
             return None
+        except EonNextApiError:
+            _LOGGER.debug("API/connection error during credential validation")
+            raise
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected error during authentication")
             raise
