@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.5.0](https://github.com/monsagri/eon-next-v2/compare/v1.4.0...v1.5.0) (2026-02-25)
+
+
+### Features
+
+* add sidebar dashboard panel and Lovelace card infrastructure ([#20](https://github.com/monsagri/eon-next-v2/issues/20)) ([84c7994](https://github.com/monsagri/eon-next-v2/commit/84c7994e878ced73356219d843e27910a28536c7))
+
+
+### Bug Fixes
+
+* preserve auth tokens on transient network errors ([#19](https://github.com/monsagri/eon-next-v2/issues/19)) ([97f0f9a](https://github.com/monsagri/eon-next-v2/commit/97f0f9ab96bacc14084f1002c823af3a208c319d))
+
 ## [Unreleased]
 
 ### Added
