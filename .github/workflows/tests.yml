@@ -30,7 +30,7 @@ jobs:
         run: python -m compileall custom_components/eon_next
 
       - name: Static type check
-        run: basedpyright -p pyrightconfig.json
+        run: basedpyright -p pyrightconfig.json --pythonpath $(which python)
 
       - name: Run unit and integration tests
         run: pytest -q
