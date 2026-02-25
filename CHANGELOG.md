@@ -28,6 +28,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ### Added
 
+- Current unit rate sensor (`£/kWh`, inc VAT) for electricity and gas meters — compatible with the Energy Dashboard's "use an entity with current price" option
 - Standing charge sensor (daily standing charge inc VAT in GBP) for electricity and gas meters
 - Previous day cost sensor (total daily cost inc VAT in GBP, including consumption and standing charge) for electricity and gas meters, with `cost_period` state attribute indicating which day the cost relates to
 - Configurable historical statistics backfill with conservative defaults, resumable progress persistence, and options-based throttling controls
