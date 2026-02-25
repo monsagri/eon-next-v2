@@ -45,3 +45,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify committed frontend bundles are up to date
+        run: npm run build:check

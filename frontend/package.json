@@ -12,6 +12,7 @@
     "format": "prettier --write 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
     "format:check": "prettier --check 'src/**/*.{ts,css}' 'dev/**/*.{html,js}'",
     "typecheck": "tsc --noEmit",
+    "build:check": "git diff --exit-code -- ../custom_components/eon_next/frontend/entrypoint.js ../custom_components/eon_next/frontend/cards.js",
     "codegen": "python3 ../scripts/generate_ts_api.py",
     "codegen:check": "python3 ../scripts/generate_ts_api.py && git diff --exit-code src/api.generated.ts"
   },
