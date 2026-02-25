@@ -13,6 +13,7 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Daily standing charge sensor (inc VAT) for electricity and gas.
 - Previous day total cost sensor (inc VAT) for electricity and gas.
 - Current unit rate sensor (£/kWh, inc VAT) for electricity and gas — compatible with the Energy Dashboard's "use an entity with current price" option.
+- Current tariff name sensor with agreement metadata (code, type, validity period) and published unit rate.
 - EV smart charging sensors (when SmartFlex devices are available):
   - Smart charging schedule status.
   - Next charge start/end.

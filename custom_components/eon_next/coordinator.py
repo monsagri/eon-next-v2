@@ -50,6 +50,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
         errors: list[str] = []
 
         for account in self.api.accounts:
+            account_tariffs = await self._fetch_tariff_data(account)
+
             for meter in account.meters:
                 meter_key = meter.serial
                 try:
@@ -103,6 +105,24 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["previous_day_cost"] = cost_data["total_cost"]
                         meter_data["cost_period"] = cost_data["period"]
                         meter_data["unit_rate"] = cost_data.get("unit_rate")
+
+                    tariff = (
+                        account_tariffs.get(meter.supply_point_id)
+                        if account_tariffs
+                        else None
+                    )
+                    if tariff:
+                        meter_data["tariff_name"] = tariff.get("tariff_name")
+                        meter_data["tariff_code"] = tariff.get("tariff_code")
+                        meter_data["tariff_type"] = tariff.get("tariff_type")
+                        meter_data["tariff_unit_rate"] = self._pence_to_pounds(
+                            tariff.get("unit_rate")
+                        )
+                        meter_data["tariff_standing_charge"] = self._pence_to_pounds(
+                            tariff.get("standing_charge")
+                        )
+                        meter_data["tariff_valid_from"] = tariff.get("valid_from")
+                        meter_data["tariff_valid_to"] = tariff.get("valid_to")
 
                     data[meter_key] = meter_data
 
@@ -163,6 +183,22 @@ class EonNextCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Failed to fetch any data: {'; '.join(errors)}")
 
         return data
+
+    async def _fetch_tariff_data(self, account) -> dict[str, dict[str, Any]] | None:
+        """Fetch tariff agreement data for all meter points on an account."""
+        try:
+            return await self.api.async_get_tariff_data(account.account_number)
+        except EonNextAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"Authentication failed fetching tariffs: {err}"
+            ) from err
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.debug(
+                "Tariff data unavailable for account %s: %s",
+                account.account_number,
+                err,
+            )
+            return None
 
     async def _fetch_daily_costs(self, meter) -> dict[str, Any] | None:
         """Fetch daily cost data for the most recent complete day."""
@@ -243,6 +279,16 @@ class EonNextCoordinator(DataUpdateCoordinator):
             )
 
         return None
+
+    @staticmethod
+    def _pence_to_pounds(value: Any) -> float | None:
+        """Convert a pence value to pounds, returning None on failure."""
+        if value is None:
+            return None
+        try:
+            return round(float(value) / 100.0, 4)
+        except (TypeError, ValueError):
+            return None
 
     @staticmethod
     def _aggregate_daily_consumption(

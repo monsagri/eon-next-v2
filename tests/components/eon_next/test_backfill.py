@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -18,6 +18,17 @@ from custom_components.eon_next.const import (
     CONF_BACKFILL_REBUILD_STATISTICS,
     CONF_BACKFILL_REQUESTS_PER_RUN,
 )
+
+# Dynamic reference dates — keep tests valid regardless of when they run.
+_REF_DT = datetime.now(tz=timezone.utc).replace(
+    hour=0, minute=0, second=0, microsecond=0,
+)
+_REF_DATE = _REF_DT.date()
+_REF_DATE_ISO = _REF_DATE.isoformat()
+_REF_PREV_ISO = (_REF_DATE - timedelta(days=1)).isoformat()
+_REF_NEXT_ISO = (_REF_DATE + timedelta(days=1)).isoformat()
+_REF_PLUS2_ISO = (_REF_DATE + timedelta(days=2)).isoformat()
+_LOOKBACK_START_ISO = (_REF_DATE - timedelta(days=9)).isoformat()  # 10-day lookback
 
 
 def _meter(serial: str, meter_type: str = "electricity") -> SimpleNamespace:
@@ -70,8 +81,8 @@ def test_get_status_running_and_completed() -> None:
         "rebuild_done": True,
         "lookback_days": 3650,
         "meters": {
-            "m1": {"next_start": "2026-01-03", "done": False},
-            "m2": {"next_start": "2026-01-02", "done": True},
+            "m1": {"next_start": _REF_NEXT_ISO, "done": False},
+            "m2": {"next_start": _REF_DATE_ISO, "done": True},
         },
     }
 
@@ -79,10 +90,10 @@ def test_get_status_running_and_completed() -> None:
     assert status["state"] == "running"
     assert status["completed_meters"] == 1
     assert status["pending_meters"] == 1
-    assert status["next_start_date"] == "2026-01-03"
+    assert status["next_start_date"] == _REF_NEXT_ISO
 
     manager._state["meters"]["m1"]["done"] = True
-    manager._state["meters"]["m1"]["next_start"] = "2026-01-04"
+    manager._state["meters"]["m1"]["next_start"] = _REF_PLUS2_ISO
     status = manager.get_status()
     assert status["state"] == "completed"
     assert status["pending_meters"] == 0
@@ -108,15 +119,15 @@ async def test_initialize_or_reset_progress_uses_lookback(monkeypatch) -> None:
     monkeypatch.setattr(
         backfill_module.dt_util,
         "now",
-        lambda: datetime(2026, 1, 10, tzinfo=timezone.utc),
+        lambda: _REF_DT,
     )
 
     await manager._initialize_or_reset_progress(manager._eligible_meters())
 
     assert manager._state["initialized"] is True
     assert manager._state["lookback_days"] == 10
-    assert manager._state["meters"]["m1"]["next_start"] == "2026-01-01"
-    assert manager._state["meters"]["m2"]["next_start"] == "2026-01-01"
+    assert manager._state["meters"]["m1"]["next_start"] == _LOOKBACK_START_ISO
+    assert manager._state["meters"]["m2"]["next_start"] == _LOOKBACK_START_ISO
 
 
 @pytest.mark.asyncio
@@ -133,7 +144,7 @@ async def test_clear_existing_statistics_without_rebuild_marks_done() -> None:
         "initialized": True,
         "rebuild_done": False,
         "lookback_days": 3650,
-        "meters": {"m1": {"next_start": "2026-01-01", "done": False}},
+        "meters": {"m1": {"next_start": _REF_DATE_ISO, "done": False}},
     }
     manager._save_state = AsyncMock()  # type: ignore[method-assign]
 
@@ -160,11 +171,11 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
         "initialized": True,
         "rebuild_done": True,
         "lookback_days": 3650,
-        "meters": {"m1": {"next_start": "2026-01-01", "done": False}},
+        "meters": {"m1": {"next_start": _REF_DATE_ISO, "done": False}},
     }
     manager._save_state = AsyncMock()  # type: ignore[method-assign]
     manager.api.async_get_consumption_data_by_mpxn_range = AsyncMock(  # type: ignore[attr-defined]
-        return_value=[{"interval_start": "2026-01-01", "consumption": 1.5}]
+        return_value=[{"interval_start": _REF_DATE_ISO, "consumption": 1.5}]
     )
     import_mock = AsyncMock()
     monkeypatch.setattr(
@@ -175,14 +186,14 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
     monkeypatch.setattr(
         backfill_module.dt_util,
         "now",
-        lambda: datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+        lambda: _REF_DT.replace(hour=12),
     )
 
     await manager._run_backfill_cycle()
 
     manager.api.async_get_consumption_data_by_mpxn_range.assert_awaited_once()
     import_mock.assert_awaited_once()
-    assert manager._state["meters"]["m1"]["next_start"] == "2026-01-02"
+    assert manager._state["meters"]["m1"]["next_start"] == _REF_NEXT_ISO
     assert manager._state["meters"]["m1"]["done"] is True
     # paused while pending, resumed when completed
     assert manager.coordinator.set_statistics_import_enabled.call_args_list[-1].args == (True,)

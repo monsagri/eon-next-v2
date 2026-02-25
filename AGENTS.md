@@ -45,6 +45,12 @@ If instructions conflict and precedence does not resolve it, ask the user before
   - Do not merge changes that leave these versions drifted.
 - For user-visible behavior changes, update both `README.md` and `CHANGELOG.md` in the same change before marking work complete.
 
+## Pre-Push Code Review
+
+**Before pushing any changes**, agents must run the `/review` command (defined in `.claude/commands/review.md`). This performs an automated code review covering HA integration conventions, HACS metadata, sensor semantics, security, and documentation completeness. Do not push if the review reports blocking issues.
+
+For agents that cannot invoke `/review` directly, follow the review checklist in `docs/ai/checklist.md` and run the validation commands below manually.
+
 ## Validation Baseline
 
 Run before claiming completion on code changes:
@@ -52,6 +58,7 @@ Run before claiming completion on code changes:
 ```bash
 python -m compileall custom_components/eon_next
 basedpyright -p pyrightconfig.json
+python3 .github/scripts/check_release_metadata.py
 ```
 
 Also ensure CI-relevant constraints still hold:
@@ -68,3 +75,7 @@ The following files are adapters that should mirror this guidance instead of cre
 - `CLAUDE.md`
 - `.cursor/rules/00-project.mdc`
 - `.github/copilot-instructions.md`
+
+## Slash Commands
+
+- `/review` (`.claude/commands/review.md`): Full code review against HA/HACS conventions. **Must be run before pushing.**

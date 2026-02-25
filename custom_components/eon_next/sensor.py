@@ -56,6 +56,7 @@ async def async_setup_entry(
             entities.append(StandingChargeSensor(coordinator, meter))
             entities.append(PreviousDayCostSensor(coordinator, meter))
             entities.append(CurrentUnitRateSensor(coordinator, meter))
+            entities.append(CurrentTariffSensor(coordinator, meter))
 
         for charger in account.ev_chargers:
             entities.append(SmartChargingScheduleSensor(coordinator, charger))
@@ -288,6 +289,38 @@ class CurrentUnitRateSensor(EonNextSensorBase):
     def native_value(self):
         data = self._meter_data
         return data.get("unit_rate") if data else None
+
+
+class CurrentTariffSensor(EonNextSensorBase):
+    """Current active tariff name for a meter point."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Current Tariff"
+        self._attr_icon = "mdi:tag-text-outline"
+        self._attr_unique_id = f"{meter.serial}__current_tariff"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("tariff_name") if data else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        attrs: dict[str, Any] = {}
+        for key in (
+            "tariff_code",
+            "tariff_type",
+            "tariff_unit_rate",
+            "tariff_standing_charge",
+            "tariff_valid_from",
+            "tariff_valid_to",
+        ):
+            val = data.get(key)
+            if val is not None and val != "":
+                attrs[key] = val
+        return attrs
 
 
 class SmartChargingScheduleSensor(EonNextSensorBase):

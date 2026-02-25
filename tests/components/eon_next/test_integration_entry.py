@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from dataclasses import dataclass, field
+import datetime
 import logging
 from typing import Any
 from unittest.mock import AsyncMock, patch
@@ -241,7 +242,7 @@ async def test_status_sensor_updates_when_backfill_state_changes(
         "lookback_days": 3650,
         "meters": {
             "electric-meter-1": {
-                "next_start": "2026-01-01",
+                "next_start": datetime.date.today().isoformat(),
                 "done": True,
             }
         },

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+import datetime
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -10,23 +10,28 @@ import pytest
 
 from custom_components.eon_next.eonnext import EonNext
 
+# Dynamic reference dates so tests remain valid regardless of when they run.
+_TODAY = datetime.date.today()
+_YESTERDAY = (_TODAY - datetime.timedelta(days=1)).isoformat()
+_TWO_DAYS_AGO = (_TODAY - datetime.timedelta(days=2)).isoformat()
+
 
 def test_normalize_graphql_consumption_items() -> None:
     """GraphQL consumption items are normalized into interval/consumption pairs."""
     items = [
         {
-            "period": "2026-02-20",
+            "period": _TWO_DAYS_AGO,
             "data": {"costs": [{"consumption": "1.25"}, {"consumption": 0.75}]},
         },
         {
-            "period": "2026-02-21",
+            "period": _YESTERDAY,
             "data": {"costs": [{"consumption": None}, {"consumption": "bad"}]},
         },
         "ignore",
     ]
 
     assert EonNext._normalize_graphql_consumption_items(items) == [
-        {"interval_start": "2026-02-20", "consumption": 2.0}
+        {"interval_start": _TWO_DAYS_AGO, "consumption": 2.0}
     ]
 
 
@@ -35,17 +40,17 @@ async def test_async_get_consumption_data_by_mpxn_delegates_to_range() -> None:
     """The days-based method delegates to range-based fetch with expected dates."""
     api = EonNext()
     api.async_get_consumption_data_by_mpxn_range = AsyncMock(  # type: ignore[method-assign]
-        return_value=[{"interval_start": "2026-02-24", "consumption": 1.0}]
+        return_value=[{"interval_start": _YESTERDAY, "consumption": 1.0}]
     )
 
     result = await api.async_get_consumption_data_by_mpxn("1234567890", days=7)
 
-    assert result == [{"interval_start": "2026-02-24", "consumption": 1.0}]
+    assert result == [{"interval_start": _YESTERDAY, "consumption": 1.0}]
     api.async_get_consumption_data_by_mpxn_range.assert_awaited_once()
     args = api.async_get_consumption_data_by_mpxn_range.await_args.args
     assert args[0] == "1234567890"
-    assert isinstance(args[1], date)
-    assert isinstance(args[2], date)
+    assert isinstance(args[1], datetime.date)
+    assert isinstance(args[2], datetime.date)
     assert (args[2] - args[1]).days == 6
 
 
@@ -56,9 +61,11 @@ def _make_daily_cost_graphql_response(
     costs: list[dict[str, Any]],
     standing_charge_inc_vat: float | None = 30.0,
     total_charge_inc_vat: float | None = 150.0,
-    period: str = "2026-02-24",
+    period: str | None = None,
 ) -> dict[str, Any]:
     """Build a mock GraphQL response for consumptionDataByMpxn."""
+    if period is None:
+        period = _YESTERDAY
     return {
         "data": {
             "consumptionDataByMpxn": {

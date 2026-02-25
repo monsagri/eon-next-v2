@@ -34,6 +34,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 - Configurable historical statistics backfill with conservative defaults, resumable progress persistence, and options-based throttling controls
 - Date-range GraphQL consumption fetch support to process historical backfill in small day-based chunks
 - Diagnostic `Historical Backfill Status` sensor with progress attributes (enabled, completed/pending meters, next backfill date)
+- Current tariff sensor showing the active tariff display name per meter point, with `tariff_code`, `tariff_type`, `tariff_unit_rate`, `tariff_standing_charge`, `tariff_valid_from`, and `tariff_valid_to` as state attributes; supports standard, prepay, and half-hourly tariff types
 
 ### Changed
 
