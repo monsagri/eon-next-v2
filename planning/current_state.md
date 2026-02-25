@@ -8,8 +8,9 @@ Scope: Implemented capabilities in this repository (`eon-next-v2`)
 The integration currently provides cloud-polled monitoring for EON Next accounts through Home Assistant `sensor` entities.
 
 - Platform support: `sensor` only
+- Frontend: sidebar panel + Lovelace card(s)
 - Services exposed: none
-- Options flow: backfill configuration
+- Options flow: panel visibility, backfill configuration
 - Default polling interval: 30 minutes
 - Auth: email/password with refresh token persistence
 
@@ -19,7 +20,7 @@ The integration currently provides cloud-polled monitoring for EON Next accounts
 - Re-auth flow for credential refresh
 - Multiple account support (all discovered accounts are loaded)
 - Refresh token persistence to reduce full re-login frequency
-- Options flow for historical backfill configuration
+- Options flow for panel visibility and historical backfill configuration
 
 ## Implemented Sensor Features
 
@@ -64,6 +65,13 @@ Gas meters add:
 - External statistics import for Energy Dashboard
 - Resilience: reuses previous coordinator data on transient update failures
 - Resilience: raises re-auth when auth failure is detected
+
+## Implemented Frontend Features
+
+- Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow)
+- WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`
+- Lovelace card: `eon-next-summary-card` auto-registered as a Lovelace resource (storage mode)
+- Panel and cards share compiled JS bundles served via `async_register_static_paths`
 
 ## Current Gaps (Not Yet Implemented)
 

@@ -6,7 +6,11 @@
     ],
     "config_flow": true,
     "dependencies": [
-        "recorder"
+        "recorder",
+        "http",
+        "frontend",
+        "panel_custom",
+        "lovelace"
     ],
     "documentation": "https://github.com/monsagri/eon-next-v2",
     "integration_type": "hub",

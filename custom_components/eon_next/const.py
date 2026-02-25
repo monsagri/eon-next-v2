@@ -1,9 +1,27 @@
 """Constants for the Eon Next integration."""
 
+import json
+import pathlib
+
 DOMAIN = "eon_next"
+INTEGRATION_VERSION: str = json.loads(
+    (pathlib.Path(__file__).parent / "manifest.json").read_text()
+)["version"]
+
+# Authentication
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_REFRESH_TOKEN = "refresh_token"
+
+# Frontend / dashboard
+CONF_SHOW_PANEL = "show_panel"
+DEFAULT_SHOW_PANEL = True
+PANEL_TITLE = "EON Next"
+PANEL_ICON = "mdi:lightning-bolt"
+PANEL_URL = f"/api/{DOMAIN}/panel"
+CARDS_URL = f"/{DOMAIN}/cards"
+
+# Backfill
 CONF_BACKFILL_ENABLED = "backfill_enabled"
 CONF_BACKFILL_LOOKBACK_DAYS = "backfill_lookback_days"
 CONF_BACKFILL_CHUNK_DAYS = "backfill_chunk_days"

@@ -20,6 +20,8 @@ Custom integration for E.ON Next accounts in Home Assistant.
   - Second charge start/end.
 - Home Assistant re-auth support for password changes.
 - Diagnostic status sensor for historical backfill progress.
+- **EON Next Dashboard**: A sidebar panel providing a single-pane energy overview (consumption, costs, meter readings, EV schedule).
+- **Lovelace cards**: Embeddable cards (starting with `eon-next-summary-card`) for power users to add to their own dashboards.
 
 ## Requirements
 
@@ -68,6 +70,27 @@ Conservative defaults:
 - Requests per run: `1`.
 - Run interval: `180` minutes.
 - Delay between requests: `300` seconds.
+
+## Energy Dashboard Panel
+
+After installation, an **EON Next** entry appears in the Home Assistant sidebar. It provides a zero-config overview of your meters, consumption, costs, and EV charging status.
+
+- To hide the sidebar entry, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
+- The panel uses data already fetched by the integration's coordinator — no extra API calls.
+
+### Lovelace Cards
+
+The integration also registers Lovelace cards that power users can add to any dashboard:
+
+- **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
+
+Cards appear in the Lovelace card picker automatically (storage mode). For YAML-mode dashboards, add the resource manually:
+
+```yaml
+resources:
+  - url: /eon_next/cards.js
+    type: module
+```
 
 ## Development And Releases
 

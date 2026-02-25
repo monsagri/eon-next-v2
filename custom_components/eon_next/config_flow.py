@@ -24,6 +24,7 @@ from .const import (
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_REFRESH_TOKEN,
+    CONF_SHOW_PANEL,
     DEFAULT_BACKFILL_CHUNK_DAYS,
     DEFAULT_BACKFILL_DELAY_SECONDS,
     DEFAULT_BACKFILL_ENABLED,
@@ -31,6 +32,7 @@ from .const import (
     DEFAULT_BACKFILL_REBUILD_STATISTICS,
     DEFAULT_BACKFILL_REQUESTS_PER_RUN,
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
+    DEFAULT_SHOW_PANEL,
     DOMAIN,
 )
 from .eonnext import EonNext
@@ -181,6 +183,12 @@ class EonNextOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONF_SHOW_PANEL,
+                        default=options.get(
+                            CONF_SHOW_PANEL, DEFAULT_SHOW_PANEL
+                        ),
+                    ): bool,
                     vol.Required(
                         CONF_BACKFILL_ENABLED,
                         default=options.get(

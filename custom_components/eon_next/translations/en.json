@@ -30,6 +30,7 @@
         "step": {
             "init": {
                 "data": {
+                    "show_panel": "Show EON Next dashboard in sidebar",
                     "backfill_enabled": "Enable historical statistics backfill",
                     "backfill_rebuild_statistics": "Clear and rebuild statistics before backfill (recommended for full history)",
                     "backfill_lookback_days": "History lookback window (days)",
@@ -38,8 +39,8 @@
                     "backfill_run_interval_minutes": "Minutes between backfill runs",
                     "backfill_delay_seconds": "Delay between backfill requests (seconds)"
                 },
-                "description": "Backfill imports historical consumption slowly to avoid API/recorder load. Conservative defaults are recommended.",
-                "title": "Historical Backfill"
+                "description": "Configure dashboard visibility and backfill settings. Backfill imports historical consumption slowly to avoid API/recorder load.",
+                "title": "EON Next Options"
             }
         }
     }

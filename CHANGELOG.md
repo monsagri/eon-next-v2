@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Added
+
+- Sidebar dashboard panel: auto-registers an EON Next energy overview in the HA sidebar showing consumption, costs, meter readings, and EV charging status
+- Lovelace card infrastructure: `eon-next-summary-card` auto-registered in the card picker for power users to embed on custom dashboards
+- WebSocket API (`eon_next/version`, `eon_next/dashboard_summary`) shared by both the panel and cards
+- Options flow toggle to show or hide the sidebar panel (default: enabled)
+
 ## [1.3.1](https://github.com/monsagri/eon-next-v2/compare/v1.3.0...v1.3.1) (2026-02-25)
 
 
