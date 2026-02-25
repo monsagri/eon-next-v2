@@ -80,6 +80,7 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 - EV charging schedule timestamps are displayed in a readable local date/time format.
+- Panel and card text colors adapt to Home Assistant theme variables for improved dark-mode readability.
 
 ### Lovelace Cards
 
@@ -105,3 +106,8 @@ Maintainer and release workflow is documented in [DEVELOPMENT.md](DEVELOPMENT.md
 Contributors should use Conventional Commit messages (for example, `feat: ...`, `fix: ...`) and matching pull request titles because squash merges use PR titles as final commit subjects.
 
 Releases use a draft release-PR flow (`release-please`) so merges to `main` prepare release metadata, and maintainers explicitly approve/merge the release PR to publish.
+
+For local development consistency:
+
+- Node.js version is pinned in `.nvmrc` (`24.13.1`) for `nvm use`.
+- Python version is pinned in `.python-version` (`3.13`) for pyenv/asdf-compatible tooling.

@@ -16,6 +16,11 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 - Frontend CI workflow for lint, format check, type check, and build
 - Derived "Today's cost" rows in panel and summary card, calculated as `(today's kWh * unit rate) + daily standing charge`
 - EV next-charge schedule timestamps now render in a human-friendly local date/time format
+- Added runtime pinning files for contributors: `.nvmrc` (Node `24.13.1`) and `.python-version` (Python `3.13`)
+
+### Fixed
+
+- Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 
