@@ -1,12 +1,7 @@
 """Constants for the Eon Next integration."""
 
-import json
-import pathlib
-
 DOMAIN = "eon_next"
-INTEGRATION_VERSION: str = json.loads(
-    (pathlib.Path(__file__).parent / "manifest.json").read_text()
-)["version"]
+INTEGRATION_VERSION = "1.3.1"
 
 # Authentication
 CONF_EMAIL = "email"
