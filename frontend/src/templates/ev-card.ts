@@ -1,5 +1,6 @@
 import { html, nothing } from 'lit'
 import type { EvChargerSummary } from '../types'
+import { formatDateTimeRange } from '../utils/date'
 
 /** Render an EV charger card (used by the panel grid). */
 export const renderEvCard = (ev: EvChargerSummary) => html`
@@ -17,7 +18,7 @@ export const renderEvCard = (ev: EvChargerSummary) => html`
     ${ev.next_charge_start
       ? html`<div class="meter-row">
           <span class="label">Next charge</span>
-          <span>${ev.next_charge_start} → ${ev.next_charge_end}</span>
+          <span>${formatDateTimeRange(ev.next_charge_start, ev.next_charge_end)}</span>
         </div>`
       : nothing}
   </div>
