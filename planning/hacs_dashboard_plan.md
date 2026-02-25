@@ -72,6 +72,10 @@ from homeassistant.components.http import StaticPathConfig
 
 PANEL_URL = f"/api/{DOMAIN}/panel"
 
+# Guard: only register once (multiple config entries share one panel)
+if DOMAIN in hass.data.get("frontend_panels", {}):
+    return
+
 # Serve the compiled frontend JS file
 panel_path = os.path.join(os.path.dirname(__file__), "frontend", "entrypoint.js")
 await hass.http.async_register_static_paths([
@@ -91,11 +95,16 @@ await panel_custom.async_register_panel(
 )
 ```
 
-**Panel cleanup on unload**:
+**Panel cleanup on unload** (only when last entry is removed):
 ```python
 async def async_unload_entry(hass, entry):
     # ... existing unload logic ...
-    frontend.async_remove_panel(hass, DOMAIN)
+    # Only remove panel if no other config entries remain
+    if hass.data.get("frontend_panels", {}).get(DOMAIN):
+        remaining = [e for e in hass.config_entries.async_entries(DOMAIN)
+                     if e.entry_id != entry.entry_id]
+        if not remaining:
+            frontend.async_remove_panel(hass, DOMAIN)
 ```
 
 **Panel custom element** (Lit):
