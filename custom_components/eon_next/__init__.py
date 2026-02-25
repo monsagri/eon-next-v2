@@ -35,42 +35,52 @@ _LOGGER = logging.getLogger(__name__)
 
 async def _async_ensure_card_resource(hass: HomeAssistant) -> None:
     """Register or update the Lovelace card resource (storage mode only)."""
-    lovelace = hass.data.get("lovelace")
-    if not lovelace or lovelace.mode != "storage":
-        return
+    try:
+        lovelace = hass.data.get("lovelace")
+        if not lovelace or lovelace.mode != "storage":
+            return
 
-    resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
-    existing = [
-        r
-        for r in lovelace.resources.async_items()
-        if r["url"].startswith(CARDS_URL)
-    ]
-    if not existing:
-        await lovelace.resources.async_create_item(
-            {"res_type": "module", "url": resource_url}
+        resource_url = f"{CARDS_URL}?v={INTEGRATION_VERSION}"
+        existing = [
+            r
+            for r in lovelace.resources.async_items()
+            if r["url"].startswith(CARDS_URL)
+        ]
+        if not existing:
+            await lovelace.resources.async_create_item(
+                {"res_type": "module", "url": resource_url}
+            )
+        else:
+            for r in existing:
+                if f"v={INTEGRATION_VERSION}" not in r["url"]:
+                    await lovelace.resources.async_update_item(
+                        r["id"],
+                        {"res_type": "module", "url": resource_url},
+                    )
+    except AttributeError:
+        _LOGGER.debug(
+            "Lovelace storage API unavailable; skipping card resource registration"
         )
-    else:
-        for r in existing:
-            if f"v={INTEGRATION_VERSION}" not in r["url"]:
-                await lovelace.resources.async_update_item(
-                    r["id"],
-                    {"res_type": "module", "url": resource_url},
-                )
 
 
 async def _async_remove_card_resource(hass: HomeAssistant) -> None:
     """Remove the Lovelace card resource (storage mode only)."""
-    lovelace = hass.data.get("lovelace")
-    if not lovelace or lovelace.mode != "storage":
-        return
+    try:
+        lovelace = hass.data.get("lovelace")
+        if not lovelace or lovelace.mode != "storage":
+            return
 
-    existing = [
-        r
-        for r in lovelace.resources.async_items()
-        if r["url"].startswith(CARDS_URL)
-    ]
-    for r in existing:
-        await lovelace.resources.async_delete_item(r["id"])
+        existing = [
+            r
+            for r in lovelace.resources.async_items()
+            if r["url"].startswith(CARDS_URL)
+        ]
+        for r in existing:
+            await lovelace.resources.async_delete_item(r["id"])
+    except AttributeError:
+        _LOGGER.debug(
+            "Lovelace storage API unavailable; skipping card resource removal"
+        )
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -92,6 +102,41 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     async_setup_websocket(hass)
 
     return True
+
+
+async def _async_reconcile_frontend(
+    hass: HomeAssistant,
+    exclude_entry_id: str | None = None,
+) -> None:
+    """Reconcile panel and card resource based on all loaded entries.
+
+    Call after setup or unload so that the panel/card state reflects the
+    union of every loaded entry's options.  ``exclude_entry_id`` is used
+    during unload to ignore the entry that is about to be removed.
+    """
+    from .panel import async_register_panel, async_unregister_panel  # noqa: E402
+
+    entries = hass.config_entries.async_entries(DOMAIN)
+
+    any_panel = False
+    any_card = False
+    for e in entries:
+        if e.entry_id == exclude_entry_id:
+            continue
+        if getattr(e, "runtime_data", None) is None:
+            continue
+        any_panel = any_panel or e.options.get(CONF_SHOW_PANEL, DEFAULT_SHOW_PANEL)
+        any_card = any_card or e.options.get(CONF_SHOW_CARD, DEFAULT_SHOW_CARD)
+
+    if any_panel:
+        await async_register_panel(hass)
+    else:
+        await async_unregister_panel(hass)
+
+    if any_card:
+        await _async_ensure_card_resource(hass)
+    else:
+        await _async_remove_card_resource(hass)
 
 
 async def _async_update_listener(
@@ -168,17 +213,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Register the sidebar panel if the user has it enabled
-    if entry.options.get(CONF_SHOW_PANEL, DEFAULT_SHOW_PANEL):
-        from .panel import async_register_panel  # noqa: E402
-
-        await async_register_panel(hass)
-
-    # Register / remove the Lovelace card resource based on the user option
-    if entry.options.get(CONF_SHOW_CARD, DEFAULT_SHOW_CARD):
-        await _async_ensure_card_resource(hass)
-    else:
-        await _async_remove_card_resource(hass)
+    await _async_reconcile_frontend(hass)
 
     return True
 
@@ -190,16 +225,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> 
         await entry.runtime_data.backfill.async_stop()
         await entry.runtime_data.api.async_close()
 
-        # Clean up integration-wide resources when the last entry is unloaded
-        remaining = [
-            e
-            for e in hass.config_entries.async_entries(DOMAIN)
-            if e.entry_id != entry.entry_id
-        ]
-        if not remaining:
-            from .panel import async_unregister_panel  # noqa: E402
-
-            await async_unregister_panel(hass)
-            await _async_remove_card_resource(hass)
+        # Reconcile frontend, excluding the entry being unloaded
+        await _async_reconcile_frontend(hass, exclude_entry_id=entry.entry_id)
 
     return unload_ok

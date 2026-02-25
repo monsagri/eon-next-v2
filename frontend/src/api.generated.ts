@@ -14,8 +14,8 @@ export interface VersionResponse {
 }
 
 export interface MeterSummary {
-  serial: string
-  type: string
+  serial: string | null
+  type: string | null
   latest_reading: number | null
   latest_reading_date: string | null
   daily_consumption: number | null
@@ -26,8 +26,8 @@ export interface MeterSummary {
 }
 
 export interface EvChargerSummary {
-  device_id: string
-  serial: string
+  device_id: string | null
+  serial: string | null
   schedule_slots: number
   next_charge_start: string | null
   next_charge_end: string | null

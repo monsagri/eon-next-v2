@@ -28,8 +28,8 @@ class VersionResponse:
 class MeterSummary:
     """Per-meter data included in the dashboard summary."""
 
-    serial: str
-    type: str
+    serial: str | None
+    type: str | None
     latest_reading: float | None
     latest_reading_date: str | None
     daily_consumption: float | None
@@ -43,8 +43,8 @@ class MeterSummary:
 class EvChargerSummary:
     """Per-charger data included in the dashboard summary."""
 
-    device_id: str
-    serial: str
+    device_id: str | None
+    serial: str | None
     schedule_slots: int
     next_charge_start: str | None
     next_charge_end: str | None
