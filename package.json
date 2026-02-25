@@ -16,14 +16,14 @@
   },
   "lint-staged": {
     "frontend/src/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
+      "npx --prefix frontend eslint --config frontend/eslint.config.js --fix",
+      "npx --prefix frontend prettier --write"
     ],
     "frontend/src/**/*.css": [
-      "prettier --write"
+      "npx --prefix frontend prettier --write"
     ],
     "frontend/dev/**/*.{html,js}": [
-      "prettier --write"
+      "npx --prefix frontend prettier --write"
     ]
   }
 }

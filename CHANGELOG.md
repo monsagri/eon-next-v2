@@ -21,6 +21,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Fixed
 
 - Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
+- Frontend websocket data controller now restores loading state during reconnect/manual refresh instead of continuing to show stale data
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 

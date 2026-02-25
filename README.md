@@ -81,6 +81,7 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 - EV charging schedule timestamps are displayed in a readable local date/time format.
 - Panel and card text colors adapt to Home Assistant theme variables for improved dark-mode readability.
+- Panel and card components now return to a loading state during reconnect/manual refresh cycles instead of showing stale values.
 
 ### Lovelace Cards
 

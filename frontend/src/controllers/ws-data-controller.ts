@@ -43,9 +43,12 @@ export class WsDataController<T> implements ReactiveController {
 
   private async _fetch(hass: HomeAssistant): Promise<void> {
     this._fetched = true
+    this.loading = true
+    this.error = null
+    this._host.requestUpdate()
+
     try {
       this.data = await this._fetcher(hass)
-      this.error = null
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err)
     } finally {
@@ -57,5 +60,6 @@ export class WsDataController<T> implements ReactiveController {
   hostDisconnected(): void {
     // Allow re-fetch if the element is reconnected.
     this._fetched = false
+    this.loading = true
   }
 }
