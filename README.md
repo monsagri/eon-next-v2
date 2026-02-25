@@ -78,12 +78,14 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 
 - To hide the sidebar entry, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
+- "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 
 ### Lovelace Cards
 
 The integration ships Lovelace cards that power users can add to any dashboard:
 
 - **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
+- Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
 
 To enable the card, go to **Settings -> Devices & Services -> Eon Next -> Configure** and enable "Register EON Next summary card for Lovelace dashboards". The card will then appear in the Lovelace card picker (storage mode).
 

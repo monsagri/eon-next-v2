@@ -5,6 +5,10 @@ import type { MeterSummary } from '../types'
 export const renderMeterCard = (meter: MeterSummary) => {
   const icon = meter.type === 'gas' ? 'mdi:fire' : 'mdi:flash'
   const label = meter.type === 'gas' ? 'Gas' : 'Electricity'
+  const todayCost =
+    meter.daily_consumption != null && meter.unit_rate != null
+      ? meter.daily_consumption * meter.unit_rate + (meter.standing_charge ?? 0)
+      : null
 
   return html`
     <div class="card">
@@ -19,6 +23,12 @@ export const renderMeterCard = (meter: MeterSummary) => {
             <span class="value"
               >${meter.daily_consumption}<span class="unit">kWh</span></span
             >
+          </div>`
+        : nothing}
+      ${todayCost != null
+        ? html`<div class="meter-row">
+            <span class="label">Today's cost</span>
+            <span class="value">£${todayCost.toFixed(2)}</span>
           </div>`
         : nothing}
       ${meter.latest_reading != null

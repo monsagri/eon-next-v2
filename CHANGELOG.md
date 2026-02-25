@@ -14,6 +14,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 - Options flow toggle to show or hide the sidebar panel (default: enabled)
 - Options flow toggle to register the Lovelace summary card (default: disabled)
 - Frontend CI workflow for lint, format check, type check, and build
+- Derived "Today's cost" rows in panel and summary card, calculated as `(today's kWh * unit rate) + daily standing charge`
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 
