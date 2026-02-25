@@ -22,6 +22,7 @@ from custom_components.eon_next.const import (
     DOMAIN,
 )
 from custom_components.eon_next.coordinator import EonNextCoordinator
+from custom_components.eon_next.eonnext import EonNextApiError
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import recorder as recorder_helper
@@ -276,3 +277,81 @@ async def test_unload_entry_closes_api_client(
 
     assert fake_api.closed is True
     assert entry.state is ConfigEntryState.NOT_LOADED
+
+
+class FakeApiWithApiError(FakeApi):
+    """FakeApi variant that raises EonNextApiError on login calls."""
+
+    def __init__(
+        self,
+        *,
+        refresh_raises: bool = False,
+        password_raises: bool = False,
+    ) -> None:
+        super().__init__(refresh_login_result=False)
+        self._refresh_raises = refresh_raises
+        self._password_raises = password_raises
+
+    async def login_with_refresh_token(self, token: str) -> bool:
+        self.refresh_login_calls.append(token)
+        if self._refresh_raises:
+            raise EonNextApiError("API unreachable")
+        return self.refresh_login_result
+
+    async def login_with_username_and_password(
+        self,
+        username: str,
+        password: str,
+    ) -> bool:
+        self.password_login_calls.append((username, password))
+        if self._password_raises:
+            raise EonNextApiError("API unreachable")
+        return self.password_login_result
+
+
+@pytest.mark.asyncio
+async def test_setup_raises_config_entry_not_ready_on_refresh_api_error(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """EonNextApiError during refresh-token login should result in ConfigEntryNotReady."""
+    del enable_custom_integrations
+    fake_api = FakeApiWithApiError(refresh_raises=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _ensure_recorder(hass)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert fake_api.closed is True
+    assert fake_api.refresh_login_calls == ["refresh-token"]
+    # Password fallback should NOT have been attempted.
+    assert fake_api.password_login_calls == []
+
+
+@pytest.mark.asyncio
+async def test_setup_raises_config_entry_not_ready_on_password_api_error(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """EonNextApiError during password login should result in ConfigEntryNotReady."""
+    del enable_custom_integrations
+    fake_api = FakeApiWithApiError(refresh_raises=False, password_raises=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _ensure_recorder(hass)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert fake_api.closed is True
+    # Refresh token login returned False, so password fallback was attempted.
+    assert fake_api.refresh_login_calls == ["refresh-token"]
+    assert fake_api.password_login_calls == [("user@example.com", "secret")]

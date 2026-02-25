@@ -4,6 +4,7 @@
             "reauth_successful": "Re-authentication was successful"
         },
         "error": {
+            "cannot_connect": "Unable to connect to E.ON Next API",
             "invalid_auth": "Authentication failed",
             "unknown": "An unexpected error occurred"
         },

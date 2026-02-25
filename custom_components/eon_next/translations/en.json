@@ -4,6 +4,7 @@
             "reauth_successful": "Re-authentication was successful"
         },
         "error": {
+            "cannot_connect": "Unable to connect to E.ON Next API",
             "invalid_auth": "Authentication failed",
             "unknown": "An unexpected error occurred"
         },
@@ -31,6 +32,7 @@
             "init": {
                 "data": {
                     "show_panel": "Show EON Next dashboard in sidebar",
+                    "show_card": "Register EON Next summary card for Lovelace dashboards",
                     "backfill_enabled": "Enable historical statistics backfill",
                     "backfill_rebuild_statistics": "Clear and rebuild statistics before backfill (recommended for full history)",
                     "backfill_lookback_days": "History lookback window (days)",

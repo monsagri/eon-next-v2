@@ -19,6 +19,7 @@ Custom integration for E.ON Next accounts in Home Assistant.
   - Next charge start/end.
   - Second charge start/end.
 - Home Assistant re-auth support for password changes.
+- Automatic retry on API outages — transient connectivity failures during login defer setup instead of invalidating stored credentials.
 - Diagnostic status sensor for historical backfill progress.
 - **EON Next Dashboard**: A sidebar panel providing a single-pane energy overview (consumption, costs, meter readings, EV schedule).
 - **Lovelace cards**: Embeddable cards (starting with `eon-next-summary-card`) for power users to add to their own dashboards.

@@ -62,6 +62,31 @@ For user-visible changes, verify:
 - `CHANGELOG.md` has an entry under `## [Unreleased]` describing the change.
 - `planning/current_state.md` is updated if new sensors or capabilities were added.
 
+## Error Handling and Logging Hygiene
+
+Check every changed `except` block for these patterns:
+
+### Broad-except masking expected errors (BLOCKING)
+If a catch-all `except Exception` (or `except BaseException`) re-raises or logs, verify that **expected, typed exceptions** (e.g. `EonNextApiError`, `aiohttp.ClientError`) are caught **before** the broad handler. A broad handler that logs with `_LOGGER.exception(...)` will emit misleading stack traces for errors that are routine and expected.
+
+Required pattern:
+```python
+except SpecificExpectedError:
+    _LOGGER.debug("...")  # expected — debug level, no traceback
+    raise
+except Exception:
+    _LOGGER.exception("Unexpected error ...")  # truly unexpected
+    raise
+```
+
+### Inaccurate log messages / comments
+Log messages and inline comments describing error categories MUST accurately reflect what can trigger them. For example, if an exception can be caused by non-network failures (invalid JSON, unexpected HTTP status), do not label the log/comment as "Network error" — use a broader label like "API error" or include the exception type/message.
+
+Scan changed code for log messages containing words like "network", "connection", "timeout" and verify the caught exception type actually guarantees that category. Flag mismatches as warnings.
+
+### Missing test coverage for error-handling paths
+When a change introduces or modifies an `except` branch that alters control flow (re-raises a different exception, changes state, converts errors), verify that a corresponding test exists. If no test covers the new path, flag it as a warning with a description of what test is needed.
+
 ## Code Quality
 
 - All new public functions MUST have type annotations.

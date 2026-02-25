@@ -15,6 +15,14 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 - Options flow toggle to register the Lovelace summary card (default: disabled)
 - Frontend CI workflow for lint, format check, type check, and build
 
+## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
+
+
+### Features
+
+* add current unit rate sensor for Energy Dashboard cost tracking ([#15](https://github.com/monsagri/eon-next-v2/issues/15)) ([3ce81b8](https://github.com/monsagri/eon-next-v2/commit/3ce81b8f461fa69ea6821e6477b8f3dbfb49fcf8))
+* add tariff agreement sensors with current tariff name and metadata ([#18](https://github.com/monsagri/eon-next-v2/issues/18)) ([add16e4](https://github.com/monsagri/eon-next-v2/commit/add16e4fdb4e26e3999f237e1cadbc6ba101c068))
+
 ## [1.3.1](https://github.com/monsagri/eon-next-v2/compare/v1.3.0...v1.3.1) (2026-02-25)
 
 
