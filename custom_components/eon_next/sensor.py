@@ -280,7 +280,6 @@ class CurrentUnitRateSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Current Unit Rate"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
-        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__current_unit_rate"
         self._attr_suggested_display_precision = 4
