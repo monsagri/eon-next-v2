@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.5.2](https://github.com/monsagri/eon-next-v2/compare/v1.5.1...v1.5.2) (2026-02-26)
+
+
+### Bug Fixes
+
+* add 30-second request timeout to API session ([b6d3a83](https://github.com/monsagri/eon-next-v2/commit/b6d3a83271873dd089c71f7fbaa9c5da55e0211e))
+* revert auth retry and IPv4 fallback that caused connection failures ([b88cc1c](https://github.com/monsagri/eon-next-v2/commit/b88cc1c209e9f7cbe409b4e9989cc8bc88e7e9cc))
+* revert auth retry and IPv4 fallback that caused connection failures ([ff28570](https://github.com/monsagri/eon-next-v2/commit/ff2857016aec8433408a5d8b3f92a5af501e2635))
+
 ## [1.5.1](https://github.com/monsagri/eon-next-v2/compare/v1.5.0...v1.5.1) (2026-02-25)
 
 
