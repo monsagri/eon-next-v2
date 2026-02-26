@@ -10,7 +10,6 @@ from typing import Any
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
 
 from .backfill import EonNextBackfillManager
@@ -184,7 +183,7 @@ async def _async_update_listener(
 
 async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Set up Eon Next from a config entry."""
-    api = EonNext(session=async_get_clientsession(hass))
+    api = EonNext()
     authenticated = False
 
     def _persist_refresh_token(refresh_token: str) -> None:
