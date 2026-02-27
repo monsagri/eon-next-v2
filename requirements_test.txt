@@ -1,8 +1,4 @@
 basedpyright
-fnv-hash-fast
-homeassistant
-psutil-home-assistant
 pytest
 pytest-asyncio
-pytest-homeassistant-custom-component
-tzdata
+pytest-homeassistant-custom-component>=0.13.313
