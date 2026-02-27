@@ -266,9 +266,9 @@ async def _entries_from_rest(
     if not supply_point_id:
         return []
 
-    local_now = dt_util.now()
-    period_to = (local_now + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
-    period_from = (local_now - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
+    today = dt_util.now().date()
+    period_to = f"{(today + timedelta(days=1)).isoformat()}T00:00:00Z"
+    period_from = f"{(today - timedelta(days=days)).isoformat()}T00:00:00Z"
 
     entries: list[ConsumptionHistoryEntry] = []
     try:
