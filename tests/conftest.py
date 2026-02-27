@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 # a ``where()`` returning a path prevents ModuleNotFoundError during
 # component setup while keeping tests lightweight.
 _mock_frontend = MagicMock()
-_mock_frontend.where.return_value = "/dev/null"
+_mock_frontend.where.return_value = Path("/dev/null")
 sys.modules.setdefault("hass_frontend", _mock_frontend)
 
 ROOT = Path(__file__).resolve().parents[1]
