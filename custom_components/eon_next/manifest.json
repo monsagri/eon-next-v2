@@ -3,21 +3,21 @@
     "name": "Eon Next",
     "after_dependencies": [
         "frontend",
-        "panel_custom",
-        "lovelace"
+        "lovelace",
+        "panel_custom"
     ],
     "codeowners": [
         "@monsagri"
     ],
     "config_flow": true,
     "dependencies": [
-        "recorder",
-        "http"
+        "http",
+        "recorder"
     ],
     "documentation": "https://github.com/monsagri/eon-next-v2",
     "integration_type": "hub",
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/monsagri/eon-next-v2/issues",
     "requirements": [],
-    "version": "1.5.2"
+    "version": "1.5.3"
 }

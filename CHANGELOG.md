@@ -13,6 +13,14 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 * new Lovelace cards: `eon-next-consumption-card`, `eon-next-cost-card`, `eon-next-reading-card`
 * panel meter cards now show consumption bar chart, cost summary, and meter reading sections
 
+## [1.5.3](https://github.com/monsagri/eon-next-v2/compare/v1.5.2...v1.5.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* drop invalid state_class from CurrentUnitRateSensor ([249e3c3](https://github.com/monsagri/eon-next-v2/commit/249e3c32e38ab26daf4f96ff931565a3c5ecf6ad))
+* revert manual CHANGELOG entry — release-please generates it ([dd1ed3c](https://github.com/monsagri/eon-next-v2/commit/dd1ed3c4285c67c08309045bbaf0a0961492b163))
+
 ## [1.5.2](https://github.com/monsagri/eon-next-v2/compare/v1.5.1...v1.5.2) (2026-02-26)
 
 
@@ -46,19 +54,24 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Added
 
 - Sidebar dashboard panel: auto-registers an EON Next energy overview in the HA sidebar showing consumption, costs, meter readings, and EV charging status
-- Lovelace card: `eon-next-summary-card` for embedding on custom dashboards, opt-in via integration options
+- Lovelace card: `eon-next-summary-card` for embedding on custom dashboards
 - WebSocket API (`eon_next/version`, `eon_next/dashboard_summary`) shared by both the panel and cards
 - Options flow toggle to show or hide the sidebar panel (default: enabled)
-- Options flow toggle to register the Lovelace summary card (default: disabled)
+- Options flow toggle to register the Lovelace summary card (default: enabled)
 - Frontend CI workflow for lint, format check, type check, and build
 - Derived "Today's cost" rows in panel and summary card, calculated as `(today's kWh * unit rate) + daily standing charge`
 - EV next-charge schedule timestamps now render in a human-friendly local date/time format
 - Added runtime pinning files for contributors: `.nvmrc` (Node `24.13.1`) and `.python-version` (Python `3.13`)
 
+### Changed
+
+- Dashboard panel and Lovelace summary card are now both enabled by default on fresh installs — no manual opt-in required
+
 ### Fixed
 
 - Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
 - Frontend websocket data controller now restores loading state during reconnect/manual refresh instead of continuing to show stale data
+- Fixed `hass_frontend` mock in test harness to return a `Path` object (not a string) so the HA frontend component can resolve static paths correctly
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 

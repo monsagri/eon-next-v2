@@ -27,7 +27,7 @@ Custom integration for E.ON Next accounts in Home Assistant.
 
 ## Requirements
 
-- Home Assistant `2024.4.0` or newer.
+- Home Assistant `2024.7.0` or newer.
 - An active E.ON Next account.
 
 ## Install With HACS (Recommended)
@@ -77,7 +77,7 @@ Conservative defaults:
 
 After installation, an **EON Next** entry appears in the Home Assistant sidebar. It provides a zero-config overview of your meters, consumption, costs, and EV charging status.
 
-- To hide the sidebar entry, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
+- The sidebar panel is enabled by default. To hide it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 - EV charging schedule timestamps are displayed in a readable local date/time format.
@@ -94,7 +94,7 @@ The integration ships Lovelace cards that power users can add to any dashboard:
 - **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest meter reading, date, and tariff.
 - Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
 
-To enable the card, go to **Settings -> Devices & Services -> Eon Next -> Configure** and enable "Register EON Next summary card for Lovelace dashboards". The card will then appear in the Lovelace card picker (storage mode).
+The summary card is registered by default and appears in the Lovelace card picker (storage mode). To disable it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and turn off "Register EON Next summary card for Lovelace dashboards".
 
 For YAML-mode dashboards, add the resource manually instead:
 

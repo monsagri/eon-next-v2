@@ -199,3 +199,125 @@ async def test_daily_costs_unit_rate_skips_invalid_entries() -> None:
     assert result is not None
     # 50p / 2 kWh = 25p/kWh = 0.25 £/kWh
     assert result["unit_rate"] == 0.25
+
+
+# --- multi-item daily costs tests ---
+
+_THREE_DAYS_AGO = (_TODAY - datetime.timedelta(days=3)).isoformat()
+
+
+@pytest.mark.asyncio
+async def test_daily_costs_picks_most_recent_usable_item() -> None:
+    """When multiple items are returned, pick the most recent with cost data."""
+    api = EonNext()
+    api._graphql_post = AsyncMock(  # type: ignore[method-assign]
+        return_value={
+            "data": {
+                "consumptionDataByMpxn": {
+                    "items": [
+                        # Oldest — has cost data
+                        {
+                            "period": _THREE_DAYS_AGO,
+                            "data": {
+                                "costs": [{"costIncVat": 40.0, "consumption": 2.0}],
+                                "standingChargeIncVat": 25.0,
+                                "totalChargeIncVat": 65.0,
+                            },
+                        },
+                        # Middle — missing cost fields entirely
+                        {
+                            "period": _TWO_DAYS_AGO,
+                            "data": {
+                                "costs": [],
+                                "standingChargeIncVat": None,
+                                "totalChargeIncVat": None,
+                            },
+                        },
+                        # Most recent — has cost data, should be selected
+                        {
+                            "period": _YESTERDAY,
+                            "data": {
+                                "costs": [{"costIncVat": 80.0, "consumption": 4.0}],
+                                "standingChargeIncVat": 30.0,
+                                "totalChargeIncVat": 110.0,
+                            },
+                        },
+                    ]
+                }
+            }
+        }
+    )
+
+    result = await api.async_get_daily_costs("mpxn-1")
+
+    assert result is not None
+    assert result["period"] == _YESTERDAY
+    assert result["standing_charge"] == 0.30
+    assert result["total_cost"] == 1.10
+    # 80p / 4 kWh = 20p/kWh = 0.20 £/kWh
+    assert result["unit_rate"] == 0.20
+
+
+@pytest.mark.asyncio
+async def test_daily_costs_skips_to_older_when_recent_has_no_data() -> None:
+    """When the most recent item has no usable data, fall back to older."""
+    api = EonNext()
+    api._graphql_post = AsyncMock(  # type: ignore[method-assign]
+        return_value={
+            "data": {
+                "consumptionDataByMpxn": {
+                    "items": [
+                        # Older — has valid cost data
+                        {
+                            "period": _TWO_DAYS_AGO,
+                            "data": {
+                                "costs": [{"costIncVat": 60.0, "consumption": 3.0}],
+                                "standingChargeIncVat": 28.0,
+                                "totalChargeIncVat": 88.0,
+                            },
+                        },
+                        # Most recent — data field is null
+                        {
+                            "period": _YESTERDAY,
+                            "data": None,
+                        },
+                    ]
+                }
+            }
+        }
+    )
+
+    result = await api.async_get_daily_costs("mpxn-1")
+
+    assert result is not None
+    assert result["period"] == _TWO_DAYS_AGO
+    assert result["standing_charge"] == 0.28
+
+
+@pytest.mark.asyncio
+async def test_daily_costs_returns_none_when_all_items_empty() -> None:
+    """When all items lack cost data, return None."""
+    api = EonNext()
+    api._graphql_post = AsyncMock(  # type: ignore[method-assign]
+        return_value={
+            "data": {
+                "consumptionDataByMpxn": {
+                    "items": [
+                        {"period": _TWO_DAYS_AGO, "data": None},
+                        {
+                            "period": _YESTERDAY,
+                            "data": {
+                                "costs": [],
+                                "standingChargeIncVat": None,
+                                "totalChargeIncVat": None,
+                            },
+                        },
+                    ]
+                }
+            }
+        }
+    )
+
+    result = await api.async_get_daily_costs("mpxn-1")
+
+    assert result is None

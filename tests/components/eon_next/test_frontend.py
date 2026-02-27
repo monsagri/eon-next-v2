@@ -24,7 +24,10 @@ from custom_components.eon_next.const import (
     INTEGRATION_VERSION,
 )
 from custom_components.eon_next.coordinator import EonNextCoordinator
-from custom_components.eon_next.schemas import VersionResponse
+from custom_components.eon_next.schemas import (
+    ConsumptionHistoryResponse,
+    VersionResponse,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
@@ -280,6 +283,162 @@ class TestWsDashboardSummary:
         assert result["ev_chargers"] == []
 
 
+class TestWsConsumptionHistory:
+    """Tests for the eon_next/consumption_history WebSocket handler."""
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_meter_not_found(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Unknown meter serial should return empty entries, not an error."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 10,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "UNKNOWN-SERIAL",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert result == dataclasses.asdict(
+            ConsumptionHistoryResponse(entries=[])
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_no_statistics(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Known meter with no recorder statistics should return empty entries."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        # Set coordinator data so the meter is found
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 11,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        # No statistics imported yet, so entries should be empty
+        assert result["entries"] == []
+
+    @pytest.mark.asyncio
+    async def test_handles_recorder_exception_gracefully(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Recorder failure should return empty entries, not crash."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Make the recorder blow up
+        monkeypatch.setattr(
+            "custom_components.eon_next.websocket.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(
+                        side_effect=RuntimeError("DB gone")
+                    )
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 12,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert result["entries"] == []
+
+
 # ── Panel registration tests ─────────────────────────────────────
 
 
@@ -439,6 +598,46 @@ class TestCardResource:
 
 
 # ── Reconcile frontend (multi-entry) tests ────────────────────────
+
+
+class TestDefaultFrontendEnabled:
+    """Tests that panel and cards are enabled by default on fresh install."""
+
+    @pytest.mark.asyncio
+    async def test_panel_and_card_enabled_with_default_options(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Fresh install (no options) should enable both panel and card."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+
+        mock_register = AsyncMock()
+        monkeypatch.setattr(
+            "custom_components.eon_next.panel.async_register_panel",
+            mock_register,
+        )
+        mock_unregister = AsyncMock()
+        monkeypatch.setattr(
+            "custom_components.eon_next.panel.async_unregister_panel",
+            mock_unregister,
+        )
+        mock_ensure = AsyncMock()
+        monkeypatch.setattr(integration, "_async_ensure_card_resource", mock_ensure)
+        mock_remove = AsyncMock()
+        monkeypatch.setattr(integration, "_async_remove_card_resource", mock_remove)
+
+        # Fresh install: no options set at all
+        entry = _mock_entry()
+        await _setup_entry(hass, entry)
+
+        mock_register.assert_called()
+        mock_ensure.assert_called()
+        mock_unregister.assert_not_called()
+        mock_remove.assert_not_called()
 
 
 class TestReconcileFrontend:

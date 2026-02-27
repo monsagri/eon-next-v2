@@ -1,7 +1,7 @@
 """Constants for the Eon Next integration."""
 
 DOMAIN = "eon_next"
-INTEGRATION_VERSION = "1.5.2"  # x-release-please-version
+INTEGRATION_VERSION = "1.5.3"  # x-release-please-version
 
 # Authentication
 CONF_EMAIL = "email"
@@ -12,7 +12,7 @@ CONF_REFRESH_TOKEN = "refresh_token"
 CONF_SHOW_PANEL = "show_panel"
 CONF_SHOW_CARD = "show_card"
 DEFAULT_SHOW_PANEL = True
-DEFAULT_SHOW_CARD = False
+DEFAULT_SHOW_CARD = True
 PANEL_TITLE = "EON Next"
 PANEL_ICON = "mdi:lightning-bolt"
 PANEL_URL = f"/api/{DOMAIN}/panel"
