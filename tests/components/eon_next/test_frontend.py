@@ -441,6 +441,46 @@ class TestCardResource:
 # ── Reconcile frontend (multi-entry) tests ────────────────────────
 
 
+class TestDefaultFrontendEnabled:
+    """Tests that panel and cards are enabled by default on fresh install."""
+
+    @pytest.mark.asyncio
+    async def test_panel_and_card_enabled_with_default_options(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Fresh install (no options) should enable both panel and card."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+
+        mock_register = AsyncMock()
+        monkeypatch.setattr(
+            "custom_components.eon_next.panel.async_register_panel",
+            mock_register,
+        )
+        mock_unregister = AsyncMock()
+        monkeypatch.setattr(
+            "custom_components.eon_next.panel.async_unregister_panel",
+            mock_unregister,
+        )
+        mock_ensure = AsyncMock()
+        monkeypatch.setattr(integration, "_async_ensure_card_resource", mock_ensure)
+        mock_remove = AsyncMock()
+        monkeypatch.setattr(integration, "_async_remove_card_resource", mock_remove)
+
+        # Fresh install: no options set at all
+        entry = _mock_entry()
+        await _setup_entry(hass, entry)
+
+        mock_register.assert_called()
+        mock_ensure.assert_called()
+        mock_unregister.assert_not_called()
+        mock_remove.assert_not_called()
+
+
 class TestReconcileFrontend:
     """Tests for global panel/card reconciliation logic."""
 
