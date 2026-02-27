@@ -334,6 +334,14 @@ class EonNext:
                 if self._has_auth_error(result.get("errors")):
                     raise EonNextAuthError("Authentication failed")
 
+                errors = result.get("errors")
+                if errors and isinstance(errors, list):
+                    _LOGGER.warning(
+                        "GraphQL errors in %s response: %s",
+                        operation,
+                        [e.get("message", str(e)) for e in errors if isinstance(e, dict)],
+                    )
+
                 return result
 
         except aiohttp.ClientError as err:
@@ -582,10 +590,11 @@ class EonNext:
         self,
         mpxn: str,
     ) -> dict[str, Any] | None:
-        """Fetch cost and standing charge data for the most recent complete day.
+        """Fetch cost and standing charge data for a recent complete day.
 
-        Queries the consumptionDataByMpxn GraphQL endpoint for yesterday's data
-        and extracts standing charge and total cost (both inc VAT).
+        Queries the consumptionDataByMpxn GraphQL endpoint for the last few
+        days (tries yesterday first, then up to 7 days back) and extracts
+        standing charge and total cost (both inc VAT).
 
         Note: Kraken API returns cost values in pence; this method converts to
         pounds (GBP) by dividing by 100.
@@ -593,11 +602,14 @@ class EonNext:
         if not mpxn:
             return None
 
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        # Query the last 7 days to handle API data delays.
+        today = datetime.date.today()
+        start_date = today - datetime.timedelta(days=7)
+        end_date = today - datetime.timedelta(days=1)
         variables = {
-            "startDate": yesterday.isoformat(),
-            "endDate": yesterday.isoformat(),
-            "limit": 1,
+            "startDate": start_date.isoformat(),
+            "endDate": end_date.isoformat(),
+            "limit": 7,
             "mpxn": mpxn,
         }
 
@@ -607,13 +619,40 @@ class EonNext:
             variables,
         )
         if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
+            structure = (
+                {k: type(v).__name__ for k, v in result.items()}
+                if isinstance(result, dict)
+                else type(result).__name__
+            )
+            _LOGGER.debug(
+                "Daily costs query returned unexpected structure for %s: %s",
+                mpxn,
+                structure,
+            )
             return None
 
         items = result["data"]["consumptionDataByMpxn"].get("items", [])
         if not items:
+            _LOGGER.debug("Daily costs query returned no items for %s", mpxn)
             return None
 
-        item = items[0]
+        # Use the most recent item with cost data.
+        for item in reversed(items) if isinstance(items, list) else []:
+            parsed = self._parse_cost_item(item)
+            if parsed is not None:
+                return parsed
+
+        _LOGGER.debug(
+            "Daily costs query returned %d items for %s but none "
+            "contained usable cost data",
+            len(items),
+            mpxn,
+        )
+        return None
+
+    @staticmethod
+    def _parse_cost_item(item: Any) -> dict[str, Any] | None:
+        """Extract cost data from a single consumptionDataByMpxn item."""
         if not isinstance(item, dict):
             return None
 
