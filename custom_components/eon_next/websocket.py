@@ -234,7 +234,7 @@ async def _entries_from_statistics(
         if stat_id in result:
             for stat in result[stat_id]:
                 change = stat.get("change")
-                if change is None or change <= 0:
+                if change is None or change < 0:
                     continue
                 start_ts = stat.get("start")
                 if not isinstance(start_ts, (int, float)):
@@ -291,7 +291,7 @@ async def _entries_from_rest(
                     value = float(consumption)
                 except (TypeError, ValueError):
                     continue
-                if value <= 0:
+                if value < 0:
                     continue
                 # interval_start is an ISO datetime; extract the date part
                 date_str = str(interval)[:10]

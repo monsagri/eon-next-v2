@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 from collections.abc import Generator
 from dataclasses import dataclass, field
 import logging
@@ -526,6 +527,96 @@ class TestWsConsumptionHistory:
         assert len(result["entries"]) == 1
         assert result["entries"][0]["date"] == "2026-02-26"
         assert result["entries"][0]["consumption"] == 5.5
+
+    @pytest.mark.asyncio
+    async def test_returns_entries_from_recorder_statistics(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Recorder statistics should be converted to dated entries and trimmed."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Build dynamic timestamps relative to today so the test never goes stale.
+        _today = datetime.date.today()
+        _two_days_ago = _today - datetime.timedelta(days=2)
+        _yesterday = _today - datetime.timedelta(days=1)
+
+        ts_two_days = datetime.datetime(
+            _two_days_ago.year, _two_days_ago.month, _two_days_ago.day,
+            tzinfo=datetime.timezone.utc,
+        ).timestamp()
+        ts_yesterday = datetime.datetime(
+            _yesterday.year, _yesterday.month, _yesterday.day,
+            tzinfo=datetime.timezone.utc,
+        ).timestamp()
+
+        stat_id = "eon_next:electricity_e123_consumption"
+        mock_stats = {
+            stat_id: [
+                {"start": ts_two_days, "change": 8.123},
+                {"start": ts_yesterday, "change": 0.0},
+            ]
+        }
+
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value=mock_stats)
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 14,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 3,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        entries = result["entries"]
+
+        # Both entries should be present (including the 0.0 day)
+        assert len(entries) == 2
+        assert entries[0]["date"] == _two_days_ago.isoformat()
+        assert entries[0]["consumption"] == 8.123
+        assert entries[1]["date"] == _yesterday.isoformat()
+        assert entries[1]["consumption"] == 0.0
 
 
 # ── Panel registration tests ─────────────────────────────────────
