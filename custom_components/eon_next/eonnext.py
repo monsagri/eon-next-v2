@@ -19,39 +19,6 @@ METER_TYPE_GAS = "gas"
 METER_TYPE_ELECTRIC = "electricity"
 METER_TYPE_UNKNOWN = "unknown"
 
-CONSUMPTION_DATA_BY_MPXN_QUERY = """
-query consumptionDataByMpxn($startDate: String!, $endDate: String!, $limit: Int!, $mpxn: ID!) {
-  consumptionDataByMpxn(
-    startDate: $startDate
-    endDate: $endDate
-    limit: $limit
-    mpxn: $mpxn
-  ) {
-    __typename
-    items {
-      __typename
-      mpxn
-      period
-      fuel
-      data {
-        __typename
-        costs {
-          __typename
-          source
-          consumption
-          cost
-          costIncVat
-          consumptionOutsideTolerances
-        }
-        standingCharge
-        standingChargeIncVat
-        totalCharge
-        totalChargeIncVat
-      }
-    }
-  }
-}
-"""
 
 GET_ACCOUNT_DEVICES_QUERY = """
 query getAccountDevices($accountNumber: String!) {
@@ -132,18 +99,8 @@ query getAccountAgreements($accountNumber: String!) {
             fullName
             tariffCode
           }
-          ... on StandardTariff {
+          ... on GasTariffType {
             unitRate
-            standingCharge
-          }
-          ... on PrepayTariff {
-            unitRate
-            standingCharge
-          }
-          ... on HalfHourlyTariff {
-            unitRates {
-              value
-            }
             standingCharge
           }
         }
@@ -499,92 +456,30 @@ class EonNext:
             _LOGGER.debug("REST consumption request failed for %s: %s", serial, err)
             return None
 
-    @staticmethod
-    def _normalize_graphql_consumption_items(
-        items: list[Any],
-    ) -> list[dict[str, Any]] | None:
-        """Normalize GraphQL consumptionDataByMpxn items to interval_start/consumption."""
-        normalized: list[dict[str, Any]] = []
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-
-            costs = item.get("data", {}).get("costs", [])
-            if not isinstance(costs, list):
-                continue
-
-            total = 0.0
-            has_value = False
-            for cost_entry in costs:
-                if not isinstance(cost_entry, dict):
-                    continue
-                consumption = cost_entry.get("consumption")
-                if consumption is None:
-                    continue
-                try:
-                    total += float(consumption)
-                    has_value = True
-                except (TypeError, ValueError):
-                    continue
-
-            if not has_value:
-                continue
-
-            normalized.append(
-                {
-                    "interval_start": item.get("period"),
-                    "consumption": round(total, 3),
-                }
-            )
-
-        return normalized or None
-
     async def async_get_consumption_data_by_mpxn_range(
         self,
         mpxn: str,
         start_date: datetime.date,
         end_date: datetime.date,
     ) -> list[dict[str, Any]] | None:
-        """Fetch daily consumption data for a specific date range via GraphQL."""
-        if not mpxn:
-            return None
-        if end_date < start_date:
-            return None
+        """Fetch daily consumption data for a specific date range via GraphQL.
 
-        day_count = max((end_date - start_date).days + 1, 1)
-        variables = {
-            "startDate": start_date.isoformat(),
-            "endDate": end_date.isoformat(),
-            "limit": day_count,
-            "mpxn": mpxn,
-        }
-
-        result = await self._graphql_post(
-            "consumptionDataByMpxn",
-            CONSUMPTION_DATA_BY_MPXN_QUERY,
-            variables,
-        )
-        if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
-            return None
-
-        items = result["data"]["consumptionDataByMpxn"].get("items", [])
-        if not isinstance(items, list):
-            return None
-        return self._normalize_graphql_consumption_items(items)
+        Note: The consumptionDataByMpxn query has been removed from the Kraken
+        API.  This stub returns None so callers fall back to REST consumption.
+        """
+        return None
 
     async def async_get_consumption_data_by_mpxn(
         self,
         mpxn: str,
         days: int = 7,
     ) -> list[dict[str, Any]] | None:
-        """Fetch daily consumption data via the GraphQL consumptionDataByMpxn query."""
-        end_date = datetime.date.today()
-        start_date = end_date - datetime.timedelta(days=max(days - 1, 0))
-        return await self.async_get_consumption_data_by_mpxn_range(
-            mpxn,
-            start_date,
-            end_date,
-        )
+        """Fetch daily consumption data via GraphQL.
+
+        Note: The consumptionDataByMpxn query has been removed from the Kraken
+        API.  This stub returns None so callers fall back to REST consumption.
+        """
+        return None
 
     async def async_get_daily_costs(
         self,
@@ -592,121 +487,11 @@ class EonNext:
     ) -> dict[str, Any] | None:
         """Fetch cost and standing charge data for a recent complete day.
 
-        Queries the consumptionDataByMpxn GraphQL endpoint for the last few
-        days (tries yesterday first, then up to 7 days back) and extracts
-        standing charge and total cost (both inc VAT).
-
-        Note: Kraken API returns cost values in pence; this method converts to
-        pounds (GBP) by dividing by 100.
+        Note: The consumptionDataByMpxn query that powered this method has been
+        removed from the Kraken API.  Returns None until a replacement query is
+        available; callers already handle None gracefully.
         """
-        if not mpxn:
-            return None
-
-        # Query the last 7 days to handle API data delays.
-        today = datetime.date.today()
-        start_date = today - datetime.timedelta(days=7)
-        end_date = today - datetime.timedelta(days=1)
-        variables = {
-            "startDate": start_date.isoformat(),
-            "endDate": end_date.isoformat(),
-            "limit": 7,
-            "mpxn": mpxn,
-        }
-
-        result = await self._graphql_post(
-            "consumptionDataByMpxn",
-            CONSUMPTION_DATA_BY_MPXN_QUERY,
-            variables,
-        )
-        if not self._json_contains_key_chain(result, ["data", "consumptionDataByMpxn", "items"]):
-            structure = (
-                {k: type(v).__name__ for k, v in result.items()}
-                if isinstance(result, dict)
-                else type(result).__name__
-            )
-            _LOGGER.debug(
-                "Daily costs query returned unexpected structure for %s: %s",
-                mpxn,
-                structure,
-            )
-            return None
-
-        items = result["data"]["consumptionDataByMpxn"].get("items", [])
-        if not items:
-            _LOGGER.debug("Daily costs query returned no items for %s", mpxn)
-            return None
-
-        # Use the most recent item with cost data.
-        for item in reversed(items) if isinstance(items, list) else []:
-            parsed = self._parse_cost_item(item)
-            if parsed is not None:
-                return parsed
-
-        _LOGGER.debug(
-            "Daily costs query returned %d items for %s but none "
-            "contained usable cost data",
-            len(items),
-            mpxn,
-        )
         return None
-
-    @staticmethod
-    def _parse_cost_item(item: Any) -> dict[str, Any] | None:
-        """Extract cost data from a single consumptionDataByMpxn item."""
-        if not isinstance(item, dict):
-            return None
-
-        item_data = item.get("data")
-        if not isinstance(item_data, dict):
-            return None
-
-        standing_raw = item_data.get("standingChargeIncVat")
-        total_raw = item_data.get("totalChargeIncVat")
-
-        standing = None
-        if standing_raw is not None:
-            try:
-                standing = round(float(standing_raw) / 100.0, 2)
-            except (TypeError, ValueError):
-                pass
-
-        total = None
-        if total_raw is not None:
-            try:
-                total = round(float(total_raw) / 100.0, 2)
-            except (TypeError, ValueError):
-                pass
-
-        # Derive effective unit rate from cost entries.
-        unit_rate = None
-        costs = item_data.get("costs", [])
-        if isinstance(costs, list):
-            total_cost_pence = 0.0
-            total_consumption = 0.0
-            for cost_entry in costs:
-                if not isinstance(cost_entry, dict):
-                    continue
-                entry_cost = cost_entry.get("costIncVat")
-                entry_consumption = cost_entry.get("consumption")
-                if entry_cost is None or entry_consumption is None:
-                    continue
-                try:
-                    total_cost_pence += float(entry_cost)
-                    total_consumption += float(entry_consumption)
-                except (TypeError, ValueError):
-                    continue
-            if total_consumption > 0:
-                unit_rate = round(total_cost_pence / total_consumption / 100.0, 4)
-
-        if standing is None and total is None and unit_rate is None:
-            return None
-
-        return {
-            "standing_charge": standing,
-            "total_cost": total,
-            "unit_rate": unit_rate,
-            "period": item.get("period"),
-        }
 
     async def async_get_smart_charging_schedule(
         self,

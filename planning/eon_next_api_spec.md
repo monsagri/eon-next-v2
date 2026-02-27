@@ -31,7 +31,6 @@ Scope: API paths and methods used by this integration, plus live curl verificati
 | `getAccountDevices`                            | `POST /v1/graphql/` | yes  | EV/SmartFlex devices                   |
 | `getSmartChargingSchedule`                     | `POST /v1/graphql/` | yes  | EV planned dispatches                  |
 | `getAccountAgreements`                         | `POST /v1/graphql/` | yes  | Tariff metadata                        |
-| `consumptionDataByMpxn`                        | `POST /v1/graphql/` | yes  | GraphQL fallback consumption and costs |
 
 ### REST operations
 
@@ -42,8 +41,7 @@ Scope: API paths and methods used by this integration, plus live curl verificati
 
 ## Known Drift / Watch Items
 
-- During unauthenticated probe on 2026-02-25, `consumptionDataByMpxn` returned GraphQL schema error (`Cannot query field 'consumptionDataByMpxn' on type 'Query'`).
-- This may indicate schema/client gating or an API change. It should be revalidated with a valid JWT from the target account.
+- `consumptionDataByMpxn` was removed from the Kraken GraphQL schema (confirmed 2026-02-27). The integration now relies solely on REST consumption endpoints. A replacement GraphQL query (e.g. `consumptionEstimates`) may be available in the future.
 
 ## Recommended Verification Command Set
 
