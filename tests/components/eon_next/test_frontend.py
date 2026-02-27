@@ -355,6 +355,17 @@ class TestWsConsumptionHistory:
             }
         )
 
+        # Mock the recorder to return no statistics (avoids executor-pool
+        # timing issues that cause async_block_till_done to return early).
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value={})
+                )
+            ),
+        )
+
         from custom_components.eon_next.websocket import ws_consumption_history
 
         mock_connection = MagicMock()
@@ -407,9 +418,10 @@ class TestWsConsumptionHistory:
             }
         )
 
-        # Make the recorder blow up
+        # Make the recorder blow up.  ``get_instance`` is imported locally
+        # inside the handler, so we patch it at its source module.
         monkeypatch.setattr(
-            "custom_components.eon_next.websocket.get_instance",
+            "homeassistant.helpers.recorder.get_instance",
             MagicMock(
                 return_value=MagicMock(
                     async_add_executor_job=AsyncMock(
