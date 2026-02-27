@@ -562,17 +562,19 @@ class TestWsConsumptionHistory:
         )
 
         # Build dynamic timestamps relative to today so the test never goes stale.
+        # Use midday (12:00) UTC so that dt_util.as_local() never shifts
+        # the date across a day boundary regardless of the HA timezone.
         _today = datetime.date.today()
         _two_days_ago = _today - datetime.timedelta(days=2)
         _yesterday = _today - datetime.timedelta(days=1)
 
         ts_two_days = datetime.datetime(
             _two_days_ago.year, _two_days_ago.month, _two_days_ago.day,
-            tzinfo=datetime.timezone.utc,
+            12, 0, 0, tzinfo=datetime.timezone.utc,
         ).timestamp()
         ts_yesterday = datetime.datetime(
             _yesterday.year, _yesterday.month, _yesterday.day,
-            tzinfo=datetime.timezone.utc,
+            12, 0, 0, tzinfo=datetime.timezone.utc,
         ).timestamp()
 
         stat_id = "eon_next:electricity_e123_consumption"
