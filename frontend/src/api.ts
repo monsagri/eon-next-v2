@@ -2,9 +2,8 @@
  * WebSocket API client for the EON Next integration.
  *
  * Zero-argument commands are generated from the Python schemas.
- * Parameterized commands (those accepting request arguments) are
- * defined here manually because the code-generator does not yet
- * support request schemas.
+ * Parameterized commands (those accepting request arguments) have their
+ * response interfaces generated but require hand-written wrapper functions.
  *
  * Source of truth: custom_components/eon_next/schemas.py
  * Regenerate:      python scripts/generate_ts_api.py
@@ -16,18 +15,12 @@ export {
   WS_DASHBOARD_SUMMARY
 } from './api.generated'
 
+export type { ConsumptionHistoryEntry, ConsumptionHistoryResponse } from './api.generated'
+
 import type { HomeAssistant } from './types'
+import type { ConsumptionHistoryResponse } from './api.generated'
 
 // --- Consumption history (parameterized command) -------------------------
-
-export interface ConsumptionHistoryEntry {
-  date: string
-  consumption: number
-}
-
-export interface ConsumptionHistoryResponse {
-  entries: ConsumptionHistoryEntry[]
-}
 
 export async function getConsumptionHistory(
   hass: HomeAssistant,

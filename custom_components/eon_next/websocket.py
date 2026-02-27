@@ -167,8 +167,15 @@ async def ws_consumption_history(
         )
         return
 
-    now = dt_util.now()
-    start = now - timedelta(days=days)
+    # Align to local day boundaries so each bucket represents a full
+    # calendar day and the caller gets exactly ``days`` entries.
+    local_now = dt_util.now()
+    end_of_today = local_now.replace(
+        hour=23, minute=59, second=59, microsecond=999999
+    )
+    start_of_range = (local_now - timedelta(days=days)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
 
     entries: list[ConsumptionHistoryEntry] = []
     try:
@@ -180,8 +187,8 @@ async def ws_consumption_history(
         result = await get_instance(hass).async_add_executor_job(
             statistics_during_period,
             hass,
-            start,
-            now,
+            start_of_range,
+            end_of_today,
             {stat_id},
             "day",
             None,
@@ -203,6 +210,9 @@ async def ws_consumption_history(
                         consumption=round(float(change), 3),
                     )
                 )
+        # Trim to exactly the requested number of days
+        entries.sort(key=lambda e: e.date)
+        entries = entries[-days:]
     except Exception as err:  # pylint: disable=broad-except
         _LOGGER.debug("Failed to fetch consumption history for %s: %s", stat_id, err)
 

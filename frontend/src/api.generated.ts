@@ -38,6 +38,15 @@ export interface DashboardSummary {
   ev_chargers: EvChargerSummary[]
 }
 
+export interface ConsumptionHistoryEntry {
+  date: string
+  consumption: number
+}
+
+export interface ConsumptionHistoryResponse {
+  entries: ConsumptionHistoryEntry[]
+}
+
 // --- WebSocket command constants ---
 
 export const WS_VERSION = 'eon_next/version' as const

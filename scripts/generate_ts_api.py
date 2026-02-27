@@ -43,6 +43,7 @@ def _load_schemas():
 
 _schemas = _load_schemas()
 WS_COMMANDS = _schemas.WS_COMMANDS
+WS_EXTRA_RESPONSE_TYPES: list[type] = getattr(_schemas, "WS_EXTRA_RESPONSE_TYPES", [])
 
 # ---------------------------------------------------------------------------
 # Python → TypeScript type mapping
@@ -160,7 +161,7 @@ def _api_fn_name(cmd: str) -> str:
 
 def generate() -> str:
     """Return the full contents of the generated TypeScript file."""
-    response_classes = list(WS_COMMANDS.values())
+    response_classes = list(WS_COMMANDS.values()) + list(WS_EXTRA_RESPONSE_TYPES)
     all_classes = _collect_dataclasses(response_classes)
 
     sections: list[str] = []

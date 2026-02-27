@@ -71,9 +71,9 @@ class ConsumptionHistoryResponse:
     """Response from ``eon_next/consumption_history``.
 
     This command accepts ``meter_serial`` (str) and ``days`` (int, 1–30)
-    as request parameters.  The code-generator only handles zero-argument
-    commands, so the typed API wrapper lives in ``frontend/src/api.ts``
-    rather than in the auto-generated file.
+    as request parameters.  The typed API wrapper lives in
+    ``frontend/src/api.ts``; the interface is auto-generated via
+    ``WS_EXTRA_RESPONSE_TYPES``.
     """
 
     entries: list[ConsumptionHistoryEntry]
@@ -87,3 +87,11 @@ WS_COMMANDS: dict[str, type] = {
     "eon_next/version": VersionResponse,
     "eon_next/dashboard_summary": DashboardSummary,
 }
+
+# Response types for *parameterized* commands (those that accept request
+# arguments beyond ``type``).  The code-generator emits interfaces for these
+# but does **not** generate zero-argument API wrapper functions — the typed
+# callers live in ``frontend/src/api.ts``.
+WS_EXTRA_RESPONSE_TYPES: list[type] = [
+    ConsumptionHistoryResponse,
+]

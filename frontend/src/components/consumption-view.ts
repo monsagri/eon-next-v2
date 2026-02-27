@@ -41,9 +41,10 @@ class EonConsumptionView extends LitElement {
     const barColor =
       this.meter?.type === 'gas' ? 'rgba(255, 152, 0, 0.7)' : 'rgba(3, 169, 244, 0.7)'
 
+    const locale = this.hass?.language ?? 'en'
     const chartLabels = this._history.map((e) => {
       const d = new Date(e.date + 'T00:00:00')
-      return d.toLocaleDateString('en-GB', { weekday: 'short' })
+      return d.toLocaleDateString(locale, { weekday: 'short' })
     })
     const chartData = this._history.map((e) => e.consumption)
 
