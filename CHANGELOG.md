@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.5.4](https://github.com/monsagri/eon-next-v2/compare/v1.5.3...v1.5.4) (2026-02-27)
+
+
+### Bug Fixes
+
+* enable dashboard panel and cards by default on fresh install ([#29](https://github.com/monsagri/eon-next-v2/issues/29)) ([d9c5a0e](https://github.com/monsagri/eon-next-v2/commit/d9c5a0ee4c4f4e9c32597da28c2571f8bc0ac902))
+* resolve post-fork entities always showing unknown values ([b08301b](https://github.com/monsagri/eon-next-v2/commit/b08301bff001051f94228a11ae64a6892c832e8c))
+* widen cost fallback gate and add test coverage ([7ac4563](https://github.com/monsagri/eon-next-v2/commit/7ac45635cbb9f1ac8aadee4d079190baa53e622d))
+
 ## [1.5.3](https://github.com/monsagri/eon-next-v2/compare/v1.5.2...v1.5.3) (2026-02-26)
 
 
