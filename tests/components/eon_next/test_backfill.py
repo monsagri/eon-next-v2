@@ -197,3 +197,118 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
     assert manager._state["meters"]["m1"]["done"] is True
     # paused while pending, resumed when completed
     assert manager.coordinator.set_statistics_import_enabled.call_args_list[-1].args == (True,)
+
+
+# --- meters_progress attribute tests ---
+
+
+def test_meters_progress_all_done(monkeypatch) -> None:
+    """When all meters are done, days_completed should equal lookback_days."""
+    monkeypatch.setattr(
+        backfill_module.dt_util,
+        "now",
+        lambda: _REF_DT,
+    )
+    manager = _manager(
+        {CONF_BACKFILL_ENABLED: True, CONF_BACKFILL_LOOKBACK_DAYS: 10},
+        [_meter("m1")],
+    )
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 10,
+        "meters": {
+            "m1": {"next_start": _REF_NEXT_ISO, "done": True},
+        },
+    }
+
+    status = manager.get_status()
+    prog = status["meters_progress"]
+    assert "m1" in prog
+    assert prog["m1"]["done"] is True
+    assert prog["m1"]["days_completed"] == 10
+    assert prog["m1"]["days_remaining"] == 0
+
+
+def test_meters_progress_partial(monkeypatch) -> None:
+    """A meter partway through backfill reports correct split."""
+    monkeypatch.setattr(
+        backfill_module.dt_util,
+        "now",
+        lambda: _REF_DT,
+    )
+    # 10-day lookback: start is _REF_DATE - 9 days.
+    # next_start halfway: _REF_DATE - 4 days (5 days completed).
+    halfway = (_REF_DATE - timedelta(days=4)).isoformat()
+    manager = _manager(
+        {CONF_BACKFILL_ENABLED: True, CONF_BACKFILL_LOOKBACK_DAYS: 10},
+        [_meter("m1")],
+    )
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 10,
+        "meters": {
+            "m1": {"next_start": halfway, "done": False},
+        },
+    }
+
+    status = manager.get_status()
+    prog = status["meters_progress"]["m1"]
+    assert prog["done"] is False
+    assert prog["days_completed"] == 5
+    assert prog["days_remaining"] == 5
+    assert prog["next_start"] == halfway
+
+
+def test_meters_progress_missing_meter_state(monkeypatch) -> None:
+    """A meter not yet in persisted state gets zero progress."""
+    monkeypatch.setattr(
+        backfill_module.dt_util,
+        "now",
+        lambda: _REF_DT,
+    )
+    manager = _manager(
+        {CONF_BACKFILL_ENABLED: True, CONF_BACKFILL_LOOKBACK_DAYS: 10},
+        [_meter("m1"), _meter("m2")],
+    )
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 10,
+        "meters": {
+            "m1": {"next_start": _REF_DATE_ISO, "done": True},
+            # m2 intentionally missing from state
+        },
+    }
+
+    status = manager.get_status()
+    assert status["meters_progress"]["m2"]["done"] is False
+    assert status["meters_progress"]["m2"]["days_completed"] == 0
+    assert status["meters_progress"]["m2"]["days_remaining"] == 10
+
+
+def test_meters_progress_invalid_next_start(monkeypatch) -> None:
+    """An invalid next_start should fall back to backfill_start (0 days)."""
+    monkeypatch.setattr(
+        backfill_module.dt_util,
+        "now",
+        lambda: _REF_DT,
+    )
+    manager = _manager(
+        {CONF_BACKFILL_ENABLED: True, CONF_BACKFILL_LOOKBACK_DAYS: 10},
+        [_meter("m1")],
+    )
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 10,
+        "meters": {
+            "m1": {"next_start": "not-a-date", "done": False},
+        },
+    }
+
+    status = manager.get_status()
+    prog = status["meters_progress"]["m1"]
+    assert prog["days_completed"] == 0
+    assert prog["days_remaining"] == 10

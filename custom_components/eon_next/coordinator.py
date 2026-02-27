@@ -123,12 +123,23 @@ class EonNextCoordinator(DataUpdateCoordinator):
                     else:
                         # Use previous values when available to avoid
                         # flipping sensors to "unknown" on transient failures.
+                        # Check each field independently — _parse_cost_item
+                        # can return standing_charge=None while still
+                        # providing total_cost or unit_rate.
                         prev = self.data.get(meter_key, {}) if self.data else {}
-                        if prev.get("standing_charge") is not None:
-                            meter_data["standing_charge"] = prev["standing_charge"]
-                            meter_data["previous_day_cost"] = prev.get("previous_day_cost")
-                            meter_data["cost_period"] = prev.get("cost_period")
-                            meter_data["unit_rate"] = prev.get("unit_rate")
+                        _cost_keys = (
+                            "standing_charge",
+                            "previous_day_cost",
+                            "cost_period",
+                            "unit_rate",
+                        )
+                        has_prev = any(
+                            prev.get(k) is not None for k in _cost_keys
+                        )
+                        if has_prev:
+                            for k in _cost_keys:
+                                if prev.get(k) is not None:
+                                    meter_data[k] = prev[k]
                             _LOGGER.debug(
                                 "No new cost data for meter %s; "
                                 "retaining previous values",
