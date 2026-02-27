@@ -66,6 +66,7 @@ class BackfillStatus(TypedDict):
     completed_meters: int
     pending_meters: int
     next_start_date: str | None
+    meters_progress: dict[str, dict[str, Any]]
 
 
 class EonNextBackfillManager:
@@ -258,6 +259,9 @@ class EonNextBackfillManager:
         completed_meters = 0
         pending_meters = total_meters
         next_start_date: str | None = None
+        meters_progress: dict[str, dict[str, Any]] = {}
+
+        today = dt_util.now().date()
 
         if self._state is not None:
             meter_state = self._state["meters"]
@@ -272,6 +276,32 @@ class EonNextBackfillManager:
             ]
             if pending_dates:
                 next_start_date = min(pending_dates)
+
+            # Build per-meter progress details.
+            backfill_start = today - timedelta(days=lookback_days - 1)
+            for meter in meters:
+                ms = meter_state.get(meter.serial)
+                if ms is None:
+                    meters_progress[meter.serial] = {
+                        "done": False,
+                        "next_start": None,
+                        "days_completed": 0,
+                        "days_remaining": lookback_days,
+                    }
+                    continue
+                is_done = ms.get("done", False)
+                try:
+                    ns = date.fromisoformat(ms["next_start"])
+                except (ValueError, KeyError):
+                    ns = backfill_start
+                days_completed = max((ns - backfill_start).days, 0)
+                days_remaining = max(lookback_days - days_completed, 0)
+                meters_progress[meter.serial] = {
+                    "done": is_done,
+                    "next_start": ms.get("next_start"),
+                    "days_completed": days_completed,
+                    "days_remaining": days_remaining,
+                }
 
         if not enabled:
             state = "disabled"
@@ -292,6 +322,7 @@ class EonNextBackfillManager:
             "completed_meters": completed_meters,
             "pending_meters": pending_meters,
             "next_start_date": next_start_date,
+            "meters_progress": meters_progress,
         }
 
     async def _initialize_or_reset_progress(self, meters: list[Any]) -> None:

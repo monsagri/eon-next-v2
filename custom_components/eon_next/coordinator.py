@@ -64,6 +64,21 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "supply_point_id": meter.supply_point_id,
                         "latest_reading": meter.latest_reading,
                         "latest_reading_date": meter.latest_reading_date,
+                        # Defaults for cost/tariff fields — overwritten below
+                        # when the respective API calls succeed.
+                        "daily_consumption": None,
+                        "daily_consumption_last_reset": None,
+                        "standing_charge": None,
+                        "previous_day_cost": None,
+                        "cost_period": None,
+                        "unit_rate": None,
+                        "tariff_name": None,
+                        "tariff_code": None,
+                        "tariff_type": None,
+                        "tariff_unit_rate": None,
+                        "tariff_standing_charge": None,
+                        "tariff_valid_from": None,
+                        "tariff_valid_to": None,
                     }
 
                     if (
@@ -105,6 +120,39 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["previous_day_cost"] = cost_data["total_cost"]
                         meter_data["cost_period"] = cost_data["period"]
                         meter_data["unit_rate"] = cost_data.get("unit_rate")
+                    else:
+                        # Use previous values when available to avoid
+                        # flipping sensors to "unknown" on transient failures.
+                        # Check each field independently — _parse_cost_item
+                        # can return standing_charge=None while still
+                        # providing total_cost or unit_rate.
+                        prev = self.data.get(meter_key, {}) if self.data else {}
+                        _cost_keys = (
+                            "standing_charge",
+                            "previous_day_cost",
+                            "cost_period",
+                            "unit_rate",
+                        )
+                        has_prev = any(
+                            prev.get(k) is not None for k in _cost_keys
+                        )
+                        if has_prev:
+                            for k in _cost_keys:
+                                if prev.get(k) is not None:
+                                    meter_data[k] = prev[k]
+                            _LOGGER.debug(
+                                "No new cost data for meter %s; "
+                                "retaining previous values",
+                                meter.serial,
+                            )
+                        else:
+                            _LOGGER.warning(
+                                "No cost data available for meter %s — "
+                                "standing charge, previous day cost, and unit "
+                                "rate sensors will show as unknown until data "
+                                "arrives from the API",
+                                meter.serial,
+                            )
 
                     tariff = (
                         account_tariffs.get(meter.supply_point_id)
@@ -123,6 +171,33 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         )
                         meter_data["tariff_valid_from"] = tariff.get("valid_from")
                         meter_data["tariff_valid_to"] = tariff.get("valid_to")
+                    else:
+                        # Retain previous tariff values on transient failures.
+                        prev = self.data.get(meter_key, {}) if self.data else {}
+                        if prev.get("tariff_name") is not None:
+                            for key in (
+                                "tariff_name",
+                                "tariff_code",
+                                "tariff_type",
+                                "tariff_unit_rate",
+                                "tariff_standing_charge",
+                                "tariff_valid_from",
+                                "tariff_valid_to",
+                            ):
+                                meter_data[key] = prev.get(key)
+                            _LOGGER.debug(
+                                "No new tariff data for meter %s; "
+                                "retaining previous values",
+                                meter.serial,
+                            )
+                        else:
+                            _LOGGER.warning(
+                                "No tariff data available for meter %s "
+                                "(supply point %s) — tariff sensor will show "
+                                "as unknown until data arrives from the API",
+                                meter.serial,
+                                meter.supply_point_id,
+                            )
 
                     data[meter_key] = meter_data
 
@@ -193,7 +268,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 f"Authentication failed fetching tariffs: {err}"
             ) from err
         except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.debug(
+            _LOGGER.warning(
                 "Tariff data unavailable for account %s: %s",
                 account.account_number,
                 err,
@@ -207,7 +282,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         except EonNextAuthError:
             raise
         except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.debug(
+            _LOGGER.warning(
                 "Daily cost data unavailable for meter %s: %s",
                 meter.serial,
                 err,
