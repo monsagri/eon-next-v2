@@ -174,8 +174,8 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
         "meters": {"m1": {"next_start": _REF_DATE_ISO, "done": False}},
     }
     manager._save_state = AsyncMock()  # type: ignore[method-assign]
-    manager.api.async_get_consumption_data_by_mpxn_range = AsyncMock(  # type: ignore[attr-defined]
-        return_value=[{"interval_start": _REF_DATE_ISO, "consumption": 1.5}]
+    manager.api.async_get_consumption = AsyncMock(  # type: ignore[attr-defined]
+        return_value={"results": [{"interval_start": _REF_DATE_ISO, "consumption": 1.5}]}
     )
     import_mock = AsyncMock()
     monkeypatch.setattr(
@@ -191,7 +191,7 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
 
     await manager._run_backfill_cycle()
 
-    manager.api.async_get_consumption_data_by_mpxn_range.assert_awaited_once()
+    manager.api.async_get_consumption.assert_awaited_once()
     import_mock.assert_awaited_once()
     assert manager._state["meters"]["m1"]["next_start"] == _REF_NEXT_ISO
     assert manager._state["meters"]["m1"]["done"] is True

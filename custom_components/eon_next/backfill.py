@@ -445,11 +445,19 @@ class EonNextBackfillManager:
                 continue
 
             end_date = min(start_date + timedelta(days=chunk_days - 1), today)
-            consumption = await self.api.async_get_consumption_data_by_mpxn_range(
+            period_from = f"{start_date.isoformat()}T00:00:00Z"
+            period_to = f"{(end_date + timedelta(days=1)).isoformat()}T00:00:00Z"
+            day_count = (end_date - start_date).days + 1
+            result = await self.api.async_get_consumption(
+                meter.type,
                 meter.supply_point_id,
-                start_date,
-                end_date,
+                meter.serial,
+                group_by="day",
+                page_size=day_count,
+                period_from=period_from,
+                period_to=period_to,
             )
+            consumption = result.get("results") if result else None
             if consumption:
                 await async_import_consumption_statistics(
                     self.hass,

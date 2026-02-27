@@ -417,6 +417,8 @@ class EonNext:
         serial: str,
         group_by: str = "day",
         page_size: int = 10,
+        period_from: str | None = None,
+        period_to: str | None = None,
     ) -> dict | None:
         """Fetch consumption data from the REST API endpoint."""
         if not supply_point_id:
@@ -431,7 +433,11 @@ class EonNext:
         else:
             return None
 
-        params = {"group_by": group_by, "page_size": str(page_size)}
+        params: dict[str, str] = {"group_by": group_by, "page_size": str(page_size)}
+        if period_from:
+            params["period_from"] = period_from
+        if period_to:
+            params["period_to"] = period_to
         headers = {"Authorization": f"JWT {token}"}
 
         session = await self._get_session()

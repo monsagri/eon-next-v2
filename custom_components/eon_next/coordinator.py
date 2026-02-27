@@ -39,6 +39,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         )
         self.api = api
         self._statistics_import_enabled = True
+        self._cost_warning_logged: set[str] = set()
 
     def set_statistics_import_enabled(self, enabled: bool) -> None:
         """Enable or disable automatic statistics imports during updates."""
@@ -145,14 +146,15 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 "retaining previous values",
                                 meter.serial,
                             )
-                        else:
-                            _LOGGER.warning(
+                        elif meter.serial not in self._cost_warning_logged:
+                            _LOGGER.debug(
                                 "No cost data available for meter %s — "
                                 "standing charge, previous day cost, and unit "
-                                "rate sensors will show as unknown until data "
-                                "arrives from the API",
+                                "rate sensors will show as unknown until a "
+                                "cost data source becomes available",
                                 meter.serial,
                             )
+                            self._cost_warning_logged.add(meter.serial)
 
                     tariff = (
                         account_tariffs.get(meter.supply_point_id)
