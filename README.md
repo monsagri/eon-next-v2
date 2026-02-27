@@ -89,6 +89,9 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 The integration ships Lovelace cards that power users can add to any dashboard:
 
 - **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
+- **EON Next Consumption** (`custom:eon-next-consumption-card`) — daily consumption with a 7-day bar chart.
+- **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, standing charge, and unit rate.
+- **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest meter reading, date, and tariff.
 - Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
 
 The summary card is registered by default and appears in the Lovelace card picker (storage mode). To disable it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and turn off "Register EON Next summary card for Lovelace dashboards".

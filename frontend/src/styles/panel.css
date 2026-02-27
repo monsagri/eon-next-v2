@@ -80,6 +80,11 @@
   text-align: center;
 }
 
+.card-divider {
+  border-top: 1px solid var(--eon-divider);
+  margin: 12px 0;
+}
+
 .empty {
   color: var(--eon-text-secondary);
   padding: 16px;

@@ -1,0 +1,41 @@
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--eon-text-primary);
+}
+
+.reading-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reading {
+  display: flex;
+  flex-direction: column;
+}
+
+.reading-value {
+  font-size: 1.4em;
+  font-weight: 500;
+  color: var(--eon-text-primary);
+}
+
+.reading-label {
+  font-size: 0.8em;
+  color: var(--eon-text-secondary);
+}
+
+.detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9em;
+  color: var(--eon-text-primary);
+}
+
+.detail-label {
+  color: var(--eon-text-secondary);
+}

@@ -2,7 +2,8 @@
  * Mock hass object for local development.
  *
  * Intercepts callWS and returns fixture data that mirrors the real
- * eon_next/version and eon_next/dashboard_summary responses.
+ * eon_next/version, eon_next/dashboard_summary, and
+ * eon_next/consumption_history responses.
  */
 
 // ---------------------------------------------------------------------------
@@ -10,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 const FIXTURES = {
-  version: { version: '1.3.1' },
+  version: { version: '1.5.2' },
 
   summary: {
     meters: [
@@ -48,6 +49,31 @@ const FIXTURES = {
     ]
   },
 
+  consumptionHistory: {
+    '21L1234567': {
+      entries: [
+        { date: '2026-02-21', consumption: 9.12 },
+        { date: '2026-02-22', consumption: 7.84 },
+        { date: '2026-02-23', consumption: 11.03 },
+        { date: '2026-02-24', consumption: 8.45 },
+        { date: '2026-02-25', consumption: 7.14 },
+        { date: '2026-02-26', consumption: 9.67 },
+        { date: '2026-02-27', consumption: 8.72 }
+      ]
+    },
+    G4E98765: {
+      entries: [
+        { date: '2026-02-21', consumption: 24.1 },
+        { date: '2026-02-22', consumption: 19.8 },
+        { date: '2026-02-23', consumption: 28.5 },
+        { date: '2026-02-24', consumption: 21.3 },
+        { date: '2026-02-25', consumption: 18.7 },
+        { date: '2026-02-26', consumption: 25.2 },
+        { date: '2026-02-27', consumption: 22.3 }
+      ]
+    }
+  },
+
   empty: {
     meters: [],
     ev_chargers: []
@@ -80,6 +106,11 @@ function createMockHass() {
           return FIXTURES.version
         case 'eon_next/dashboard_summary':
           return simulateEmpty ? FIXTURES.empty : FIXTURES.summary
+        case 'eon_next/consumption_history': {
+          if (simulateEmpty) return { entries: [] }
+          const serial = msg.meter_serial
+          return FIXTURES.consumptionHistory[serial] || { entries: [] }
+        }
         default:
           throw new Error(`Unknown WS command: ${msg.type}`)
       }
@@ -99,7 +130,10 @@ function inject() {
   const hass = createMockHass()
 
   const panel = document.getElementById('panel')
-  const card = document.getElementById('card')
+  const summaryCard = document.getElementById('summary-card')
+  const consumptionCard = document.getElementById('consumption-card')
+  const costCard = document.getElementById('cost-card')
+  const readingCard = document.getElementById('reading-card')
 
   if (panel) {
     Object.assign(panel, {
@@ -110,17 +144,43 @@ function inject() {
     })
   }
 
-  if (card) {
-    // Cards expect setConfig before hass is set
-    card.setConfig({ type: 'custom:eon-next-summary-card' })
-    card.hass = hass
+  if (summaryCard) {
+    summaryCard.setConfig({ type: 'custom:eon-next-summary-card' })
+    summaryCard.hass = hass
+  }
+
+  if (consumptionCard) {
+    consumptionCard.setConfig({
+      type: 'custom:eon-next-consumption-card',
+      meter_type: 'electricity'
+    })
+    consumptionCard.hass = hass
+  }
+
+  if (costCard) {
+    costCard.setConfig({
+      type: 'custom:eon-next-cost-card',
+      meter_type: 'electricity'
+    })
+    costCard.hass = hass
+  }
+
+  if (readingCard) {
+    readingCard.setConfig({
+      type: 'custom:eon-next-reading-card',
+      meter_type: 'electricity'
+    })
+    readingCard.hass = hass
   }
 }
 
 // Wait for custom elements to be defined, then inject
 Promise.all([
   customElements.whenDefined('eon-next-panel'),
-  customElements.whenDefined('eon-next-summary-card')
+  customElements.whenDefined('eon-next-summary-card'),
+  customElements.whenDefined('eon-next-consumption-card'),
+  customElements.whenDefined('eon-next-cost-card'),
+  customElements.whenDefined('eon-next-reading-card')
 ]).then(() => inject())
 
 // ---------------------------------------------------------------------------

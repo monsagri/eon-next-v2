@@ -2,15 +2,19 @@ import { LitElement, html, nothing } from 'lit'
 import { property } from 'lit/decorators.js'
 import { getVersion, getDashboardSummary } from './api'
 import { WsDataController } from './controllers/ws-data-controller'
-import { renderMeterCard } from './templates/meter-card'
 import { renderEvCard } from './templates/ev-card'
 import type {
   HomeAssistant,
   PanelRoute,
   PanelInfo,
   DashboardSummary,
+  MeterSummary,
   VersionResponse
 } from './types'
+
+import './components/consumption-view'
+import './components/cost-view'
+import './components/meter-view'
 
 import sharedStyles from './styles/shared.css'
 import panelStyles from './styles/panel.css'
@@ -47,7 +51,7 @@ class EonNextPanel extends LitElement {
       </div>
 
       <div class="grid">
-        ${data?.meters.map(renderMeterCard) ?? nothing}
+        ${data?.meters.map((m) => this._renderMeterCard(m)) ?? nothing}
         ${data?.ev_chargers.map(renderEvCard) ?? nothing}
       </div>
 
@@ -56,6 +60,30 @@ class EonNextPanel extends LitElement {
             No meter or EV data available. Check your integration configuration.
           </div>`
         : nothing}
+    `
+  }
+
+  private _renderMeterCard(meter: MeterSummary) {
+    const icon = meter.type === 'gas' ? 'mdi:fire' : 'mdi:flash'
+    const label = meter.type === 'gas' ? 'Gas' : 'Electricity'
+
+    return html`
+      <div class="card">
+        <h2>
+          <ha-icon .icon=${icon} style="--mdc-icon-size: 20px;"></ha-icon>
+          ${label} — ${meter.serial}
+        </h2>
+
+        <eon-consumption-view .hass=${this.hass} .meter=${meter}></eon-consumption-view>
+
+        <div class="card-divider"></div>
+
+        <eon-cost-view .meter=${meter}></eon-cost-view>
+
+        <div class="card-divider"></div>
+
+        <eon-meter-view .meter=${meter}></eon-meter-view>
+      </div>
     `
   }
 }

@@ -107,6 +107,12 @@
       .card-container {
         max-width: 400px;
       }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        max-width: 900px;
+      }
     </style>
   </head>
   <body>
@@ -128,7 +134,16 @@
     <div class="section">
       <h2>Summary Card</h2>
       <div class="card-container">
-        <eon-next-summary-card id="card"></eon-next-summary-card>
+        <eon-next-summary-card id="summary-card"></eon-next-summary-card>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>New Cards</h2>
+      <div class="card-grid">
+        <eon-next-consumption-card id="consumption-card"></eon-next-consumption-card>
+        <eon-next-cost-card id="cost-card"></eon-next-cost-card>
+        <eon-next-reading-card id="reading-card"></eon-next-reading-card>
       </div>
     </div>
 

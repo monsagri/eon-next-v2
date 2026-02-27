@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 from collections.abc import Generator
 from dataclasses import dataclass, field
 import logging
@@ -24,7 +25,10 @@ from custom_components.eon_next.const import (
     INTEGRATION_VERSION,
 )
 from custom_components.eon_next.coordinator import EonNextCoordinator
-from custom_components.eon_next.schemas import VersionResponse
+from custom_components.eon_next.schemas import (
+    ConsumptionHistoryResponse,
+    VersionResponse,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
@@ -73,6 +77,7 @@ class FakeApi:
         self.password = ""
         self.accounts = [FakeAccount(meters=[FakeMeter()])]
         self._token_callback = None
+        self._consumption_result: dict[str, Any] | None = None
 
     def set_token_update_callback(self, callback: Any) -> None:
         self._token_callback = callback
@@ -84,6 +89,9 @@ class FakeApi:
     async def login_with_username_and_password(self, u: str, p: str) -> bool:
         self.password_login_calls.append((u, p))
         return True
+
+    async def async_get_consumption(self, *args: Any, **kwargs: Any) -> dict | None:
+        return self._consumption_result
 
     async def async_close(self) -> None:
         self.closed = True
@@ -227,6 +235,7 @@ class TestWsDashboardSummary:
                 "meter-1": {
                     "type": "electricity",
                     "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
                     "latest_reading": 1234.5,
                     "latest_reading_date": "2026-02-25",
                     "daily_consumption": 10.5,
@@ -278,6 +287,338 @@ class TestWsDashboardSummary:
         result = mock_connection.send_result.call_args[0][1]
         assert result["meters"] == []
         assert result["ev_chargers"] == []
+
+
+class TestWsConsumptionHistory:
+    """Tests for the eon_next/consumption_history WebSocket handler."""
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_meter_not_found(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Unknown meter serial should return empty entries, not an error."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 10,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "UNKNOWN-SERIAL",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert result == dataclasses.asdict(
+            ConsumptionHistoryResponse(entries=[])
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_when_no_statistics(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Known meter with no recorder statistics should return empty entries."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        # Set coordinator data so the meter is found
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Mock the recorder to return no statistics (avoids executor-pool
+        # timing issues that cause async_block_till_done to return early).
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value={})
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 11,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        # No statistics imported yet, so entries should be empty
+        assert result["entries"] == []
+
+    @pytest.mark.asyncio
+    async def test_handles_recorder_exception_gracefully(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Recorder failure should return empty entries, not crash."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Make the recorder blow up.  ``get_instance`` is imported locally
+        # inside the handler, so we patch it at its source module.
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(
+                        side_effect=RuntimeError("DB gone")
+                    )
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 12,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert result["entries"] == []
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_rest_when_statistics_empty(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """REST endpoint should be used when recorder statistics return nothing."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        # Pre-configure the REST fallback to return a single day entry.
+        fake_api._consumption_result = {
+            "results": [
+                {"interval_start": "2026-02-26T00:00:00Z", "consumption": 5.5}
+            ]
+        }
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Mock recorder to return empty so REST fallback kicks in.
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value={})
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 13,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert len(result["entries"]) == 1
+        assert result["entries"][0]["date"] == "2026-02-26"
+        assert result["entries"][0]["consumption"] == 5.5
+
+    @pytest.mark.asyncio
+    async def test_returns_entries_from_recorder_statistics(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Recorder statistics should be converted to dated entries and trimmed."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Build dynamic timestamps relative to today so the test never goes stale.
+        # Use midday (12:00) UTC so that dt_util.as_local() never shifts
+        # the date across a day boundary regardless of the HA timezone.
+        _today = datetime.date.today()
+        _two_days_ago = _today - datetime.timedelta(days=2)
+        _yesterday = _today - datetime.timedelta(days=1)
+
+        ts_two_days = datetime.datetime(
+            _two_days_ago.year, _two_days_ago.month, _two_days_ago.day,
+            12, 0, 0, tzinfo=datetime.timezone.utc,
+        ).timestamp()
+        ts_yesterday = datetime.datetime(
+            _yesterday.year, _yesterday.month, _yesterday.day,
+            12, 0, 0, tzinfo=datetime.timezone.utc,
+        ).timestamp()
+
+        stat_id = "eon_next:electricity_e123_consumption"
+        mock_stats = {
+            stat_id: [
+                {"start": ts_two_days, "change": 8.123},
+                {"start": ts_yesterday, "change": 0.0},
+            ]
+        }
+
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value=mock_stats)
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 14,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 3,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        entries = result["entries"]
+
+        # Both entries should be present (including the 0.0 day)
+        assert len(entries) == 2
+        assert entries[0]["date"] == _two_days_ago.isoformat()
+        assert entries[0]["consumption"] == 8.123
+        assert entries[1]["date"] == _yesterday.isoformat()
+        assert entries[1]["consumption"] == 0.0
 
 
 # ── Panel registration tests ─────────────────────────────────────

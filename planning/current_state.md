@@ -69,9 +69,11 @@ Gas meters add:
 ## Implemented Frontend Features
 
 - Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow, default: enabled)
-- WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`
-- Lovelace card: `eon-next-summary-card` registered as a Lovelace resource when enabled in options (default: disabled)
+- WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`, `eon_next/consumption_history`
+- `eon_next/consumption_history` returns daily consumption from HA recorder statistics for a given meter serial and day range (1–30)
+- Lovelace cards: `eon-next-summary-card`, `eon-next-consumption-card` (with 7-day bar chart), `eon-next-cost-card`, `eon-next-reading-card`
 - Panel and cards share compiled JS bundles served via `async_register_static_paths`
+- Panel meter cards now display consumption bar chart (Chart.js, tree-shaken), cost summary grid, and meter reading section
 - Panel meter rows include a derived "Today's cost" value: `(today's consumption * current unit rate) + daily standing charge`
 - Summary card meter rows include the same derived "Today's cost" value when costs are enabled
 - EV next-charge timestamps in the panel are rendered as human-friendly local date/time strings
