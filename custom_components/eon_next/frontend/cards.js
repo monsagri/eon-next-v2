@@ -173,7 +173,7 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
   color: var(--eon-text-secondary);
   font-size: 0.9em;
 }
-`;class Ho extends rt{constructor(){super(...arguments),this._history=[],this._loading=!0,this._fetchedSerial=null}updated(){this.hass&&this.meter?.serial&&this.meter.serial!==this._fetchedSerial&&this._fetchHistory()}async _fetchHistory(){this._fetchedSerial=this.meter.serial,this._loading=!0;try{const t=await async function(t,e,i=7){return t.callWS({type:"eon_next/consumption_history",meter_serial:e,days:i})}(this.hass,this.meter.serial,7);this._history=t.entries}catch{this._history=[]}this._loading=!1}render(){const t="gas"===this.meter?.type?"rgba(255, 152, 0, 0.7)":"rgba(3, 169, 244, 0.7)",e=this.hass?.language??"en",i=this._history.map(t=>new Date(t.date+"T00:00:00").toLocaleDateString(e,{weekday:"short"})),s=this._history.map(t=>t.consumption);return V`
+`;class Ho extends rt{constructor(){super(...arguments),this._history=[],this._loading=!0,this._chartLabels=[],this._chartDatasets=[],this._memoizedHistory=null,this._fetchedSerial=null}updated(){this.hass&&this.meter?.serial&&this.meter.serial!==this._fetchedSerial&&this._fetchHistory()}async _fetchHistory(){this._fetchedSerial=this.meter.serial,this._loading=!0;try{const t=await async function(t,e,i=7){return t.callWS({type:"eon_next/consumption_history",meter_serial:e,days:i})}(this.hass,this.meter.serial,7);this._history=t.entries}catch{this._history=[]}this._loading=!1}_ensureChartData(){if(this._memoizedHistory===this._history)return;this._memoizedHistory=this._history;const t=this.hass?.language??"en";this._chartLabels=this._history.map(e=>new Date(e.date+"T00:00:00").toLocaleDateString(t,{weekday:"short"}));const e="gas"===this.meter?.type?"rgba(255, 152, 0, 0.7)":"rgba(3, 169, 244, 0.7)";this._chartDatasets=[{label:"Consumption",data:this._history.map(t=>t.consumption),backgroundColor:e,borderRadius:4}]}render(){return this._ensureChartData(),V`
       <div class="stats">
         ${null!=this.meter?.daily_consumption?V`<div class="stat">
               <span class="stat-value"
@@ -184,8 +184,8 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       </div>
 
       ${this._history.length>0?V`<eon-bar-chart
-            .labels=${i}
-            .datasets=${[{label:"Consumption",data:s,backgroundColor:t,borderRadius:4}]}
+            .labels=${this._chartLabels}
+            .datasets=${this._chartDatasets}
             yLabel="kWh"
             ?darkMode=${this.hass?.themes?.darkMode??!1}
           ></eon-bar-chart>`:this._loading?V`<div class="chart-placeholder">Loading chart…</div>`:U}

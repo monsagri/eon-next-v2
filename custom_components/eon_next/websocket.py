@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, INTEGRATION_VERSION
+from .eonnext import EonNextAuthError
 from .models import EonNextConfigEntry
 from .schemas import (
     ConsumptionHistoryEntry,
@@ -116,8 +117,14 @@ async def ws_dashboard_summary(
     )
 
 
-def _find_meter_type(hass: HomeAssistant, meter_serial: str) -> str | None:
-    """Look up a meter's type (electricity/gas) from coordinator data."""
+def _find_meter_info(
+    hass: HomeAssistant, meter_serial: str
+) -> dict[str, Any] | None:
+    """Look up meter metadata from coordinator data.
+
+    Returns a dict with ``type``, ``supply_point_id``, and the owning
+    ``api`` client, or ``None`` if the meter is not found.
+    """
     entries: list[EonNextConfigEntry] = (
         hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
     )
@@ -130,7 +137,11 @@ def _find_meter_type(hass: HomeAssistant, meter_serial: str) -> str | None:
             continue
         for data in coordinator.data.values():
             if data.get("serial") == meter_serial:
-                return data.get("type")  # type: ignore[no-any-return]
+                return {
+                    "type": data.get("type"),
+                    "supply_point_id": data.get("supply_point_id"),
+                    "api": coordinator.api,
+                }
     return None
 
 
@@ -147,25 +158,51 @@ async def ws_consumption_history(
     connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
     msg: dict[str, Any],
 ) -> None:
-    """Return daily consumption history for a meter from recorder statistics."""
+    """Return daily consumption history for a meter.
+
+    Tries recorder statistics first, then falls back to the REST
+    consumption endpoint when statistics are empty or unavailable.
+    """
     meter_serial: str = msg["meter_serial"]
     days: int = msg["days"]
 
-    meter_type = _find_meter_type(hass, meter_serial)
-    if meter_type is None:
+    meter_info = _find_meter_info(hass, meter_serial)
+    if meter_info is None:
         connection.send_result(
             msg["id"],
             dataclasses.asdict(ConsumptionHistoryResponse(entries=[])),
         )
         return
 
+    meter_type: str = meter_info["type"]
+
+    entries = await _entries_from_statistics(hass, meter_serial, meter_type, days)
+
+    if not entries:
+        entries = await _entries_from_rest(
+            meter_info["api"],
+            meter_type,
+            meter_info["supply_point_id"],
+            meter_serial,
+            days,
+        )
+
+    connection.send_result(
+        msg["id"],
+        dataclasses.asdict(ConsumptionHistoryResponse(entries=entries)),
+    )
+
+
+async def _entries_from_statistics(
+    hass: HomeAssistant,
+    meter_serial: str,
+    meter_type: str,
+    days: int,
+) -> list[ConsumptionHistoryEntry]:
+    """Try to build consumption entries from HA recorder statistics."""
     stat_id = statistic_id_for_meter(meter_serial, meter_type)
     if stat_id is None:
-        connection.send_result(
-            msg["id"],
-            dataclasses.asdict(ConsumptionHistoryResponse(entries=[])),
-        )
-        return
+        return []
 
     # Align to local day boundaries so each bucket represents a full
     # calendar day and the caller gets exactly ``days`` entries.
@@ -210,13 +247,70 @@ async def ws_consumption_history(
                         consumption=round(float(change), 3),
                     )
                 )
-        # Trim to exactly the requested number of days
         entries.sort(key=lambda e: e.date)
         entries = entries[-days:]
     except Exception as err:  # pylint: disable=broad-except
         _LOGGER.debug("Failed to fetch consumption history for %s: %s", stat_id, err)
 
-    connection.send_result(
-        msg["id"],
-        dataclasses.asdict(ConsumptionHistoryResponse(entries=entries)),
-    )
+    return entries
+
+
+async def _entries_from_rest(
+    api: Any,
+    meter_type: str,
+    supply_point_id: str | None,
+    meter_serial: str,
+    days: int,
+) -> list[ConsumptionHistoryEntry]:
+    """Fall back to the REST consumption endpoint for history data."""
+    if not supply_point_id:
+        return []
+
+    local_now = dt_util.now()
+    period_to = (local_now + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+    period_from = (local_now - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
+
+    entries: list[ConsumptionHistoryEntry] = []
+    try:
+        result = await api.async_get_consumption(
+            meter_type,
+            supply_point_id,
+            meter_serial,
+            group_by="day",
+            page_size=days,
+            period_from=period_from,
+            period_to=period_to,
+        )
+        if result and isinstance(result.get("results"), list):
+            for item in result["results"]:
+                consumption = item.get("consumption")
+                interval = item.get("interval_start")
+                if consumption is None or interval is None:
+                    continue
+                try:
+                    value = float(consumption)
+                except (TypeError, ValueError):
+                    continue
+                if value <= 0:
+                    continue
+                # interval_start is an ISO datetime; extract the date part
+                date_str = str(interval)[:10]
+                entries.append(
+                    ConsumptionHistoryEntry(
+                        date=date_str,
+                        consumption=round(value, 3),
+                    )
+                )
+        entries.sort(key=lambda e: e.date)
+        entries = entries[-days:]
+    except EonNextAuthError:
+        _LOGGER.warning(
+            "Authentication failed fetching REST consumption for meter %s",
+            meter_serial,
+        )
+    except Exception as err:  # pylint: disable=broad-except
+        _LOGGER.debug(
+            "REST consumption fallback failed for meter %s: %s", meter_serial, err
+        )
+
+    return entries

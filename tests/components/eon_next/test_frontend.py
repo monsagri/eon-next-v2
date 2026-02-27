@@ -76,6 +76,7 @@ class FakeApi:
         self.password = ""
         self.accounts = [FakeAccount(meters=[FakeMeter()])]
         self._token_callback = None
+        self._consumption_result: dict[str, Any] | None = None
 
     def set_token_update_callback(self, callback: Any) -> None:
         self._token_callback = callback
@@ -87,6 +88,9 @@ class FakeApi:
     async def login_with_username_and_password(self, u: str, p: str) -> bool:
         self.password_login_calls.append((u, p))
         return True
+
+    async def async_get_consumption(self, *args: Any, **kwargs: Any) -> dict | None:
+        return self._consumption_result
 
     async def async_close(self) -> None:
         self.closed = True
@@ -230,6 +234,7 @@ class TestWsDashboardSummary:
                 "meter-1": {
                     "type": "electricity",
                     "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
                     "latest_reading": 1234.5,
                     "latest_reading_date": "2026-02-25",
                     "daily_consumption": 10.5,
@@ -344,6 +349,7 @@ class TestWsConsumptionHistory:
                 "meter-1": {
                     "type": "electricity",
                     "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
                     "latest_reading": 1234.5,
                     "latest_reading_date": "2026-02-25",
                     "daily_consumption": 10.5,
@@ -407,6 +413,7 @@ class TestWsConsumptionHistory:
                 "meter-1": {
                     "type": "electricity",
                     "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
                     "latest_reading": 1234.5,
                     "latest_reading_date": "2026-02-25",
                     "daily_consumption": 10.5,
@@ -449,6 +456,76 @@ class TestWsConsumptionHistory:
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
         assert result["entries"] == []
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_rest_when_statistics_empty(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """REST endpoint should be used when recorder statistics return nothing."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        # Pre-configure the REST fallback to return a single day entry.
+        fake_api._consumption_result = {
+            "results": [
+                {"interval_start": "2026-02-26T00:00:00Z", "consumption": 5.5}
+            ]
+        }
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "meter-1": {
+                    "type": "electricity",
+                    "serial": "E123",
+                    "supply_point_id": "mpxn-e123",
+                    "latest_reading": 1234.5,
+                    "latest_reading_date": "2026-02-25",
+                    "daily_consumption": 10.5,
+                    "standing_charge": 0.25,
+                    "previous_day_cost": 2.50,
+                    "unit_rate": 0.24,
+                    "tariff_name": "Standard",
+                },
+            }
+        )
+
+        # Mock recorder to return empty so REST fallback kicks in.
+        monkeypatch.setattr(
+            "homeassistant.helpers.recorder.get_instance",
+            MagicMock(
+                return_value=MagicMock(
+                    async_add_executor_job=AsyncMock(return_value={})
+                )
+            ),
+        )
+
+        from custom_components.eon_next.websocket import ws_consumption_history
+
+        mock_connection = MagicMock()
+        ws_consumption_history(
+            hass,
+            mock_connection,
+            {
+                "id": 13,
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 7,
+            },
+        )
+        await hass.async_block_till_done()
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+        assert len(result["entries"]) == 1
+        assert result["entries"][0]["date"] == "2026-02-26"
+        assert result["entries"][0]["consumption"] == 5.5
 
 
 # ── Panel registration tests ─────────────────────────────────────

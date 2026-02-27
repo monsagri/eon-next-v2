@@ -8,6 +8,13 @@ import './bar-chart'
 import sharedStyles from '../styles/shared.css'
 import styles from '../styles/consumption-view.css'
 
+interface ChartDataset {
+  label: string
+  data: number[]
+  backgroundColor: string
+  borderRadius: number
+}
+
 class EonConsumptionView extends LitElement {
   static styles = [sharedStyles, styles]
 
@@ -16,6 +23,11 @@ class EonConsumptionView extends LitElement {
 
   @state() private _history: ConsumptionHistoryEntry[] = []
   @state() private _loading = true
+
+  /** Memoized chart data — recomputed only when _history changes. */
+  private _chartLabels: string[] = []
+  private _chartDatasets: ChartDataset[] = []
+  private _memoizedHistory: ConsumptionHistoryEntry[] | null = null
 
   private _fetchedSerial: string | null = null
 
@@ -37,16 +49,32 @@ class EonConsumptionView extends LitElement {
     this._loading = false
   }
 
-  render() {
-    const barColor =
-      this.meter?.type === 'gas' ? 'rgba(255, 152, 0, 0.7)' : 'rgba(3, 169, 244, 0.7)'
+  private _ensureChartData(): void {
+    if (this._memoizedHistory === this._history) {
+      return
+    }
+    this._memoizedHistory = this._history
 
     const locale = this.hass?.language ?? 'en'
-    const chartLabels = this._history.map((e) => {
+    this._chartLabels = this._history.map((e) => {
       const d = new Date(e.date + 'T00:00:00')
       return d.toLocaleDateString(locale, { weekday: 'short' })
     })
-    const chartData = this._history.map((e) => e.consumption)
+
+    const barColor =
+      this.meter?.type === 'gas' ? 'rgba(255, 152, 0, 0.7)' : 'rgba(3, 169, 244, 0.7)'
+    this._chartDatasets = [
+      {
+        label: 'Consumption',
+        data: this._history.map((e) => e.consumption),
+        backgroundColor: barColor,
+        borderRadius: 4
+      }
+    ]
+  }
+
+  render() {
+    this._ensureChartData()
 
     return html`
       <div class="stats">
@@ -62,15 +90,8 @@ class EonConsumptionView extends LitElement {
 
       ${this._history.length > 0
         ? html`<eon-bar-chart
-            .labels=${chartLabels}
-            .datasets=${[
-              {
-                label: 'Consumption',
-                data: chartData,
-                backgroundColor: barColor,
-                borderRadius: 4
-              }
-            ]}
+            .labels=${this._chartLabels}
+            .datasets=${this._chartDatasets}
             yLabel="kWh"
             ?darkMode=${this.hass?.themes?.darkMode ?? false}
           ></eon-bar-chart>`
