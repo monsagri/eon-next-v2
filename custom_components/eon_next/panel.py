@@ -22,15 +22,9 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     if DOMAIN in hass.data.get("frontend_panels", {}):
         return
 
-    # Actively ensure panel_custom is loaded — in a standard HA install it
-    # is always available (via after_dependencies ordering), but calling
-    # async_setup_component is idempotent and handles edge cases.
-    from homeassistant.setup import async_setup_component  # noqa: E402
-
     if "panel_custom" not in hass.config.components:
-        if not await async_setup_component(hass, "panel_custom", {}):
-            _LOGGER.debug("panel_custom not available; skipping panel registration")
-            return
+        _LOGGER.debug("panel_custom not available; skipping panel registration")
+        return
 
     from homeassistant.components import panel_custom  # noqa: E402
 
