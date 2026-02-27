@@ -1,0 +1,30 @@
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--eon-text-primary);
+}
+
+.cost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: var(--eon-text-primary);
+}
+
+.stat-label {
+  font-size: 0.8em;
+  color: var(--eon-text-secondary);
+}

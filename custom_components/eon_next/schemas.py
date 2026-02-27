@@ -58,6 +58,27 @@ class DashboardSummary:
     ev_chargers: list[EvChargerSummary]
 
 
+@dataclass
+class ConsumptionHistoryEntry:
+    """Single day of consumption history."""
+
+    date: str
+    consumption: float
+
+
+@dataclass
+class ConsumptionHistoryResponse:
+    """Response from ``eon_next/consumption_history``.
+
+    This command accepts ``meter_serial`` (str) and ``days`` (int, 1–30)
+    as request parameters.  The code-generator only handles zero-argument
+    commands, so the typed API wrapper lives in ``frontend/src/api.ts``
+    rather than in the auto-generated file.
+    """
+
+    entries: list[ConsumptionHistoryEntry]
+
+
 # ---------------------------------------------------------------------------
 # Command registry — maps WS command type strings to response dataclasses
 # ---------------------------------------------------------------------------
