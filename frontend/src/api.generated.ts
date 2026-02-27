@@ -47,6 +47,37 @@ export interface ConsumptionHistoryResponse {
   entries: ConsumptionHistoryEntry[]
 }
 
+export interface EvScheduleSlot {
+  start: string
+  end: string
+}
+
+export interface EvScheduleResponse {
+  device_id: string | null
+  serial: string | null
+  status: string
+  slots: EvScheduleSlot[]
+}
+
+export interface BackfillMeterProgress {
+  serial: string
+  done: boolean
+  next_start: string | null
+  days_completed: number
+  days_remaining: number
+}
+
+export interface BackfillStatusResponse {
+  state: string
+  enabled: boolean
+  total_meters: number
+  completed_meters: number
+  pending_meters: number
+  lookback_days: number
+  next_start_date: string | null
+  meters: BackfillMeterProgress[]
+}
+
 // --- WebSocket command constants ---
 
 export const WS_VERSION = 'eon_next/version' as const

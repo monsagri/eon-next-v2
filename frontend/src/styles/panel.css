@@ -68,26 +68,99 @@
   font-size: 0.9em;
 }
 
-.loading {
-  text-align: center;
-  padding: 48px;
-  color: var(--eon-text-secondary);
-}
-
-.error {
-  color: var(--error-color, #db4437);
-  padding: 16px;
-  text-align: center;
-}
-
 .card-divider {
   border-top: 1px solid var(--eon-divider);
   margin: 12px 0;
 }
 
-.empty {
-  color: var(--eon-text-secondary);
-  padding: 16px;
+/* --- Skeleton loading state --- */
+
+.loading {
+  padding: 0;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-card {
+  background: var(--eon-background);
+  border-radius: var(--ha-card-border-radius, 12px);
+  box-shadow: var(
+    --ha-card-box-shadow,
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2)
+  );
+  height: 280px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* --- Error state --- */
+
+.error-state {
   text-align: center;
-  font-style: italic;
+  padding: 48px 16px;
+  color: var(--error-color, #db4437);
+}
+
+.error-state h2 {
+  margin: 12px 0 4px;
+  font-size: 1.2em;
+}
+
+.error-state p {
+  color: var(--eon-text-secondary);
+  font-size: 0.9em;
+  margin: 0;
+}
+
+/* --- Empty state --- */
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--eon-text-secondary);
+}
+
+.empty-state h2 {
+  margin: 12px 0 4px;
+  font-size: 1.2em;
+  color: var(--eon-text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* --- Diagnostics section --- */
+
+.section-divider {
+  border-top: 1px solid var(--eon-divider);
+  margin: 24px 0;
+}
+
+.diagnostics {
+  background: var(--eon-background);
+  border-radius: var(--ha-card-border-radius, 12px);
+  box-shadow: var(
+    --ha-card-box-shadow,
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2)
+  );
+  padding: 16px;
 }

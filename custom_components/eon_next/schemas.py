@@ -79,6 +79,52 @@ class ConsumptionHistoryResponse:
     entries: list[ConsumptionHistoryEntry]
 
 
+@dataclass
+class EvScheduleSlot:
+    """A single charge slot in the EV schedule."""
+
+    start: str
+    end: str
+
+
+@dataclass
+class EvScheduleResponse:
+    """Response from ``eon_next/ev_schedule``.
+
+    Accepts ``device_id`` (str) as a request parameter.
+    """
+
+    device_id: str | None
+    serial: str | None
+    status: str
+    slots: list[EvScheduleSlot]
+
+
+@dataclass
+class BackfillMeterProgress:
+    """Per-meter backfill progress."""
+
+    serial: str
+    done: bool
+    next_start: str | None
+    days_completed: int
+    days_remaining: int
+
+
+@dataclass
+class BackfillStatusResponse:
+    """Response from ``eon_next/backfill_status``."""
+
+    state: str
+    enabled: bool
+    total_meters: int
+    completed_meters: int
+    pending_meters: int
+    lookback_days: int
+    next_start_date: str | None
+    meters: list[BackfillMeterProgress]
+
+
 # ---------------------------------------------------------------------------
 # Command registry — maps WS command type strings to response dataclasses
 # ---------------------------------------------------------------------------
@@ -94,4 +140,6 @@ WS_COMMANDS: dict[str, type] = {
 # callers live in ``frontend/src/api.ts``.
 WS_EXTRA_RESPONSE_TYPES: list[type] = [
     ConsumptionHistoryResponse,
+    EvScheduleResponse,
+    BackfillStatusResponse,
 ]
