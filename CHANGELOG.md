@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.6.0](https://github.com/monsagri/eon-next-v2/compare/v1.5.4...v1.6.0) (2026-02-27)
+
+
+### Features
+
+* **frontend:** add consumption charts and new Lovelace cards ([#31](https://github.com/monsagri/eon-next-v2/issues/31)) ([4d898f0](https://github.com/monsagri/eon-next-v2/commit/4d898f06622804d5e98f442aa442befe5e9ee7bf))
+
+
+### Bug Fixes
+
+* correct GraphQL query shapes for gas tariffs and remove defunct consumptionDataByMpxn ([#33](https://github.com/monsagri/eon-next-v2/issues/33)) ([4a6fc6a](https://github.com/monsagri/eon-next-v2/commit/4a6fc6affb74f494981f108308c73e3d8e91ac3c))
+
 ## [Unreleased]
 
 ### Features
