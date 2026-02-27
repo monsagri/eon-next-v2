@@ -116,7 +116,7 @@ class HistoricalBackfillStatusSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         status = self._backfill.get_status()
-        return {
+        attrs: dict[str, Any] = {
             "enabled": status["enabled"],
             "initialized": status["initialized"],
             "rebuild_done": status["rebuild_done"],
@@ -126,6 +126,10 @@ class HistoricalBackfillStatusSensor(CoordinatorEntity, SensorEntity):
             "pending_meters": status["pending_meters"],
             "next_start_date": status["next_start_date"],
         }
+        meters_progress = status.get("meters_progress", {})
+        if meters_progress:
+            attrs["meters_progress"] = meters_progress
+        return attrs
 
 
 class LatestReadingDateSensor(EonNextSensorBase):
