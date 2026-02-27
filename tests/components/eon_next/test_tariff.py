@@ -272,7 +272,7 @@ async def test_async_get_tariff_data_maps_by_supply_point() -> None:
                                         "validFrom": _LAST_YEAR,
                                         "validTo": "",
                                         "tariff": {
-                                            "__typename": "StandardTariff",
+                                            "__typename": "GasTariffType",
                                             "displayName": "Next Flex Gas",
                                             "tariffCode": "GAS-01",
                                             "unitRate": "6.20",

@@ -39,6 +39,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         )
         self.api = api
         self._statistics_import_enabled = True
+        self._cost_warning_logged: set[str] = set()
 
     def set_statistics_import_enabled(self, enabled: bool) -> None:
         """Enable or disable automatic statistics imports during updates."""
@@ -123,7 +124,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                     else:
                         # Use previous values when available to avoid
                         # flipping sensors to "unknown" on transient failures.
-                        # Check each field independently — _parse_cost_item
+                        # Check each field independently — the cost endpoint
                         # can return standing_charge=None while still
                         # providing total_cost or unit_rate.
                         prev = self.data.get(meter_key, {}) if self.data else {}
@@ -145,14 +146,15 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 "retaining previous values",
                                 meter.serial,
                             )
-                        else:
-                            _LOGGER.warning(
+                        elif meter.serial not in self._cost_warning_logged:
+                            _LOGGER.debug(
                                 "No cost data available for meter %s — "
                                 "standing charge, previous day cost, and unit "
-                                "rate sensors will show as unknown until data "
-                                "arrives from the API",
+                                "rate sensors will show as unknown until a "
+                                "cost data source becomes available",
                                 meter.serial,
                             )
+                            self._cost_warning_logged.add(meter.serial)
 
                     tariff = (
                         account_tariffs.get(meter.supply_point_id)
@@ -294,7 +296,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
 
         Tries half-hourly REST data first (up to 48 half-hour slots,
         approximately one day depending on availability), then falls back to
-        daily REST data, then to the GraphQL consumptionDataByMpxn query.
+        daily REST data.
         """
         # Try half-hourly data first (up to 48 slots, ~1 day when available)
         try:
@@ -332,23 +334,6 @@ class EonNextCoordinator(DataUpdateCoordinator):
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.debug(
                 "REST daily consumption unavailable for meter %s: %s",
-                meter.serial,
-                err,
-            )
-
-        # Fall back to GraphQL
-        try:
-            fallback = await self.api.async_get_consumption_data_by_mpxn(
-                meter.supply_point_id,
-                days=7,
-            )
-            if fallback:
-                return fallback
-        except EonNextAuthError:
-            raise
-        except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.debug(
-                "GraphQL consumptionDataByMpxn fallback unavailable for meter %s: %s",
                 meter.serial,
                 err,
             )
