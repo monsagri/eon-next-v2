@@ -48,5 +48,9 @@ export type {
   VersionResponse,
   DashboardSummary,
   MeterSummary,
-  EvChargerSummary
+  EvChargerSummary,
+  EvScheduleSlot,
+  EvScheduleResponse,
+  BackfillMeterProgress,
+  BackfillStatusResponse
 } from './api.generated'

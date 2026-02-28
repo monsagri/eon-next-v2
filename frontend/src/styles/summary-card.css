@@ -42,3 +42,15 @@ ha-card {
   color: var(--error-color, #db4437);
   font-size: 0.9em;
 }
+
+.empty-notice {
+  color: var(--eon-text-secondary);
+  font-size: 0.9em;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+eon-sparkline-chart {
+  display: block;
+  margin-top: 4px;
+}

@@ -11,14 +11,23 @@
 export {
   getVersion,
   getDashboardSummary,
+  getBackfillStatus,
   WS_VERSION,
-  WS_DASHBOARD_SUMMARY
+  WS_DASHBOARD_SUMMARY,
+  WS_BACKFILL_STATUS
 } from './api.generated'
 
-export type { ConsumptionHistoryEntry, ConsumptionHistoryResponse } from './api.generated'
+export type {
+  ConsumptionHistoryEntry,
+  ConsumptionHistoryResponse,
+  EvScheduleSlot,
+  EvScheduleResponse,
+  BackfillMeterProgress,
+  BackfillStatusResponse
+} from './api.generated'
 
 import type { HomeAssistant } from './types'
-import type { ConsumptionHistoryResponse } from './api.generated'
+import type { ConsumptionHistoryResponse, EvScheduleResponse } from './api.generated'
 
 // --- Consumption history (parameterized command) -------------------------
 
@@ -31,5 +40,17 @@ export async function getConsumptionHistory(
     type: 'eon_next/consumption_history',
     meter_serial: meterSerial,
     days
+  })
+}
+
+// --- EV schedule (parameterized command) ---------------------------------
+
+export async function getEvSchedule(
+  hass: HomeAssistant,
+  deviceId: string
+): Promise<EvScheduleResponse> {
+  return hass.callWS<EvScheduleResponse>({
+    type: 'eon_next/ev_schedule',
+    device_id: deviceId
   })
 }

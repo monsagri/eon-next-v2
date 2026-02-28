@@ -81,8 +81,10 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 - EV charging schedule timestamps are displayed in a readable local date/time format.
+- EV schedule widgets now show explicit `Unknown`/`No device selected` states instead of falling back to `Idle`.
 - Panel and card text colors adapt to Home Assistant theme variables for improved dark-mode readability.
 - Panel and card components now return to a loading state during reconnect/manual refresh cycles instead of showing stale values.
+- Backfill diagnostics now render explicit loading/error/empty messages instead of a blank diagnostics block.
 
 ### Lovelace Cards
 
@@ -93,6 +95,7 @@ The integration ships Lovelace cards that power users can add to any dashboard:
 - **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, standing charge, and unit rate.
 - **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest meter reading, date, and tariff.
 - Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
+- Summary-card sparkline history loads per meter in parallel for faster initial render on multi-meter setups.
 
 The summary card is registered by default and appears in the Lovelace card picker (storage mode). To disable it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and turn off "Register EON Next summary card for Lovelace dashboards".
 

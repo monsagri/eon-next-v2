@@ -16,6 +16,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 import custom_components.eon_next as integration
 from custom_components.eon_next.backfill import EonNextBackfillManager
 from custom_components.eon_next.const import (
+    CONF_BACKFILL_ENABLED,
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_REFRESH_TOKEN,
@@ -27,6 +28,8 @@ from custom_components.eon_next.const import (
 from custom_components.eon_next.coordinator import EonNextCoordinator
 from custom_components.eon_next.schemas import (
     ConsumptionHistoryResponse,
+    EvScheduleResponse,
+    EvScheduleSlot,
     VersionResponse,
 )
 from homeassistant.core import HomeAssistant
@@ -577,6 +580,162 @@ class TestWsConsumptionHistory:
         assert entries[1]["consumption"] == 0.0
         assert entries[2]["date"] == _today.isoformat()
         assert entries[2]["consumption"] == 0.0
+
+
+class TestWsEvSchedule:
+    """Tests for the eon_next/ev_schedule WebSocket handler."""
+
+    @pytest.mark.asyncio
+    async def test_ws_ev_schedule_returns_slots_for_known_device(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        now = dt_util.now()
+        slot_start = now.isoformat()
+        slot_end = (now + datetime.timedelta(hours=2)).isoformat()
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "ev::device-1": {
+                    "type": "ev_charger",
+                    "device_id": "device-1",
+                    "serial": "EV-001",
+                    "schedule": [{"start": slot_start, "end": slot_end}],
+                }
+            }
+        )
+
+        from custom_components.eon_next.websocket import ws_ev_schedule
+
+        mock_connection = MagicMock()
+        ws_ev_schedule(
+            hass,
+            mock_connection,
+            {"id": 20, "type": "eon_next/ev_schedule", "device_id": "device-1"},
+        )
+
+        mock_connection.send_result.assert_called_once_with(
+            20,
+            dataclasses.asdict(
+                EvScheduleResponse(
+                    device_id="device-1",
+                    serial="EV-001",
+                    status="scheduled",
+                    slots=[EvScheduleSlot(start=slot_start, end=slot_end)],
+                )
+            ),
+        )
+
+    @pytest.mark.asyncio
+    async def test_ws_ev_schedule_returns_unknown_for_missing_device(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        from custom_components.eon_next.websocket import ws_ev_schedule
+
+        mock_connection = MagicMock()
+        ws_ev_schedule(
+            hass,
+            mock_connection,
+            {"id": 21, "type": "eon_next/ev_schedule", "device_id": "missing-device"},
+        )
+
+        mock_connection.send_result.assert_called_once_with(
+            21,
+            dataclasses.asdict(
+                EvScheduleResponse(
+                    device_id="missing-device",
+                    serial=None,
+                    status="unknown",
+                    slots=[],
+                )
+            ),
+        )
+
+
+class TestWsBackfillStatus:
+    """Tests for the eon_next/backfill_status WebSocket handler."""
+
+    @pytest.mark.asyncio
+    async def test_ws_backfill_status_reports_disabled_state(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry(options={CONF_BACKFILL_ENABLED: False})
+
+        await _setup_entry(hass, entry)
+
+        from custom_components.eon_next.websocket import ws_backfill_status
+
+        mock_connection = MagicMock()
+        ws_backfill_status(hass, mock_connection, {"id": 30, "type": "eon_next/backfill_status"})
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+
+        assert result["state"] == "disabled"
+        assert result["enabled"] is False
+        assert result["total_meters"] == 1
+
+    @pytest.mark.asyncio
+    async def test_ws_backfill_status_sorts_meter_progress_by_serial(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        fake_api.accounts = [
+            FakeAccount(
+                meters=[FakeMeter(serial="METER-B"), FakeMeter(serial="METER-A")]
+            )
+        ]
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry(options={CONF_BACKFILL_ENABLED: True})
+
+        await _setup_entry(hass, entry)
+
+        from custom_components.eon_next.websocket import ws_backfill_status
+
+        mock_connection = MagicMock()
+        ws_backfill_status(
+            hass, mock_connection, {"id": 31, "type": "eon_next/backfill_status"}
+        )
+
+        mock_connection.send_result.assert_called_once()
+        result = mock_connection.send_result.call_args[0][1]
+
+        assert result["enabled"] is True
+        assert result["state"] == "initializing"
+        assert [meter["serial"] for meter in result["meters"]] == [
+            "METER-A",
+            "METER-B",
+        ]
 
 
 # ── Panel registration tests ─────────────────────────────────────

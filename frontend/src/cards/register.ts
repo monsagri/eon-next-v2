@@ -9,6 +9,7 @@ import './summary-card'
 import './consumption-card'
 import './cost-card'
 import './reading-card'
+import './ev-card'
 
 // Extend the global Window type for HA card registration
 declare global {
@@ -50,6 +51,13 @@ window.customCards.push(
     type: 'eon-next-reading-card',
     name: 'EON Next Meter Reading',
     description: 'Latest meter reading, date, and tariff information for a single meter.',
+    preview: true
+  },
+  {
+    type: 'eon-next-ev-card',
+    name: 'EON Next EV Charging',
+    description:
+      'Smart charging schedule timeline showing upcoming charge slots for your EV.',
     preview: true
   }
 )

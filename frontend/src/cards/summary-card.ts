@@ -1,9 +1,10 @@
 import { LitElement, html, nothing } from 'lit'
 import { property, state } from 'lit/decorators.js'
-import { getDashboardSummary } from '../api'
+import { getDashboardSummary, getConsumptionHistory } from '../api'
 import { WsDataController } from '../controllers/ws-data-controller'
-import { renderMeterSummary } from '../templates/meter-summary'
-import type { HomeAssistant, DashboardSummary } from '../types'
+import type { HomeAssistant, DashboardSummary, MeterSummary } from '../types'
+import { formatDateTime } from '../utils/date'
+import '../components/sparkline-chart'
 
 import sharedStyles from '../styles/shared.css'
 import cardStyles from '../styles/summary-card.css'
@@ -20,23 +21,70 @@ class EonNextSummaryCard extends LitElement {
 
   @property({ attribute: false }) hass!: HomeAssistant
   @state() private _config!: SummaryCardConfig
+  @state() private _sparklines: Record<string, number[]> = {}
 
   private _data = new WsDataController<DashboardSummary>(this, (h) =>
     getDashboardSummary(h)
   )
+
+  private _sparklineFetched = false
 
   setConfig(config: SummaryCardConfig): void {
     this._config = { show_gas: true, show_ev: true, show_costs: true, ...config }
   }
 
   getCardSize(): number {
-    return 3
+    return 4
+  }
+
+  updated() {
+    if (this.hass && this._data.data && !this._sparklineFetched) {
+      this._fetchSparklines()
+    }
+  }
+
+  private async _fetchSparklines() {
+    this._sparklineFetched = true
+    const meters = this._data.data?.meters ?? []
+    const meterPromises = meters
+      .filter((meter) => meter.serial)
+      .map(async (meter) => {
+        try {
+          const serial = meter.serial as string
+          const resp = await getConsumptionHistory(this.hass, serial, 7)
+          return { serial, values: resp.entries.map((e) => e.consumption) }
+        } catch {
+          // Sparkline is optional; silently skip individual failures.
+          return null
+        }
+      })
+
+    if (meterPromises.length === 0) {
+      return
+    }
+
+    const results = await Promise.all(meterPromises)
+    const nextSparklines: Record<string, number[]> = {}
+
+    for (const result of results) {
+      if (result) {
+        nextSparklines[result.serial] = result.values
+      }
+    }
+
+    if (Object.keys(nextSparklines).length > 0) {
+      this._sparklines = {
+        ...this._sparklines,
+        ...nextSparklines
+      }
+    }
   }
 
   render() {
     if (this._data.error) {
       return html`<ha-card>
-        <div class="error">Error: ${this._data.error}</div>
+        <div class="error">Unable to load data</div>
+        <div class="card-content secondary-text">Details: ${this._data.error}</div>
       </ha-card>`
     }
 
@@ -61,10 +109,10 @@ class EonNextSummaryCard extends LitElement {
         </div>
 
         ${electricity.map((m) =>
-          renderMeterSummary(m, 'Electricity', 'mdi:flash', showCosts)
+          this._renderMeterSection(m, 'Electricity', 'mdi:flash', showCosts)
         )}
         ${showGas
-          ? gas.map((m) => renderMeterSummary(m, 'Gas', 'mdi:fire', showCosts))
+          ? gas.map((m) => this._renderMeterSection(m, 'Gas', 'mdi:fire', showCosts))
           : nothing}
         ${showEv && ev_chargers.length > 0
           ? html`<div class="meter-section">
@@ -78,11 +126,76 @@ class EonNextSummaryCard extends LitElement {
                     <span class="stat-label">Status</span>
                     <span>${ev.schedule_slots > 0 ? 'Scheduled' : 'Idle'}</span>
                   </div>
+                  ${ev.next_charge_start
+                    ? html`<div class="stat-row">
+                        <span class="stat-label">Next charge</span>
+                        <span>${formatDateTime(ev.next_charge_start)}</span>
+                      </div>`
+                    : nothing}
                 `
               )}
             </div>`
           : nothing}
+        ${!meters.length && !ev_chargers.length
+          ? html`<div class="empty-notice">No data available</div>`
+          : nothing}
       </ha-card>
+    `
+  }
+
+  private _renderMeterSection(
+    meter: MeterSummary,
+    label: string,
+    icon: string,
+    showCosts: boolean
+  ) {
+    const todayCost =
+      meter.daily_consumption != null && meter.unit_rate != null
+        ? meter.daily_consumption * meter.unit_rate + (meter.standing_charge ?? 0)
+        : null
+
+    const sparklineData = meter.serial ? this._sparklines[meter.serial] : undefined
+    const sparklineColor =
+      meter.type === 'gas' ? 'rgba(255, 152, 0, 0.8)' : 'rgba(3, 169, 244, 0.8)'
+
+    return html`
+      <div class="meter-section">
+        <div class="meter-label">
+          <ha-icon .icon=${icon} style="--mdc-icon-size: 16px;"></ha-icon>
+          ${label}
+        </div>
+
+        ${meter.daily_consumption != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Today</span>
+              <span>${meter.daily_consumption} kWh</span>
+            </div>`
+          : nothing}
+        ${showCosts && todayCost != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Today's cost</span>
+              <span>£${todayCost.toFixed(2)}</span>
+            </div>`
+          : nothing}
+        ${showCosts && meter.previous_day_cost != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Yesterday cost</span>
+              <span>£${meter.previous_day_cost.toFixed(2)}</span>
+            </div>`
+          : nothing}
+        ${showCosts && meter.standing_charge != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Standing charge</span>
+              <span>£${meter.standing_charge.toFixed(2)}/day</span>
+            </div>`
+          : nothing}
+        ${sparklineData && sparklineData.length >= 2
+          ? html`<eon-sparkline-chart
+              .values=${sparklineData}
+              .color=${sparklineColor}
+            ></eon-sparkline-chart>`
+          : nothing}
+      </div>
     `
   }
 }

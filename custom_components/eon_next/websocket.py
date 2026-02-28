@@ -20,10 +20,14 @@ from .const import DOMAIN, INTEGRATION_VERSION
 from .eonnext import EonNextAuthError
 from .models import EonNextConfigEntry
 from .schemas import (
+    BackfillMeterProgress,
+    BackfillStatusResponse,
     ConsumptionHistoryEntry,
     ConsumptionHistoryResponse,
     DashboardSummary,
     EvChargerSummary,
+    EvScheduleResponse,
+    EvScheduleSlot,
     MeterSummary,
     VersionResponse,
 )
@@ -37,6 +41,8 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_version)
     websocket_api.async_register_command(hass, ws_dashboard_summary)
     websocket_api.async_register_command(hass, ws_consumption_history)
+    websocket_api.async_register_command(hass, ws_ev_schedule)
+    websocket_api.async_register_command(hass, ws_backfill_status)
 
 
 @websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
@@ -338,3 +344,153 @@ async def _entries_from_rest(
         )
 
     return entries
+
+
+@websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
+    {
+        vol.Required("type"): "eon_next/ev_schedule",
+        vol.Required("device_id"): str,
+    }
+)
+@callback
+def ws_ev_schedule(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
+    msg: dict[str, Any],
+) -> None:
+    """Return EV charge schedule for a specific device."""
+    device_id: str = msg["device_id"]
+
+    entries: list[EonNextConfigEntry] = (
+        hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
+    )
+
+    for entry in entries:
+        runtime_data = getattr(entry, "runtime_data", None)
+        if runtime_data is None:
+            continue
+        coordinator = runtime_data.coordinator
+        if coordinator.data is None:
+            continue
+
+        for data in coordinator.data.values():
+            if data.get("type") != "ev_charger":
+                continue
+            if data.get("device_id") != device_id:
+                continue
+
+            schedule = data.get("schedule", [])
+            slots = [
+                EvScheduleSlot(
+                    start=slot.get("start", ""),
+                    end=slot.get("end", ""),
+                )
+                for slot in schedule
+                if isinstance(slot, dict)
+            ]
+
+            status = "scheduled" if slots else "idle"
+            connection.send_result(
+                msg["id"],
+                dataclasses.asdict(
+                    EvScheduleResponse(
+                        device_id=device_id,
+                        serial=data.get("serial"),
+                        status=status,
+                        slots=slots,
+                    )
+                ),
+            )
+            return
+
+    # Device not found — return empty response
+    connection.send_result(
+        msg["id"],
+        dataclasses.asdict(
+            EvScheduleResponse(
+                device_id=device_id,
+                serial=None,
+                status="unknown",
+                slots=[],
+            )
+        ),
+    )
+
+
+@websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
+    {vol.Required("type"): "eon_next/backfill_status"}
+)
+@callback
+def ws_backfill_status(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
+    msg: dict[str, Any],
+) -> None:
+    """Return aggregated backfill status across all config entries."""
+    entries: list[EonNextConfigEntry] = (
+        hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
+    )
+
+    total_meters = 0
+    completed_meters = 0
+    pending_meters = 0
+    lookback_days = 0
+    enabled = False
+    state = "disabled"
+    next_start_date: str | None = None
+    meter_progress: list[BackfillMeterProgress] = []
+
+    for entry in entries:
+        runtime_data = getattr(entry, "runtime_data", None)
+        if runtime_data is None:
+            continue
+
+        backfill = runtime_data.backfill
+        status = backfill.get_status()
+
+        if status["enabled"]:
+            enabled = True
+
+        total_meters += status["total_meters"]
+        completed_meters += status["completed_meters"]
+        pending_meters += status["pending_meters"]
+        lookback_days = max(lookback_days, status["lookback_days"])
+
+        if status["next_start_date"]:
+            if next_start_date is None or status["next_start_date"] < next_start_date:
+                next_start_date = status["next_start_date"]
+
+        # Use the most active state
+        if status["state"] in ("running", "initializing"):
+            state = status["state"]
+        elif status["state"] == "completed" and state == "disabled":
+            state = "completed"
+
+        for serial, progress in status["meters_progress"].items():
+            meter_progress.append(
+                BackfillMeterProgress(
+                    serial=serial,
+                    done=progress.get("done", False),
+                    next_start=progress.get("next_start"),
+                    days_completed=progress.get("days_completed", 0),
+                    days_remaining=progress.get("days_remaining", 0),
+                )
+            )
+
+    meter_progress.sort(key=lambda meter: meter.serial)
+
+    connection.send_result(
+        msg["id"],
+        dataclasses.asdict(
+            BackfillStatusResponse(
+                state=state,
+                enabled=enabled,
+                total_meters=total_meters,
+                completed_meters=completed_meters,
+                pending_meters=pending_meters,
+                lookback_days=lookback_days,
+                next_start_date=next_start_date,
+                meters=meter_progress,
+            )
+        ),
+    )

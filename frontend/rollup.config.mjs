@@ -1,10 +1,18 @@
 import resolve from "@rollup/plugin-node-resolve";
+import replace from "@rollup/plugin-replace";
 import typescript from "@rollup/plugin-typescript";
 import terser from "@rollup/plugin-terser";
 import litcss from "rollup-plugin-lit-css";
+import { readFileSync } from "fs";
 
 const watching = !!process.env.ROLLUP_WATCH;
 const production = !watching;
+
+// Read the integration version from manifest.json for frontend version stamping.
+const manifest = JSON.parse(
+  readFileSync("../custom_components/eon_next/manifest.json", "utf-8"),
+);
+const integrationVersion = manifest.version;
 
 // In dev mode, output to dev/ so the harness can load them.
 // In production, output to the custom_components frontend dir.
@@ -13,6 +21,10 @@ const outDir = watching ? "dev" : "../custom_components/eon_next/frontend";
 function plugins() {
   return [
     resolve(),
+    replace({
+      preventAssignment: true,
+      __FRONTEND_VERSION__: integrationVersion,
+    }),
     litcss(),
     typescript({ outDir, ...(watching && { sourceMap: true }) }),
   ];

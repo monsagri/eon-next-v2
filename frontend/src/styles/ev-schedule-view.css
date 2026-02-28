@@ -1,0 +1,75 @@
+.schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.status-badge {
+  font-size: 0.8em;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.status-badge.scheduled {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--label-badge-green, #4caf50);
+}
+
+.status-badge.idle {
+  background: rgba(158, 158, 158, 0.15);
+  color: var(--eon-text-secondary);
+}
+
+.status-badge.unknown {
+  background: rgba(255, 152, 0, 0.15);
+  color: var(--label-badge-yellow, #ff9800);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--primary-background-color, #f5f5f5);
+}
+
+.slot-index {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--eon-text-secondary);
+  min-width: 18px;
+}
+
+.slot-times {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.slot-range {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--eon-text-primary);
+}
+
+.slot-duration {
+  font-size: 0.8em;
+  color: var(--eon-text-secondary);
+}
+
+.empty-schedule {
+  color: var(--eon-text-secondary);
+  font-size: 0.9em;
+  font-style: italic;
+  padding: 8px 0;
+}
