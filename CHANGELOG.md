@@ -24,6 +24,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ### Bug Fixes
 
+* **coordinator:** derive unit rate, standing charge, and previous-day cost from tariff agreement data when the defunct daily-costs endpoint returns nothing
 * **frontend:** remove build-time version stamp that drifted from release-please managed version — the backend version badge is now the single source of truth
 
 ## [1.7.1](https://github.com/monsagri/eon-next-v2/compare/v1.7.0...v1.7.1) (2026-02-28)
