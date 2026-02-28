@@ -121,40 +121,6 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["previous_day_cost"] = cost_data["total_cost"]
                         meter_data["cost_period"] = cost_data["period"]
                         meter_data["unit_rate"] = cost_data.get("unit_rate")
-                    else:
-                        # Use previous values when available to avoid
-                        # flipping sensors to "unknown" on transient failures.
-                        # Check each field independently — the cost endpoint
-                        # can return standing_charge=None while still
-                        # providing total_cost or unit_rate.
-                        prev = self.data.get(meter_key, {}) if self.data else {}
-                        _cost_keys = (
-                            "standing_charge",
-                            "previous_day_cost",
-                            "cost_period",
-                            "unit_rate",
-                        )
-                        has_prev = any(
-                            prev.get(k) is not None for k in _cost_keys
-                        )
-                        if has_prev:
-                            for k in _cost_keys:
-                                if prev.get(k) is not None:
-                                    meter_data[k] = prev[k]
-                            _LOGGER.debug(
-                                "No new cost data for meter %s; "
-                                "retaining previous values",
-                                meter.serial,
-                            )
-                        elif meter.serial not in self._cost_warning_logged:
-                            _LOGGER.debug(
-                                "No cost data available for meter %s — "
-                                "standing charge, previous day cost, and unit "
-                                "rate sensors will show as unknown until a "
-                                "cost data source becomes available",
-                                meter.serial,
-                            )
-                            self._cost_warning_logged.add(meter.serial)
 
                     tariff = (
                         account_tariffs.get(meter.supply_point_id)
@@ -219,6 +185,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
 
                     # Compute previous-day cost from consumption + tariff
                     # data when the cost endpoint cannot provide it.
+                    # Require at least 44 half-hourly entries to avoid
+                    # under-reporting from incomplete data.
                     _ur = meter_data.get("unit_rate")
                     _sc = meter_data.get("standing_charge")
                     if (
@@ -228,7 +196,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         and _sc is not None
                     ):
                         yesterday_kwh = self._aggregate_yesterday_consumption(
-                            consumption
+                            consumption, min_entries=44
                         )
                         if yesterday_kwh is not None:
                             meter_data["previous_day_cost"] = round(
@@ -239,6 +207,46 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 dt_util.now() - timedelta(days=1)
                             ).date()
                             meter_data["cost_period"] = yesterday.isoformat()
+
+                    # Final fallback: retain previous cost values for any
+                    # fields still None to avoid flipping sensors to
+                    # "unknown" on transient failures.
+                    if not cost_data:
+                        prev = self.data.get(meter_key, {}) if self.data else {}
+                        _cost_keys = (
+                            "standing_charge",
+                            "previous_day_cost",
+                            "cost_period",
+                            "unit_rate",
+                        )
+                        retained = False
+                        for k in _cost_keys:
+                            if (
+                                meter_data.get(k) is None
+                                and prev.get(k) is not None
+                            ):
+                                meter_data[k] = prev[k]
+                                retained = True
+                        if retained:
+                            _LOGGER.debug(
+                                "No new cost data for meter %s; "
+                                "retaining previous values for "
+                                "unfilled fields",
+                                meter.serial,
+                            )
+                        elif not any(
+                            meter_data.get(k) is not None for k in _cost_keys
+                        ):
+                            if meter.serial not in self._cost_warning_logged:
+                                _LOGGER.debug(
+                                    "No cost data available for meter %s — "
+                                    "standing charge, previous day cost, and "
+                                    "unit rate sensors will show as unknown "
+                                    "until a cost data source becomes "
+                                    "available",
+                                    meter.serial,
+                                )
+                                self._cost_warning_logged.add(meter.serial)
 
                     data[meter_key] = meter_data
 
@@ -445,15 +453,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
     @staticmethod
     def _aggregate_yesterday_consumption(
         consumption_results: list[dict[str, Any]],
+        *,
+        min_entries: int = 1,
     ) -> float | None:
         """Sum yesterday's consumption from the given results.
 
-        Returns the total in kWh, or None if no entries matched yesterday.
+        Returns the total in kWh, or ``None`` if the number of matched
+        yesterday entries is below *min_entries* (default 1).  Use a
+        higher threshold (e.g. 44) when the result feeds a cost
+        calculation to avoid under-reporting from incomplete data.
         """
         yesterday = (dt_util.now() - timedelta(days=1)).date()
 
         total = 0.0
-        has_value = False
+        count = 0
 
         for entry in consumption_results:
             interval_start = entry.get("interval_start") or ""
@@ -477,9 +490,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 continue
 
             total += val
-            has_value = True
+            count += 1
 
-        return round(total, 3) if has_value else None
+        if count < min_entries:
+            return None
+        return round(total, 3)
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
