@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.8.0](https://github.com/monsagri/eon-next-v2/compare/v1.7.1...v1.8.0) (2026-02-28)
+
+
+### Features
+
+* **frontend:** add time-range picker, MTD cost, card editors, and accessibility (Phase 4) ([#41](https://github.com/monsagri/eon-next-v2/issues/41)) ([506e158](https://github.com/monsagri/eon-next-v2/commit/506e158d06d2ba101ded4c41977e23a5fdd197e8))
+
 ## [Unreleased]
 
 ### Features
