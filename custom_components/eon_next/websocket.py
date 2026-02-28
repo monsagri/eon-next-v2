@@ -187,10 +187,34 @@ async def ws_consumption_history(
             days,
         )
 
+    entries = _gap_fill(entries, days)
+
     connection.send_result(
         msg["id"],
         dataclasses.asdict(ConsumptionHistoryResponse(entries=entries)),
     )
+
+
+def _gap_fill(
+    entries: list[ConsumptionHistoryEntry], days: int
+) -> list[ConsumptionHistoryEntry]:
+    """Ensure every calendar day in the range has an entry.
+
+    Missing days are filled with zero-consumption entries only when at
+    least one real reading exists. This avoids masking total data-source
+    failures as genuine zero usage.
+    """
+    if not entries:
+        return []
+
+    today = dt_util.now().date()
+    existing = {e.date for e in entries}
+    for offset in range(days):
+        day = (today - timedelta(days=days - 1 - offset)).isoformat()
+        if day not in existing:
+            entries.append(ConsumptionHistoryEntry(date=day, consumption=0.0))
+    entries.sort(key=lambda e: e.date)
+    return entries[-days:]
 
 
 async def _entries_from_statistics(

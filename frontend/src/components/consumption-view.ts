@@ -13,6 +13,7 @@ interface ChartDataset {
   data: number[]
   backgroundColor: string
   borderRadius: number
+  yAxisID?: string
 }
 
 class EonConsumptionView extends LitElement {
@@ -24,10 +25,13 @@ class EonConsumptionView extends LitElement {
   @state() private _history: ConsumptionHistoryEntry[] = []
   @state() private _loading = true
 
-  /** Memoized chart data — recomputed only when _history changes. */
+  /** Memoized chart data — recomputed when history or meter pricing context changes. */
   private _chartLabels: string[] = []
   private _chartDatasets: ChartDataset[] = []
   private _memoizedHistory: ConsumptionHistoryEntry[] | null = null
+  private _memoizedMeterType: MeterSummary['type'] | undefined = undefined
+  private _memoizedUnitRate: number | null | undefined = undefined
+  private _memoizedStandingCharge: number | null | undefined = undefined
 
   private _fetchedSerial: string | null = null
 
@@ -50,10 +54,23 @@ class EonConsumptionView extends LitElement {
   }
 
   private _ensureChartData(): void {
-    if (this._memoizedHistory === this._history) {
+    const meterType = this.meter?.type
+    const unitRate = this.meter?.unit_rate
+    const standingCharge = this.meter?.standing_charge
+
+    if (
+      this._memoizedHistory === this._history &&
+      this._memoizedMeterType === meterType &&
+      this._memoizedUnitRate === unitRate &&
+      this._memoizedStandingCharge === standingCharge
+    ) {
       return
     }
+
     this._memoizedHistory = this._history
+    this._memoizedMeterType = meterType
+    this._memoizedUnitRate = unitRate
+    this._memoizedStandingCharge = standingCharge
 
     const locale = this.hass?.language ?? 'en'
     this._chartLabels = this._history.map((e) => {
@@ -63,14 +80,30 @@ class EonConsumptionView extends LitElement {
 
     const barColor =
       this.meter?.type === 'gas' ? 'rgba(255, 152, 0, 0.7)' : 'rgba(3, 169, 244, 0.7)'
-    this._chartDatasets = [
+    const datasets: ChartDataset[] = [
       {
-        label: 'Consumption',
+        label: 'Consumption (kWh)',
         data: this._history.map((e) => e.consumption),
         backgroundColor: barColor,
         borderRadius: 4
       }
     ]
+
+    const rate = unitRate
+    const standing = standingCharge ?? 0
+    if (rate != null) {
+      datasets.push({
+        label: 'Cost (£)',
+        data: this._history.map(
+          (e) => Math.round((e.consumption * rate + standing) * 100) / 100
+        ),
+        backgroundColor: 'rgba(76, 175, 80, 0.7)',
+        borderRadius: 4,
+        yAxisID: 'y2'
+      })
+    }
+
+    this._chartDatasets = datasets
   }
 
   render() {
@@ -93,6 +126,7 @@ class EonConsumptionView extends LitElement {
             .labels=${this._chartLabels}
             .datasets=${this._chartDatasets}
             yLabel="kWh"
+            y2Label=${this.meter?.unit_rate != null ? '£' : ''}
             ?darkMode=${this.hass?.themes?.darkMode ?? false}
           ></eon-bar-chart>`
         : this._loading
