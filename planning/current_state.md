@@ -1,6 +1,6 @@
 # EON Next Integration: Available Features
 
-Date: 2026-02-25
+Date: 2026-02-28
 Scope: Implemented capabilities in this repository (`eon-next-v2`)
 
 ## Summary
@@ -70,13 +70,18 @@ Gas meters add:
 
 - Sidebar panel (`panel_custom`) auto-registered on entry setup (toggleable via options flow, default: enabled)
 - WebSocket API commands: `eon_next/version`, `eon_next/dashboard_summary`, `eon_next/consumption_history`
-- `eon_next/consumption_history` returns daily consumption from HA recorder statistics for a given meter serial and day range (1–30)
-- Lovelace cards: `eon-next-summary-card`, `eon-next-consumption-card` (with 7-day bar chart), `eon-next-cost-card`, `eon-next-reading-card`
+- `eon_next/consumption_history` returns daily consumption from HA recorder statistics for a given meter serial and day range (1–365)
+- Lovelace cards: `eon-next-summary-card`, `eon-next-consumption-card`, `eon-next-cost-card`, `eon-next-reading-card`, `eon-next-ev-card`
+- All Lovelace cards include visual config editors (accessible from the card picker UI)
 - Panel and cards share compiled JS bundles served via `async_register_static_paths`
 - Panel meter cards now display consumption bar chart (Chart.js, tree-shaken), cost summary grid, and meter reading section
+- Consumption charts support selectable time ranges (7d / 30d / 90d / 1y) via a segmented range picker with adaptive date labels
 - Panel meter rows include a derived "Today's cost" value: `(today's consumption * current unit rate) + daily standing charge`
+- Cost view includes "Month to date" running cost total computed from daily consumption history
 - Summary card meter rows include the same derived "Today's cost" value when costs are enabled
 - EV next-charge timestamps in the panel are rendered as human-friendly local date/time strings
+- Chart tooltips styled with dark/light mode support and formatted values (£ prefix for cost, 1 decimal for kWh)
+- Accessibility: ARIA roles and labels on panel states, meter/EV cards, chart containers, and range picker
 - Panel and summary-card foreground text colors are explicitly theme-driven for improved dark-mode contrast
 - Frontend CI: ESLint, Prettier format check, TypeScript type check, Rollup build (`.github/workflows/frontend.yml`)
 
