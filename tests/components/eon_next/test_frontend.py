@@ -33,6 +33,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
 
+# Dynamic date references so tests never go stale.
+_TODAY = datetime.date.today()
+_YESTERDAY = _TODAY - datetime.timedelta(days=1)
+_YESTERDAY_ISO = _YESTERDAY.isoformat()
+
 
 @pytest.fixture(autouse=True)
 def _quiet_sqlalchemy_engine_logs() -> Generator[None, None, None]:
@@ -145,6 +150,24 @@ async def _ensure_recorder(hass: HomeAssistant) -> None:
     await hass.data[recorder_helper.DATA_RECORDER].db_connected
 
 
+def _electricity_meter_data() -> dict[str, dict[str, Any]]:
+    """Return coordinator data for a single electricity meter with dynamic dates."""
+    return {
+        "meter-1": {
+            "type": "electricity",
+            "serial": "E123",
+            "supply_point_id": "mpxn-e123",
+            "latest_reading": 1234.5,
+            "latest_reading_date": _YESTERDAY_ISO,
+            "daily_consumption": 10.5,
+            "standing_charge": 0.25,
+            "previous_day_cost": 2.50,
+            "unit_rate": 0.24,
+            "tariff_name": "Standard",
+        },
+    }
+
+
 async def _setup_entry(
     hass: HomeAssistant, entry: MockConfigEntry
 ) -> None:
@@ -230,22 +253,7 @@ class TestWsDashboardSummary:
 
         # Set coordinator data with a meter
         coordinator = entry.runtime_data.coordinator
-        coordinator.async_set_updated_data(
-            {
-                "meter-1": {
-                    "type": "electricity",
-                    "serial": "E123",
-                    "supply_point_id": "mpxn-e123",
-                    "latest_reading": 1234.5,
-                    "latest_reading_date": "2026-02-25",
-                    "daily_consumption": 10.5,
-                    "standing_charge": 0.25,
-                    "previous_day_cost": 2.50,
-                    "unit_rate": 0.24,
-                    "tariff_name": "Standard",
-                },
-            }
-        )
+        coordinator.async_set_updated_data(_electricity_meter_data())
 
         from custom_components.eon_next.websocket import ws_dashboard_summary
 
@@ -345,22 +353,7 @@ class TestWsConsumptionHistory:
 
         # Set coordinator data so the meter is found
         coordinator = entry.runtime_data.coordinator
-        coordinator.async_set_updated_data(
-            {
-                "meter-1": {
-                    "type": "electricity",
-                    "serial": "E123",
-                    "supply_point_id": "mpxn-e123",
-                    "latest_reading": 1234.5,
-                    "latest_reading_date": "2026-02-25",
-                    "daily_consumption": 10.5,
-                    "standing_charge": 0.25,
-                    "previous_day_cost": 2.50,
-                    "unit_rate": 0.24,
-                    "tariff_name": "Standard",
-                },
-            }
-        )
+        coordinator.async_set_updated_data(_electricity_meter_data())
 
         # Mock the recorder to return no statistics (avoids executor-pool
         # timing issues that cause async_block_till_done to return early).
@@ -410,22 +403,7 @@ class TestWsConsumptionHistory:
         await _setup_entry(hass, entry)
 
         coordinator = entry.runtime_data.coordinator
-        coordinator.async_set_updated_data(
-            {
-                "meter-1": {
-                    "type": "electricity",
-                    "serial": "E123",
-                    "supply_point_id": "mpxn-e123",
-                    "latest_reading": 1234.5,
-                    "latest_reading_date": "2026-02-25",
-                    "daily_consumption": 10.5,
-                    "standing_charge": 0.25,
-                    "previous_day_cost": 2.50,
-                    "unit_rate": 0.24,
-                    "tariff_name": "Standard",
-                },
-            }
-        )
+        coordinator.async_set_updated_data(_electricity_meter_data())
 
         # Make the recorder blow up.  ``get_instance`` is imported locally
         # inside the handler, so we patch it at its source module.
@@ -472,10 +450,12 @@ class TestWsConsumptionHistory:
         del enable_custom_integrations
         fake_api = FakeApi()
         # Pre-configure the REST fallback to return a single day entry.
-        _yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
         fake_api._consumption_result = {
             "results": [
-                {"interval_start": f"{_yesterday}T00:00:00Z", "consumption": 5.5}
+                {
+                    "interval_start": f"{_YESTERDAY_ISO}T00:00:00Z",
+                    "consumption": 5.5,
+                }
             ]
         }
         _patch_integration(monkeypatch, fake_api)
@@ -484,22 +464,7 @@ class TestWsConsumptionHistory:
         await _setup_entry(hass, entry)
 
         coordinator = entry.runtime_data.coordinator
-        coordinator.async_set_updated_data(
-            {
-                "meter-1": {
-                    "type": "electricity",
-                    "serial": "E123",
-                    "supply_point_id": "mpxn-e123",
-                    "latest_reading": 1234.5,
-                    "latest_reading_date": "2026-02-25",
-                    "daily_consumption": 10.5,
-                    "standing_charge": 0.25,
-                    "previous_day_cost": 2.50,
-                    "unit_rate": 0.24,
-                    "tariff_name": "Standard",
-                },
-            }
-        )
+        coordinator.async_set_updated_data(_electricity_meter_data())
 
         # Mock recorder to return empty so REST fallback kicks in.
         monkeypatch.setattr(
@@ -531,7 +496,7 @@ class TestWsConsumptionHistory:
         # REST returned 1 entry; gap-filling adds zeros for remaining 6 days
         assert len(result["entries"]) == 7
         rest_entry = next(e for e in result["entries"] if e["consumption"] == 5.5)
-        assert rest_entry["date"] == _yesterday
+        assert rest_entry["date"] == _YESTERDAY_ISO
         zero_entries = [e for e in result["entries"] if e["consumption"] == 0.0]
         assert len(zero_entries) == 6
 
@@ -551,22 +516,7 @@ class TestWsConsumptionHistory:
         await _setup_entry(hass, entry)
 
         coordinator = entry.runtime_data.coordinator
-        coordinator.async_set_updated_data(
-            {
-                "meter-1": {
-                    "type": "electricity",
-                    "serial": "E123",
-                    "supply_point_id": "mpxn-e123",
-                    "latest_reading": 1234.5,
-                    "latest_reading_date": "2026-02-25",
-                    "daily_consumption": 10.5,
-                    "standing_charge": 0.25,
-                    "previous_day_cost": 2.50,
-                    "unit_rate": 0.24,
-                    "tariff_name": "Standard",
-                },
-            }
-        )
+        coordinator.async_set_updated_data(_electricity_meter_data())
 
         # Build dynamic timestamps relative to today so the test never goes stale.
         # Use midday (12:00) UTC so that dt_util.as_local() never shifts

@@ -28,7 +28,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ### Bug Fixes
 
-* **websocket:** fill missing days in consumption history so chart always shows all requested days
+* **websocket:** gap-fill missing days with zero-consumption entries so the frontend always receives the requested number of data points
 
 ## [1.5.4](https://github.com/monsagri/eon-next-v2/compare/v1.5.3...v1.5.4) (2026-02-27)
 

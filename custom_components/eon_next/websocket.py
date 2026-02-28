@@ -187,19 +187,30 @@ async def ws_consumption_history(
             days,
         )
 
-    # Fill gaps so the chart always shows all requested days.
-    today = dt_util.now().date()
-    expected = {(today - timedelta(days=i)).isoformat() for i in range(days)}
-    existing = {e.date for e in entries}
-    for d in expected - existing:
-        entries.append(ConsumptionHistoryEntry(date=d, consumption=0.0))
-    entries.sort(key=lambda e: e.date)
-    entries = entries[-days:]
+    entries = _gap_fill(entries, days)
 
     connection.send_result(
         msg["id"],
         dataclasses.asdict(ConsumptionHistoryResponse(entries=entries)),
     )
+
+
+def _gap_fill(
+    entries: list[ConsumptionHistoryEntry], days: int
+) -> list[ConsumptionHistoryEntry]:
+    """Ensure every calendar day in the range has an entry.
+
+    Missing days are filled with zero-consumption entries so the frontend
+    always receives exactly ``days`` data points.
+    """
+    today = dt_util.now().date()
+    existing = {e.date for e in entries}
+    for offset in range(days):
+        day = (today - timedelta(days=days - 1 - offset)).isoformat()
+        if day not in existing:
+            entries.append(ConsumptionHistoryEntry(date=day, consumption=0.0))
+    entries.sort(key=lambda e: e.date)
+    return entries[-days:]
 
 
 async def _entries_from_statistics(
