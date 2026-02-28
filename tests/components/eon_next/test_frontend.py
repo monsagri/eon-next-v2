@@ -383,8 +383,9 @@ class TestWsConsumptionHistory:
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
-        # No statistics imported yet, so entries should be empty
-        assert result["entries"] == []
+        # No statistics — gap-filling still produces 7 zero-consumption days
+        assert len(result["entries"]) == 7
+        assert all(e["consumption"] == 0.0 for e in result["entries"])
 
     @pytest.mark.asyncio
     async def test_handles_recorder_exception_gracefully(
@@ -434,8 +435,9 @@ class TestWsConsumptionHistory:
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
-        # Recorder failure should return empty entries
-        assert result["entries"] == []
+        # Recorder failure — gap-filling still produces 7 zero-consumption days
+        assert len(result["entries"]) == 7
+        assert all(e["consumption"] == 0.0 for e in result["entries"])
 
     @pytest.mark.asyncio
     async def test_falls_back_to_rest_when_statistics_empty(
@@ -491,9 +493,12 @@ class TestWsConsumptionHistory:
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
-        assert len(result["entries"]) == 1
-        assert result["entries"][0]["date"] == _YESTERDAY_ISO
-        assert result["entries"][0]["consumption"] == 5.5
+        # REST returned 1 entry; gap-filling adds zeros for remaining 6 days
+        assert len(result["entries"]) == 7
+        rest_entry = next(e for e in result["entries"] if e["consumption"] == 5.5)
+        assert rest_entry["date"] == _YESTERDAY_ISO
+        zero_entries = [e for e in result["entries"] if e["consumption"] == 0.0]
+        assert len(zero_entries) == 6
 
     @pytest.mark.asyncio
     async def test_returns_entries_from_recorder_statistics(
@@ -565,12 +570,14 @@ class TestWsConsumptionHistory:
         result = mock_connection.send_result.call_args[0][1]
         entries = result["entries"]
 
-        # Both entries should be present (including the 0.0 day)
-        assert len(entries) == 2
+        # 2 stat entries + 1 gap-filled today = 3 entries (days=3)
+        assert len(entries) == 3
         assert entries[0]["date"] == _two_days_ago.isoformat()
         assert entries[0]["consumption"] == 8.123
         assert entries[1]["date"] == _yesterday.isoformat()
         assert entries[1]["consumption"] == 0.0
+        assert entries[2]["date"] == _today.isoformat()
+        assert entries[2]["consumption"] == 0.0
 
 
 # ── Panel registration tests ─────────────────────────────────────
