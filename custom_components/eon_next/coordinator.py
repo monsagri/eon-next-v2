@@ -201,6 +201,45 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 meter.supply_point_id,
                             )
 
+                    # Fall back to tariff-derived values for cost fields
+                    # that the defunct daily-costs endpoint can no longer
+                    # provide.
+                    if (
+                        meter_data.get("unit_rate") is None
+                        and meter_data.get("tariff_unit_rate") is not None
+                    ):
+                        meter_data["unit_rate"] = meter_data["tariff_unit_rate"]
+                    if (
+                        meter_data.get("standing_charge") is None
+                        and meter_data.get("tariff_standing_charge") is not None
+                    ):
+                        meter_data["standing_charge"] = meter_data[
+                            "tariff_standing_charge"
+                        ]
+
+                    # Compute previous-day cost from consumption + tariff
+                    # data when the cost endpoint cannot provide it.
+                    _ur = meter_data.get("unit_rate")
+                    _sc = meter_data.get("standing_charge")
+                    if (
+                        meter_data.get("previous_day_cost") is None
+                        and consumption is not None
+                        and _ur is not None
+                        and _sc is not None
+                    ):
+                        yesterday_kwh = self._aggregate_yesterday_consumption(
+                            consumption
+                        )
+                        if yesterday_kwh is not None:
+                            meter_data["previous_day_cost"] = round(
+                                yesterday_kwh * float(_ur) + float(_sc),
+                                4,
+                            )
+                            yesterday = (
+                                dt_util.now() - timedelta(days=1)
+                            ).date()
+                            meter_data["cost_period"] = yesterday.isoformat()
+
                     data[meter_key] = meter_data
 
                 except EonNextAuthError as err:
@@ -402,6 +441,45 @@ class EonNextCoordinator(DataUpdateCoordinator):
             "total": round(total, 3) if has_value else None,
             "last_reset": earliest_start,
         }
+
+    @staticmethod
+    def _aggregate_yesterday_consumption(
+        consumption_results: list[dict[str, Any]],
+    ) -> float | None:
+        """Sum yesterday's consumption from the given results.
+
+        Returns the total in kWh, or None if no entries matched yesterday.
+        """
+        yesterday = (dt_util.now() - timedelta(days=1)).date()
+
+        total = 0.0
+        has_value = False
+
+        for entry in consumption_results:
+            interval_start = entry.get("interval_start") or ""
+            parsed_start = dt_util.parse_datetime(str(interval_start))
+            if parsed_start is None:
+                continue
+
+            if parsed_start.tzinfo is None:
+                parsed_start = parsed_start.replace(tzinfo=timezone.utc)
+
+            local_start = dt_util.as_local(parsed_start)
+            if local_start.date() != yesterday:
+                continue
+
+            consumption = entry.get("consumption")
+            if consumption is None:
+                continue
+            try:
+                val = float(consumption)
+            except (TypeError, ValueError):
+                continue
+
+            total += val
+            has_value = True
+
+        return round(total, 3) if has_value else None
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
