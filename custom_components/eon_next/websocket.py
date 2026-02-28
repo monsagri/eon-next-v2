@@ -477,6 +477,8 @@ def ws_backfill_status(
                 )
             )
 
+    meter_progress.sort(key=lambda meter: meter.serial)
+
     connection.send_result(
         msg["id"],
         dataclasses.asdict(

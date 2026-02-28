@@ -132,6 +132,7 @@ class BackfillStatusResponse:
 WS_COMMANDS: dict[str, type] = {
     "eon_next/version": VersionResponse,
     "eon_next/dashboard_summary": DashboardSummary,
+    "eon_next/backfill_status": BackfillStatusResponse,
 }
 
 # Response types for *parameterized* commands (those that accept request
@@ -141,5 +142,4 @@ WS_COMMANDS: dict[str, type] = {
 WS_EXTRA_RESPONSE_TYPES: list[type] = [
     ConsumptionHistoryResponse,
     EvScheduleResponse,
-    BackfillStatusResponse,
 ]

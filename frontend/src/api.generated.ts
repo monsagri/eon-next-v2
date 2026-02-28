@@ -38,6 +38,25 @@ export interface DashboardSummary {
   ev_chargers: EvChargerSummary[]
 }
 
+export interface BackfillMeterProgress {
+  serial: string
+  done: boolean
+  next_start: string | null
+  days_completed: number
+  days_remaining: number
+}
+
+export interface BackfillStatusResponse {
+  state: string
+  enabled: boolean
+  total_meters: number
+  completed_meters: number
+  pending_meters: number
+  lookback_days: number
+  next_start_date: string | null
+  meters: BackfillMeterProgress[]
+}
+
 export interface ConsumptionHistoryEntry {
   date: string
   consumption: number
@@ -59,29 +78,11 @@ export interface EvScheduleResponse {
   slots: EvScheduleSlot[]
 }
 
-export interface BackfillMeterProgress {
-  serial: string
-  done: boolean
-  next_start: string | null
-  days_completed: number
-  days_remaining: number
-}
-
-export interface BackfillStatusResponse {
-  state: string
-  enabled: boolean
-  total_meters: number
-  completed_meters: number
-  pending_meters: number
-  lookback_days: number
-  next_start_date: string | null
-  meters: BackfillMeterProgress[]
-}
-
 // --- WebSocket command constants ---
 
 export const WS_VERSION = 'eon_next/version' as const
 export const WS_DASHBOARD_SUMMARY = 'eon_next/dashboard_summary' as const
+export const WS_BACKFILL_STATUS = 'eon_next/backfill_status' as const
 
 // --- Typed API functions ---
 
@@ -93,4 +94,10 @@ export async function getDashboardSummary(
   hass: HomeAssistant
 ): Promise<DashboardSummary> {
   return hass.callWS<DashboardSummary>({ type: WS_DASHBOARD_SUMMARY })
+}
+
+export async function getBackfillStatus(
+  hass: HomeAssistant
+): Promise<BackfillStatusResponse> {
+  return hass.callWS<BackfillStatusResponse>({ type: WS_BACKFILL_STATUS })
 }
