@@ -124,6 +124,82 @@ class TestAggregateYesterdayConsumption:
         assert result == pytest.approx(24.0)
 
 
+class TestAggregateDailyConsumption:
+    """Tests for EonNextCoordinator._aggregate_daily_consumption."""
+
+    def test_sums_today_entries(self) -> None:
+        entries = [
+            _make_entry(f"{_TODAY}T08:00:00+00:00", 1.5),
+            _make_entry(f"{_TODAY}T08:30:00+00:00", 2.5),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] == pytest.approx(4.0)
+        assert result["last_reset"] == f"{_TODAY}T08:00:00+00:00"
+
+    def test_ignores_yesterday_entries(self) -> None:
+        entries = [
+            _make_entry(f"{_YESTERDAY}T08:00:00+00:00", 10.0),
+            _make_entry(f"{_TODAY}T09:00:00+00:00", 3.0),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] == pytest.approx(3.0)
+
+    def test_returns_zero_when_no_today_entries(self) -> None:
+        """When data exists but none matches today, return 0.0 with midnight."""
+        entries = [
+            _make_entry(f"{_YESTERDAY}T08:00:00+00:00", 5.0),
+            _make_entry(f"{_YESTERDAY}T08:30:00+00:00", 3.0),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] == 0.0
+        # last_reset must be today's local midnight
+        from homeassistant.util import dt as dt_util
+
+        parsed = dt_util.parse_datetime(result["last_reset"])
+        assert parsed is not None
+        assert parsed.date() == _TODAY
+        assert parsed.hour == 0 and parsed.minute == 0 and parsed.second == 0
+
+    def test_returns_none_when_today_entries_all_invalid(self) -> None:
+        """Today entries exist but all have None consumption → unknown."""
+        entries = [
+            _make_entry(f"{_TODAY}T08:00:00+00:00", None),
+            _make_entry(f"{_TODAY}T08:30:00+00:00", None),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] is None
+        assert result["last_reset"] is None
+
+    def test_returns_none_for_empty_list(self) -> None:
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption([])
+        assert result["total"] is None
+        assert result["last_reset"] is None
+
+    def test_skips_none_consumption(self) -> None:
+        entries = [
+            _make_entry(f"{_TODAY}T08:00:00+00:00", None),
+            _make_entry(f"{_TODAY}T09:00:00+00:00", 2.0),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] == pytest.approx(2.0)
+
+    def test_last_reset_is_earliest_today_entry(self) -> None:
+        entries = [
+            _make_entry(f"{_TODAY}T10:00:00+00:00", 1.0),
+            _make_entry(f"{_TODAY}T08:00:00+00:00", 1.0),
+            _make_entry(f"{_TODAY}T09:00:00+00:00", 1.0),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["last_reset"] == f"{_TODAY}T08:00:00+00:00"
+
+
 class TestCostFallbackToTariff:
     """Tests that unit_rate and standing_charge fall back to tariff values.
 

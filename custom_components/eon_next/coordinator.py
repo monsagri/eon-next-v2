@@ -341,18 +341,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
     async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
         """Fetch consumption data, preferring half-hourly granularity.
 
-        Tries half-hourly REST data first (up to 48 half-hour slots,
-        approximately one day depending on availability), then falls back to
-        daily REST data.
+        Tries half-hourly REST data first (up to 96 half-hour slots,
+        approximately two days), then falls back to daily REST data.
         """
-        # Try half-hourly data first (up to 48 slots, ~1 day when available)
+        # Try half-hourly data first.  Fetch two full days (96 slots) so
+        # that yesterday's data is always complete even when today's entries
+        # have started arriving, which is needed for the previous-day cost
+        # calculation.
         try:
             result = await self.api.async_get_consumption(
                 meter.type,
                 meter.supply_point_id,
                 meter.serial,
                 group_by="half_hour",
-                page_size=48,
+                page_size=96,
             )
             if result and "results" in result and len(result["results"]) > 0:
                 return result["results"]
@@ -404,14 +406,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
         """Sum today's consumption and derive last_reset from the data.
 
         Filters entries to today's date in Home Assistant local time and sums
-        their consumption values. Returns a dict with ``total`` (float | None)
-        and ``last_reset`` (str | None) — the original interval_start value
-        of the earliest entry included in the sum.
+        their consumption values.  Returns a dict with:
+
+        * ``total`` — summed kWh (float) or ``None`` when no data at all.
+        * ``last_reset`` — the ``interval_start`` of the earliest today
+          entry when data exists, or today's local midnight (ISO 8601)
+          when consumption data is available but no entries match today
+          yet (so the sensor reads "0 kWh" instead of "unknown").
         """
-        today = dt_util.now().date()
+        now = dt_util.now()
+        today = now.date()
 
         total = 0.0
         has_value = False
+        has_today_entry = False
         earliest_start_utc: datetime | None = None
         earliest_start: str | None = None
 
@@ -431,6 +439,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
             if local_start.date() != today:
                 continue
 
+            has_today_entry = True
+
             consumption = entry.get("consumption")
             if consumption is None:
                 continue
@@ -445,10 +455,24 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 earliest_start_utc = parsed_start_utc
                 earliest_start = interval_start
 
-        return {
-            "total": round(total, 3) if has_value else None,
-            "last_reset": earliest_start,
-        }
+        if has_value:
+            return {"total": round(total, 3), "last_reset": earliest_start}
+
+        # Today entries exist but all have None/invalid consumption —
+        # report as unknown rather than a misleading 0 kWh.
+        if has_today_entry:
+            return {"total": None, "last_reset": None}
+
+        # No entries for today yet — report zero with midnight as the
+        # reset point so the sensor reads "0 kWh" rather than "unknown"
+        # while waiting for today's data to arrive from the smart meter.
+        if consumption_results:
+            today_midnight = now.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            return {"total": 0.0, "last_reset": today_midnight.isoformat()}
+
+        return {"total": None, "last_reset": None}
 
     @staticmethod
     def _aggregate_yesterday_consumption(
