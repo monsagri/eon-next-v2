@@ -43,14 +43,40 @@ class EonBarChart extends LitElement {
   }
 
   updated(changed: PropertyValues) {
-    if (
-      changed.has('labels') ||
-      changed.has('datasets') ||
-      changed.has('darkMode') ||
-      changed.has('y2Label')
-    ) {
-      this._updateChart()
+    const labelsChanged = changed.has('labels')
+    const datasetsChanged = changed.has('datasets')
+    const darkModeChanged = changed.has('darkMode')
+    const y2LabelChanged = changed.has('y2Label')
+
+    if (!labelsChanged && !datasetsChanged && !darkModeChanged && !y2LabelChanged) {
+      return
     }
+
+    let shouldRecreate = y2LabelChanged
+
+    if (datasetsChanged) {
+      const previousDatasets = changed.get('datasets') as BarChartDataset[] | undefined
+      const previousLength = previousDatasets?.length ?? 0
+      if (previousLength !== this.datasets.length) {
+        shouldRecreate = true
+      }
+
+      const previousUsesY2 =
+        previousDatasets?.some((dataset) => dataset.yAxisID === 'y2') ?? false
+      const currentUsesY2 = this.datasets.some((dataset) => dataset.yAxisID === 'y2')
+      if (previousUsesY2 !== currentUsesY2) {
+        shouldRecreate = true
+      }
+    }
+
+    if (shouldRecreate) {
+      this._chart?.destroy()
+      this._chart = null
+      this._createChart()
+      return
+    }
+
+    this._updateChart()
   }
 
   disconnectedCallback() {
@@ -124,11 +150,18 @@ class EonBarChart extends LitElement {
     const scales = this._chart.options.scales ?? {}
     const xScale = scales.x ?? {}
     const yScale = scales.y ?? {}
+    const yScaleTitle = (yScale as { title?: { color?: string } }).title
     if (xScale.ticks) xScale.ticks.color = textColor
     if (yScale.ticks) yScale.ticks.color = textColor
     if (yScale.grid) yScale.grid.color = gridColor
+    if (yScaleTitle) {
+      yScaleTitle.color = textColor
+    }
     const y2Scale = scales.y2 as Record<string, Record<string, unknown>> | undefined
     if (y2Scale?.ticks) y2Scale.ticks.color = textColor
+    if (y2Scale?.title) {
+      y2Scale.title.color = textColor
+    }
     this._chart.update('none')
   }
 }

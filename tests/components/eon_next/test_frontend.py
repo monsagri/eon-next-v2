@@ -32,9 +32,10 @@ from custom_components.eon_next.schemas import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
 
 # Dynamic date references so tests never go stale.
-_TODAY = datetime.date.today()
+_TODAY = dt_util.now().date()
 _YESTERDAY = _TODAY - datetime.timedelta(days=1)
 _YESTERDAY_ISO = _YESTERDAY.isoformat()
 
@@ -383,9 +384,8 @@ class TestWsConsumptionHistory:
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
-        # No statistics — gap-filling still produces 7 zero-consumption days
-        assert len(result["entries"]) == 7
-        assert all(e["consumption"] == 0.0 for e in result["entries"])
+        # No statistics and no REST fallback data -> no entries
+        assert result["entries"] == []
 
     @pytest.mark.asyncio
     async def test_handles_recorder_exception_gracefully(
@@ -435,9 +435,8 @@ class TestWsConsumptionHistory:
 
         mock_connection.send_result.assert_called_once()
         result = mock_connection.send_result.call_args[0][1]
-        # Recorder failure — gap-filling still produces 7 zero-consumption days
-        assert len(result["entries"]) == 7
-        assert all(e["consumption"] == 0.0 for e in result["entries"])
+        # Recorder failure and no REST fallback data -> no entries
+        assert result["entries"] == []
 
     @pytest.mark.asyncio
     async def test_falls_back_to_rest_when_statistics_empty(
@@ -521,7 +520,7 @@ class TestWsConsumptionHistory:
         # Build dynamic timestamps relative to today so the test never goes stale.
         # Use midday (12:00) UTC so that dt_util.as_local() never shifts
         # the date across a day boundary regardless of the HA timezone.
-        _today = datetime.date.today()
+        _today = dt_util.now().date()
         _two_days_ago = _today - datetime.timedelta(days=2)
         _yesterday = _today - datetime.timedelta(days=1)
 

@@ -25,10 +25,13 @@ class EonConsumptionView extends LitElement {
   @state() private _history: ConsumptionHistoryEntry[] = []
   @state() private _loading = true
 
-  /** Memoized chart data — recomputed only when _history changes. */
+  /** Memoized chart data — recomputed when history or meter pricing context changes. */
   private _chartLabels: string[] = []
   private _chartDatasets: ChartDataset[] = []
   private _memoizedHistory: ConsumptionHistoryEntry[] | null = null
+  private _memoizedMeterType: MeterSummary['type'] | undefined = undefined
+  private _memoizedUnitRate: number | null | undefined = undefined
+  private _memoizedStandingCharge: number | null | undefined = undefined
 
   private _fetchedSerial: string | null = null
 
@@ -51,10 +54,23 @@ class EonConsumptionView extends LitElement {
   }
 
   private _ensureChartData(): void {
-    if (this._memoizedHistory === this._history) {
+    const meterType = this.meter?.type
+    const unitRate = this.meter?.unit_rate
+    const standingCharge = this.meter?.standing_charge
+
+    if (
+      this._memoizedHistory === this._history &&
+      this._memoizedMeterType === meterType &&
+      this._memoizedUnitRate === unitRate &&
+      this._memoizedStandingCharge === standingCharge
+    ) {
       return
     }
+
     this._memoizedHistory = this._history
+    this._memoizedMeterType = meterType
+    this._memoizedUnitRate = unitRate
+    this._memoizedStandingCharge = standingCharge
 
     const locale = this.hass?.language ?? 'en'
     this._chartLabels = this._history.map((e) => {
@@ -73,8 +89,8 @@ class EonConsumptionView extends LitElement {
       }
     ]
 
-    const rate = this.meter?.unit_rate
-    const standing = this.meter?.standing_charge ?? 0
+    const rate = unitRate
+    const standing = standingCharge ?? 0
     if (rate != null) {
       datasets.push({
         label: 'Cost (£)',

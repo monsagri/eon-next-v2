@@ -200,9 +200,13 @@ def _gap_fill(
 ) -> list[ConsumptionHistoryEntry]:
     """Ensure every calendar day in the range has an entry.
 
-    Missing days are filled with zero-consumption entries so the frontend
-    always receives exactly ``days`` data points.
+    Missing days are filled with zero-consumption entries only when at
+    least one real reading exists. This avoids masking total data-source
+    failures as genuine zero usage.
     """
+    if not entries:
+        return []
+
     today = dt_util.now().date()
     existing = {e.date for e in entries}
     for offset in range(days):
