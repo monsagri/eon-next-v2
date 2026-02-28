@@ -24,11 +24,11 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 * add `eon_next/consumption_history` WebSocket command backed by HA recorder statistics
 * new Lovelace cards: `eon-next-consumption-card`, `eon-next-cost-card`, `eon-next-reading-card`
 * panel meter cards now show consumption bar chart, cost summary, and meter reading sections
-* **frontend:** show estimated daily cost overlay on consumption bar chart
 
 ### Bug Fixes
 
 * **websocket:** gap-fill missing days with zero-consumption entries so the frontend always receives the requested number of data points
+* **frontend:** fix estimated daily cost overlay on consumption bar chart
 
 ## [1.5.4](https://github.com/monsagri/eon-next-v2/compare/v1.5.3...v1.5.4) (2026-02-27)
 

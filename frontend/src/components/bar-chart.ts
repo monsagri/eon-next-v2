@@ -39,7 +39,9 @@ class EonBarChart extends LitElement {
   }
 
   firstUpdated() {
-    this._createChart()
+    if (!this._chart) {
+      this._createChart()
+    }
   }
 
   updated(changed: PropertyValues) {
@@ -52,7 +54,12 @@ class EonBarChart extends LitElement {
       return
     }
 
-    let shouldRecreate = y2LabelChanged
+    if (!this._chart) {
+      this._createChart()
+      return
+    }
+
+    let shouldRecreate = y2LabelChanged && this._chart != null
 
     if (datasetsChanged) {
       const previousDatasets = changed.get('datasets') as BarChartDataset[] | undefined
