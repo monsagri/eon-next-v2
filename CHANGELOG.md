@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.8.1](https://github.com/monsagri/eon-next-v2/compare/v1.8.0...v1.8.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* **coordinator:** address PR review feedback for tariff fallback ([d7238c3](https://github.com/monsagri/eon-next-v2/commit/d7238c326e5fb098525dfbdb2731ee975df27437))
+* **coordinator:** derive unit rate, standing charge, and previous-day cost from tariff data ([c5047ef](https://github.com/monsagri/eon-next-v2/commit/c5047efa84f418ba6bbda2a2a9f5ff57896943f6))
+
 ## [1.8.0](https://github.com/monsagri/eon-next-v2/compare/v1.7.1...v1.8.0) (2026-02-28)
 
 
