@@ -12,6 +12,8 @@ from .const import DOMAIN, PANEL_ICON, PANEL_TITLE, PANEL_URL
 
 _LOGGER = logging.getLogger(__name__)
 
+_STATIC_PATH_REGISTERED_KEY = f"{DOMAIN}_panel_static_registered"
+
 
 async def async_register_panel(hass: HomeAssistant) -> None:
     """Register the EON Next sidebar panel.
@@ -36,9 +38,15 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 
     panel_path = os.path.join(os.path.dirname(__file__), "frontend", "entrypoint.js")
 
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(PANEL_URL, panel_path, cache_headers=False)]
-    )
+    # aiohttp does not support removing routes, so once the static path is
+    # registered it persists for the lifetime of the HA instance.  Guard
+    # against re-registration (e.g. after a config entry reload) which would
+    # raise RuntimeError("method GET is already registered").
+    if not hass.data.get(_STATIC_PATH_REGISTERED_KEY):
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(PANEL_URL, panel_path, cache_headers=False)]
+        )
+        hass.data[_STATIC_PATH_REGISTERED_KEY] = True
 
     await panel_custom.async_register_panel(
         hass,
