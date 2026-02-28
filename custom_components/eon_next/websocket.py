@@ -155,7 +155,7 @@ def _find_meter_info(
     {
         vol.Required("type"): "eon_next/consumption_history",
         vol.Required("meter_serial"): str,
-        vol.Optional("days", default=7): vol.All(int, vol.Range(min=1, max=30)),
+        vol.Optional("days", default=7): vol.All(int, vol.Range(min=1, max=365)),
     }
 )
 @websocket_api.async_response  # pyright: ignore[reportPrivateImportUsage]

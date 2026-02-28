@@ -43,7 +43,12 @@ const bundles = [
   },
   {
     input: "src/cards/register.ts",
-    output: { file: `${outDir}/cards.js`, format: "es", sourcemap: watching },
+    output: {
+      file: `${outDir}/cards.js`,
+      format: "es",
+      sourcemap: watching,
+      inlineDynamicImports: true,
+    },
     plugins: production ? prodPlugins() : plugins(),
   },
 ];

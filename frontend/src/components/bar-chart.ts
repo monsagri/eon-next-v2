@@ -35,7 +35,9 @@ class EonBarChart extends LitElement {
   private _chart: Chart | null = null
 
   render() {
-    return html`<div class="chart-container"><canvas></canvas></div>`
+    return html`<div class="chart-container" role="img" aria-label="Bar chart">
+      <canvas></canvas>
+    </div>`
   }
 
   firstUpdated() {
@@ -136,7 +138,31 @@ class EonBarChart extends LitElement {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: this.datasets.length > 1 },
-          tooltip: { mode: 'index', intersect: false }
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: this.darkMode ? '#424242' : '#fff',
+            titleColor: this.darkMode ? '#e1e1e1' : '#212121',
+            bodyColor: this.darkMode ? '#bdbdbd' : '#424242',
+            borderColor: this.darkMode ? '#616161' : '#e0e0e0',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 10,
+            bodySpacing: 6,
+            callbacks: {
+              label: (ctx: {
+                dataset: { label?: string }
+                parsed: { y: number | null }
+              }) => {
+                const label = ctx.dataset.label ?? ''
+                const val = ctx.parsed.y ?? 0
+                if (label.includes('£') || label.toLowerCase().includes('cost')) {
+                  return `${label}: £${val.toFixed(2)}`
+                }
+                return `${label}: ${val.toFixed(1)}`
+              }
+            }
+          }
         },
         scales
       }

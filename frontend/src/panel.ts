@@ -38,7 +38,7 @@ class EonNextPanel extends LitElement {
   render() {
     if (this._summary.loading) {
       return html`
-        <div class="loading">
+        <div class="loading" role="status" aria-label="Loading energy data">
           <div class="skeleton-grid">
             <div class="skeleton-card"></div>
             <div class="skeleton-card"></div>
@@ -49,7 +49,7 @@ class EonNextPanel extends LitElement {
 
     if (this._summary.error) {
       return html`
-        <div class="error-state">
+        <div class="error-state" role="alert">
           <ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 48px;"></ha-icon>
           <h2>Unable to load data</h2>
           <p>${this._summary.error}</p>
@@ -97,7 +97,7 @@ class EonNextPanel extends LitElement {
     const label = meter.type === 'gas' ? 'Gas' : 'Electricity'
 
     return html`
-      <div class="card">
+      <article class="card" aria-label="${label} meter ${meter.serial}">
         <h2>
           <ha-icon .icon=${icon} style="--mdc-icon-size: 20px;"></ha-icon>
           ${label} — ${meter.serial}
@@ -107,18 +107,18 @@ class EonNextPanel extends LitElement {
 
         <div class="card-divider"></div>
 
-        <eon-cost-view .meter=${meter}></eon-cost-view>
+        <eon-cost-view .hass=${this.hass} .meter=${meter}></eon-cost-view>
 
         <div class="card-divider"></div>
 
         <eon-meter-view .meter=${meter}></eon-meter-view>
-      </div>
+      </article>
     `
   }
 
   private _renderEvCard(ev: EvChargerSummary) {
     return html`
-      <div class="card">
+      <article class="card" aria-label="EV charger ${ev.serial}">
         <h2>
           <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 20px;"></ha-icon>
           EV Charger — ${ev.serial}
@@ -128,7 +128,7 @@ class EonNextPanel extends LitElement {
           .hass=${this.hass}
           .deviceId=${ev.device_id ?? ''}
         ></eon-ev-schedule-view>
-      </div>
+      </article>
     `
   }
 }
