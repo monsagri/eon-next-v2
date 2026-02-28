@@ -22,6 +22,11 @@
   color: var(--eon-text-secondary);
 }
 
+.status-badge.unknown {
+  background: rgba(255, 152, 0, 0.15);
+  color: var(--label-badge-yellow, #ff9800);
+}
+
 .timeline {
   display: flex;
   flex-direction: column;

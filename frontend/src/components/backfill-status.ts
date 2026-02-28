@@ -17,12 +17,36 @@ class EonBackfillStatus extends LitElement {
   )
 
   render() {
-    if (this._data.loading || this._data.error) {
-      return nothing
+    if (this._data.loading) {
+      return html`
+        <div class="backfill-header">
+          <ha-icon icon="mdi:database-clock" style="--mdc-icon-size: 18px;"></ha-icon>
+          Historical Backfill
+        </div>
+        <div class="disabled-notice">Loading status…</div>
+      `
+    }
+
+    if (this._data.error) {
+      return html`
+        <div class="backfill-header">
+          <ha-icon icon="mdi:database-clock" style="--mdc-icon-size: 18px;"></ha-icon>
+          Historical Backfill
+        </div>
+        <div class="disabled-notice">Failed to load backfill status.</div>
+      `
     }
 
     const status = this._data.data
-    if (!status) return nothing
+    if (!status) {
+      return html`
+        <div class="backfill-header">
+          <ha-icon icon="mdi:database-clock" style="--mdc-icon-size: 18px;"></ha-icon>
+          Historical Backfill
+        </div>
+        <div class="disabled-notice">No backfill status available.</div>
+      `
+    }
 
     if (!status.enabled) {
       return html`

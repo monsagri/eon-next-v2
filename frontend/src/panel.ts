@@ -61,7 +61,7 @@ class EonNextPanel extends LitElement {
     const version = this._version.data?.version
 
     return html`
-      <eon-version-banner .hass=${this.hass}></eon-version-banner>
+      <eon-version-banner .backendVersion=${version ?? null}></eon-version-banner>
 
       <div class="header">
         <h1>EON Next Energy</h1>

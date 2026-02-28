@@ -29,6 +29,10 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 * **websocket:** gap-fill missing days with zero-consumption entries so the frontend always receives the requested number of data points
 * **frontend:** fix estimated daily cost overlay on consumption bar chart
+* **frontend:** fix version-mismatch banner stamping and remove duplicate version websocket calls
+* **frontend:** handle EV schedule unknown/empty device states and improve backfill diagnostics loading/error states
+* **frontend:** parallelize summary-card sparkline history fetches and include detailed error text
+* **websocket:** sort backfill meter progress for stable frontend ordering and add tests for new websocket commands
 
 ## [1.5.4](https://github.com/monsagri/eon-next-v2/compare/v1.5.3...v1.5.4) (2026-02-27)
 

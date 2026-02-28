@@ -23,7 +23,7 @@ function plugins() {
     resolve(),
     replace({
       preventAssignment: true,
-      __FRONTEND_VERSION__: JSON.stringify(integrationVersion),
+      __FRONTEND_VERSION__: integrationVersion,
     }),
     litcss(),
     typescript({ outDir, ...(watching && { sourceMap: true }) }),

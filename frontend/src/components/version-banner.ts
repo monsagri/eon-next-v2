@@ -1,8 +1,5 @@
 import { LitElement, html, nothing } from 'lit'
 import { property } from 'lit/decorators.js'
-import { getVersion } from '../api'
-import { WsDataController } from '../controllers/ws-data-controller'
-import type { HomeAssistant, VersionResponse } from '../types'
 
 import styles from '../styles/version-banner.css'
 
@@ -12,12 +9,10 @@ const FRONTEND_VERSION = '__FRONTEND_VERSION__'
 class EonVersionBanner extends LitElement {
   static styles = [styles]
 
-  @property({ attribute: false }) hass!: HomeAssistant
-
-  private _version = new WsDataController<VersionResponse>(this, (h) => getVersion(h))
+  @property() backendVersion: string | null = null
 
   render() {
-    const backendVersion = this._version.data?.version
+    const backendVersion = this.backendVersion
     if (!backendVersion) return nothing
 
     // If FRONTEND_VERSION was not replaced at build time, skip the check

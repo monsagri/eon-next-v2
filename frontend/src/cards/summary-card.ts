@@ -46,16 +46,36 @@ class EonNextSummaryCard extends LitElement {
   private async _fetchSparklines() {
     this._sparklineFetched = true
     const meters = this._data.data?.meters ?? []
-    for (const meter of meters) {
-      if (!meter.serial) continue
-      try {
-        const resp = await getConsumptionHistory(this.hass, meter.serial, 7)
-        this._sparklines = {
-          ...this._sparklines,
-          [meter.serial]: resp.entries.map((e) => e.consumption)
+    const meterPromises = meters
+      .filter((meter) => meter.serial)
+      .map(async (meter) => {
+        try {
+          const serial = meter.serial as string
+          const resp = await getConsumptionHistory(this.hass, serial, 7)
+          return { serial, values: resp.entries.map((e) => e.consumption) }
+        } catch {
+          // Sparkline is optional; silently skip individual failures.
+          return null
         }
-      } catch {
-        // Sparkline is optional; silently skip
+      })
+
+    if (meterPromises.length === 0) {
+      return
+    }
+
+    const results = await Promise.all(meterPromises)
+    const nextSparklines: Record<string, number[]> = {}
+
+    for (const result of results) {
+      if (result) {
+        nextSparklines[result.serial] = result.values
+      }
+    }
+
+    if (Object.keys(nextSparklines).length > 0) {
+      this._sparklines = {
+        ...this._sparklines,
+        ...nextSparklines
       }
     }
   }
@@ -64,6 +84,7 @@ class EonNextSummaryCard extends LitElement {
     if (this._data.error) {
       return html`<ha-card>
         <div class="error">Unable to load data</div>
+        <div class="card-content secondary-text">Details: ${this._data.error}</div>
       </ha-card>`
     }
 

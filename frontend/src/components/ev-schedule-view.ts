@@ -14,7 +14,7 @@ class EonEvScheduleView extends LitElement {
   @property() deviceId = ''
 
   @state() private _data: EvScheduleResponse | null = null
-  @state() private _loading = true
+  @state() private _loading = false
   @state() private _error: string | null = null
 
   private _fetchedDeviceId: string | null = null
@@ -22,6 +22,17 @@ class EonEvScheduleView extends LitElement {
   updated() {
     if (this.hass && this.deviceId && this.deviceId !== this._fetchedDeviceId) {
       this._fetchSchedule()
+      return
+    }
+
+    if (
+      !this.deviceId &&
+      (this._fetchedDeviceId !== null || this._loading || this._error || this._data)
+    ) {
+      this._fetchedDeviceId = null
+      this._loading = false
+      this._error = null
+      this._data = null
     }
   }
 
@@ -39,6 +50,10 @@ class EonEvScheduleView extends LitElement {
   }
 
   render() {
+    if (!this.deviceId) {
+      return html`<div class="empty-schedule">No EV device selected</div>`
+    }
+
     if (this._loading) {
       return html`<div class="empty-schedule">Loading EV schedule…</div>`
     }
@@ -52,13 +67,15 @@ class EonEvScheduleView extends LitElement {
     }
 
     const { status, slots } = this._data
+    const badgeClass =
+      status === 'scheduled' ? 'scheduled' : status === 'unknown' ? 'unknown' : 'idle'
+    const badgeLabel =
+      status === 'scheduled' ? 'Active' : status === 'unknown' ? 'Unknown' : 'Idle'
 
     return html`
       <div class="schedule-header">
         <span>Schedule</span>
-        <span class="status-badge ${status === 'scheduled' ? 'scheduled' : 'idle'}">
-          ${status === 'scheduled' ? 'Active' : 'Idle'}
-        </span>
+        <span class="status-badge ${badgeClass}">${badgeLabel}</span>
       </div>
 
       ${slots.length > 0
