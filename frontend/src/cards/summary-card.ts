@@ -19,8 +19,8 @@ export interface SummaryCardConfig {
 class EonNextSummaryCard extends LitElement {
   static styles = [sharedStyles, cardStyles]
 
-  static getConfigElement() {
-    import('./editors/summary-card-editor')
+  static async getConfigElement() {
+    await import('./editors/summary-card-editor')
     return document.createElement('eon-next-summary-card-editor')
   }
 

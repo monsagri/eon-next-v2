@@ -16,8 +16,8 @@ export interface ConsumptionCardConfig {
 class EonNextConsumptionCard extends LitElement {
   static styles = [sharedStyles]
 
-  static getConfigElement() {
-    import('./editors/meter-card-editor')
+  static async getConfigElement() {
+    await import('./editors/meter-card-editor')
     return document.createElement('eon-next-meter-card-editor')
   }
 

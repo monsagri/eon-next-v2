@@ -35,6 +35,7 @@ class EonConsumptionView extends LitElement {
   private _memoizedMeterType: MeterSummary['type'] | undefined = undefined
   private _memoizedUnitRate: number | null | undefined = undefined
   private _memoizedStandingCharge: number | null | undefined = undefined
+  private _memoizedSelectedDays = 0
 
   private _fetchedSerial: string | null = null
   private _fetchedDays = 0
@@ -100,7 +101,8 @@ class EonConsumptionView extends LitElement {
       this._memoizedHistory === this._history &&
       this._memoizedMeterType === meterType &&
       this._memoizedUnitRate === unitRate &&
-      this._memoizedStandingCharge === standingCharge
+      this._memoizedStandingCharge === standingCharge &&
+      this._memoizedSelectedDays === this._selectedDays
     ) {
       return
     }
@@ -109,6 +111,7 @@ class EonConsumptionView extends LitElement {
     this._memoizedMeterType = meterType
     this._memoizedUnitRate = unitRate
     this._memoizedStandingCharge = standingCharge
+    this._memoizedSelectedDays = this._selectedDays
 
     this._chartLabels = this._history.map((e) =>
       this._formatLabel(e.date, this._selectedDays)

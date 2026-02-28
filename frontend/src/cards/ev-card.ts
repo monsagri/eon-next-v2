@@ -15,8 +15,8 @@ export interface EvCardConfig {
 class EonNextEvCard extends LitElement {
   static styles = [sharedStyles]
 
-  static getConfigElement() {
-    import('./editors/ev-card-editor')
+  static async getConfigElement() {
+    await import('./editors/ev-card-editor')
     return document.createElement('eon-next-ev-card-editor')
   }
 

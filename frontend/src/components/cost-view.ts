@@ -15,21 +15,32 @@ class EonCostView extends LitElement {
 
   @state() private _mtdCost: number | null = null
 
-  private _fetchedSerial: string | null = null
+  private _fetchedKey: string | null = null
 
   updated() {
-    if (
-      this.hass &&
-      this.meter?.serial &&
-      this.meter.serial !== this._fetchedSerial &&
-      this.meter.unit_rate != null
-    ) {
-      this._fetchMtdCost()
+    if (!this.hass || !this.meter?.serial) {
+      return
+    }
+
+    if (this.meter.unit_rate == null) {
+      this._mtdCost = null
+      this._fetchedKey = null
+      return
+    }
+
+    const fetchKey = this._buildFetchKey()
+    if (fetchKey !== this._fetchedKey) {
+      this._fetchMtdCost(fetchKey)
     }
   }
 
-  private async _fetchMtdCost() {
-    this._fetchedSerial = this.meter.serial
+  private _buildFetchKey(): string {
+    const now = new Date()
+    return `${this.meter.serial}:${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+  }
+
+  private async _fetchMtdCost(fetchKey: string) {
+    this._fetchedKey = fetchKey
     const now = new Date()
     const dayOfMonth = now.getDate()
     if (dayOfMonth < 2 || this.meter.unit_rate == null) {
