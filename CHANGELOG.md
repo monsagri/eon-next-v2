@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.7.0](https://github.com/monsagri/eon-next-v2/compare/v1.6.0...v1.7.0) (2026-02-28)
+
+
+### Features
+
+* **frontend:** add EV schedule, backfill diagnostics, and enhanced summary card (Phase 3) ([d0dddd9](https://github.com/monsagri/eon-next-v2/commit/d0dddd9a6c4b2690ef9d9901c0e3cdbca901591d))
+* **frontend:** fill missing chart days and add cost overlay to consumption chart ([#35](https://github.com/monsagri/eon-next-v2/issues/35)) ([ccc8a94](https://github.com/monsagri/eon-next-v2/commit/ccc8a94928a6f93dfa532e486bd9348a415182f5))
+
+
+### Bug Fixes
+
+* **frontend:** improve diagnostics and version/schedule states ([954dc8a](https://github.com/monsagri/eon-next-v2/commit/954dc8af2476efec2737555318c5b1c6e73fad2e))
+* **websocket:** cover ev/backfill commands and stabilize ordering ([0df57a2](https://github.com/monsagri/eon-next-v2/commit/0df57a27de895b2671cd15329ad398694e90422f))
+
 ## [1.6.0](https://github.com/monsagri/eon-next-v2/compare/v1.5.4...v1.6.0) (2026-02-27)
 
 
