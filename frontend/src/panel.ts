@@ -17,8 +17,6 @@ import './components/cost-view'
 import './components/meter-view'
 import './components/ev-schedule-view'
 import './components/backfill-status'
-import './components/version-banner'
-
 import sharedStyles from './styles/shared.css'
 import panelStyles from './styles/panel.css'
 
@@ -61,8 +59,6 @@ class EonNextPanel extends LitElement {
     const version = this._version.data?.version
 
     return html`
-      <eon-version-banner .backendVersion=${version ?? null}></eon-version-banner>
-
       <div class="header">
         <h1>EON Next Energy</h1>
         ${version ? html`<span class="version-badge">v${version}</span>` : nothing}
