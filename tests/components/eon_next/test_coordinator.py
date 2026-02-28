@@ -147,7 +147,7 @@ class TestAggregateDailyConsumption:
         assert result["total"] == pytest.approx(3.0)
 
     def test_returns_zero_when_no_today_entries(self) -> None:
-        """When data exists but none matches today, return 0.0 (not None)."""
+        """When data exists but none matches today, return 0.0 with midnight."""
         entries = [
             _make_entry(f"{_YESTERDAY}T08:00:00+00:00", 5.0),
             _make_entry(f"{_YESTERDAY}T08:30:00+00:00", 3.0),
@@ -155,7 +155,24 @@ class TestAggregateDailyConsumption:
         with _patch_now():
             result = EonNextCoordinator._aggregate_daily_consumption(entries)
         assert result["total"] == 0.0
-        assert result["last_reset"] is not None
+        # last_reset must be today's local midnight
+        from homeassistant.util import dt as dt_util
+
+        parsed = dt_util.parse_datetime(result["last_reset"])
+        assert parsed is not None
+        assert parsed.date() == _TODAY
+        assert parsed.hour == 0 and parsed.minute == 0 and parsed.second == 0
+
+    def test_returns_none_when_today_entries_all_invalid(self) -> None:
+        """Today entries exist but all have None consumption → unknown."""
+        entries = [
+            _make_entry(f"{_TODAY}T08:00:00+00:00", None),
+            _make_entry(f"{_TODAY}T08:30:00+00:00", None),
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._aggregate_daily_consumption(entries)
+        assert result["total"] is None
+        assert result["last_reset"] is None
 
     def test_returns_none_for_empty_list(self) -> None:
         with _patch_now():
