@@ -11,6 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import voluptuous as vol
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 import custom_components.eon_next as integration
@@ -303,6 +304,29 @@ class TestWsDashboardSummary:
 
 class TestWsConsumptionHistory:
     """Tests for the eon_next/consumption_history WebSocket handler."""
+
+    def test_schema_allows_365_days_and_rejects_366(self) -> None:
+        """Validation should accept new upper bound and reject overflow."""
+        from custom_components.eon_next.websocket import WS_CONSUMPTION_HISTORY_SCHEMA
+
+        schema = vol.Schema(WS_CONSUMPTION_HISTORY_SCHEMA)
+        validated = schema(
+            {
+                "type": "eon_next/consumption_history",
+                "meter_serial": "E123",
+                "days": 365,
+            }
+        )
+        assert validated["days"] == 365
+
+        with pytest.raises(vol.Invalid):
+            schema(
+                {
+                    "type": "eon_next/consumption_history",
+                    "meter_serial": "E123",
+                    "days": 366,
+                }
+            )
 
     @pytest.mark.asyncio
     async def test_returns_empty_when_meter_not_found(

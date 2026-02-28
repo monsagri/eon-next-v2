@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Features
+
+* **frontend:** add time-range picker for consumption charts (7d / 30d / 90d / 1y) with adaptive date labels
+* **frontend:** add month-to-date running cost total to the cost view
+* **frontend:** add visual config editors for all Lovelace cards (meter, summary, EV)
+* **frontend:** improve chart tooltips with styled backgrounds, formatted values, and dark-mode support
+* **frontend:** add ARIA roles and labels across panel, charts, and range picker for accessibility
+* **websocket:** extend `eon_next/consumption_history` max day range from 30 to 365
+
+### Bug Fixes
+
+* **frontend:** remove build-time version stamp that drifted from release-please managed version — the backend version badge is now the single source of truth
+
 ## [1.7.1](https://github.com/monsagri/eon-next-v2/compare/v1.7.0...v1.7.1) (2026-02-28)
 
 
@@ -36,24 +51,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * correct GraphQL query shapes for gas tariffs and remove defunct consumptionDataByMpxn ([#33](https://github.com/monsagri/eon-next-v2/issues/33)) ([4a6fc6a](https://github.com/monsagri/eon-next-v2/commit/4a6fc6affb74f494981f108308c73e3d8e91ac3c))
-
-## [Unreleased]
-
-### Features
-
-* add consumption chart with 7-day history to sidebar panel and new Lovelace cards
-* add `eon_next/consumption_history` WebSocket command backed by HA recorder statistics
-* new Lovelace cards: `eon-next-consumption-card`, `eon-next-cost-card`, `eon-next-reading-card`
-* panel meter cards now show consumption bar chart, cost summary, and meter reading sections
-
-### Bug Fixes
-
-* **websocket:** gap-fill missing days with zero-consumption entries so the frontend always receives the requested number of data points
-* **frontend:** fix estimated daily cost overlay on consumption bar chart
-* **frontend:** fix version-mismatch banner stamping and remove duplicate version websocket calls
-* **frontend:** handle EV schedule unknown/empty device states and improve backfill diagnostics loading/error states
-* **frontend:** parallelize summary-card sparkline history fetches and include detailed error text
-* **websocket:** sort backfill meter progress for stable frontend ordering and add tests for new websocket commands
 
 ## [1.5.4](https://github.com/monsagri/eon-next-v2/compare/v1.5.3...v1.5.4) (2026-02-27)
 
@@ -99,30 +96,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * preserve auth tokens on transient network errors ([#19](https://github.com/monsagri/eon-next-v2/issues/19)) ([97f0f9a](https://github.com/monsagri/eon-next-v2/commit/97f0f9ab96bacc14084f1002c823af3a208c319d))
-
-## [Unreleased]
-
-### Added
-
-- Sidebar dashboard panel: auto-registers an EON Next energy overview in the HA sidebar showing consumption, costs, meter readings, and EV charging status
-- Lovelace card: `eon-next-summary-card` for embedding on custom dashboards
-- WebSocket API (`eon_next/version`, `eon_next/dashboard_summary`) shared by both the panel and cards
-- Options flow toggle to show or hide the sidebar panel (default: enabled)
-- Options flow toggle to register the Lovelace summary card (default: enabled)
-- Frontend CI workflow for lint, format check, type check, and build
-- Derived "Today's cost" rows in panel and summary card, calculated as `(today's kWh * unit rate) + daily standing charge`
-- EV next-charge schedule timestamps now render in a human-friendly local date/time format
-- Added runtime pinning files for contributors: `.nvmrc` (Node `24.13.1`) and `.python-version` (Python `3.13`)
-
-### Changed
-
-- Dashboard panel and Lovelace summary card are now both enabled by default on fresh installs — no manual opt-in required
-
-### Fixed
-
-- Improved panel and summary-card text contrast in dark mode by explicitly applying theme-driven foreground colors to value rows
-- Frontend websocket data controller now restores loading state during reconnect/manual refresh instead of continuing to show stale data
-- Fixed `hass_frontend` mock in test harness to return a `Path` object (not a string) so the HA frontend component can resolve static paths correctly
 
 ## [1.4.0](https://github.com/monsagri/eon-next-v2/compare/v1.3.1...v1.4.0) (2026-02-25)
 

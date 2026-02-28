@@ -16,6 +16,11 @@ export interface CostCardConfig {
 class EonNextCostCard extends LitElement {
   static styles = [sharedStyles]
 
+  static async getConfigElement() {
+    await import('./editors/meter-card-editor')
+    return document.createElement('eon-next-meter-card-editor')
+  }
+
   @property({ attribute: false }) hass!: HomeAssistant
   @state() private _config!: CostCardConfig
 
@@ -61,7 +66,7 @@ class EonNextCostCard extends LitElement {
           ${label} Costs
         </div>
         <div class="card-content">
-          <eon-cost-view .meter=${meter}></eon-cost-view>
+          <eon-cost-view .hass=${this.hass} .meter=${meter}></eon-cost-view>
         </div>
       </ha-card>
     `

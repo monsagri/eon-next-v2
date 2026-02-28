@@ -1,0 +1,51 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.editor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor-row label {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--primary-text-color, #212121);
+}
+
+.editor-row select,
+.editor-row input {
+  padding: 8px;
+  border: 1px solid var(--divider-color, #e0e0e0);
+  border-radius: 4px;
+  background: var(--card-background-color, #fff);
+  color: var(--primary-text-color, #212121);
+  font-size: 0.9em;
+}
+
+.editor-row select:focus,
+.editor-row input:focus {
+  outline: 2px solid var(--primary-color, #03a9f4);
+  outline-offset: -1px;
+}
+
+.editor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color, #03a9f4);
+}
+
+.editor-checkbox label {
+  font-size: 0.9em;
+  color: var(--primary-text-color, #212121);
+}

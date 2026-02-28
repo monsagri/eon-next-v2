@@ -15,6 +15,11 @@ export interface EvCardConfig {
 class EonNextEvCard extends LitElement {
   static styles = [sharedStyles]
 
+  static async getConfigElement() {
+    await import('./editors/ev-card-editor')
+    return document.createElement('eon-next-ev-card-editor')
+  }
+
   @property({ attribute: false }) hass!: HomeAssistant
   @state() private _config!: EvCardConfig
 

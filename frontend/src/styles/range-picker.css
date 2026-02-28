@@ -1,0 +1,39 @@
+.range-picker {
+  display: inline-flex;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--eon-divider);
+}
+
+.range-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--eon-text-secondary);
+  background: transparent;
+  border-right: 1px solid var(--eon-divider);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.range-btn:last-child {
+  border-right: none;
+}
+
+.range-btn:hover {
+  background: var(--eon-divider);
+}
+
+.range-btn:focus-visible {
+  outline: 2px solid var(--eon-primary);
+  outline-offset: -2px;
+}
+
+.range-btn.active {
+  background: var(--eon-primary);
+  color: #fff;
+}

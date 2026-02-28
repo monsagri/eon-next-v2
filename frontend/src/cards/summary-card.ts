@@ -19,6 +19,11 @@ export interface SummaryCardConfig {
 class EonNextSummaryCard extends LitElement {
   static styles = [sharedStyles, cardStyles]
 
+  static async getConfigElement() {
+    await import('./editors/summary-card-editor')
+    return document.createElement('eon-next-summary-card-editor')
+  }
+
   @property({ attribute: false }) hass!: HomeAssistant
   @state() private _config!: SummaryCardConfig
   @state() private _sparklines: Record<string, number[]> = {}

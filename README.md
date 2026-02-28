@@ -80,6 +80,8 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 - The sidebar panel is enabled by default. To hide it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
+- "Month to date" cost is shown as a running total computed from daily consumption history.
+- Consumption charts support selectable time ranges (7 days, 30 days, 90 days, or 1 year) with adaptive date labels.
 - EV charging schedule timestamps are displayed in a readable local date/time format.
 - EV schedule widgets now show explicit `Unknown`/`No device selected` states instead of falling back to `Idle`.
 - Panel and card text colors adapt to Home Assistant theme variables for improved dark-mode readability.
@@ -91,9 +93,11 @@ After installation, an **EON Next** entry appears in the Home Assistant sidebar.
 The integration ships Lovelace cards that power users can add to any dashboard:
 
 - **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
-- **EON Next Consumption** (`custom:eon-next-consumption-card`) — 7-day daily consumption bar chart with missing days shown as zero, plus an estimated daily cost overlay (£) on a second y-axis when tariff pricing is available.
-- **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, standing charge, and unit rate.
+- **EON Next Consumption** (`custom:eon-next-consumption-card`) — daily consumption bar chart with a time-range picker (7d / 30d / 90d / 1y), missing days shown as zero, plus an estimated daily cost overlay (£) on a second y-axis when tariff pricing is available.
+- **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, month-to-date running total, standing charge, and unit rate.
 - **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest meter reading, date, and tariff.
+- **EON Next EV Charger** (`custom:eon-next-ev-card`) — EV smart charging schedule status and upcoming slots.
+- All cards include visual config editors accessible from the Lovelace card picker UI — no YAML required to configure meter type, serial, or display options.
 - Summary card rows include a derived "Today's cost" value using the same formula `(kWh * current unit rate) + daily standing charge`.
 - Summary-card sparkline history loads per meter in parallel for faster initial render on multi-meter setups.
 

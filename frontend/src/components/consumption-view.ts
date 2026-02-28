@@ -4,6 +4,7 @@ import { getConsumptionHistory } from '../api'
 import type { HomeAssistant, MeterSummary } from '../types'
 import type { ConsumptionHistoryEntry } from '../api'
 import './bar-chart'
+import './range-picker'
 
 import sharedStyles from '../styles/shared.css'
 import styles from '../styles/consumption-view.css'
@@ -21,9 +22,11 @@ class EonConsumptionView extends LitElement {
 
   @property({ attribute: false }) hass!: HomeAssistant
   @property({ attribute: false }) meter!: MeterSummary
+  @property({ type: Number }) days = 7
 
   @state() private _history: ConsumptionHistoryEntry[] = []
   @state() private _loading = true
+  @state() private _selectedDays = 0
 
   /** Memoized chart data — recomputed when history or meter pricing context changes. */
   private _chartLabels: string[] = []
@@ -32,25 +35,61 @@ class EonConsumptionView extends LitElement {
   private _memoizedMeterType: MeterSummary['type'] | undefined = undefined
   private _memoizedUnitRate: number | null | undefined = undefined
   private _memoizedStandingCharge: number | null | undefined = undefined
+  private _memoizedSelectedDays = 0
 
   private _fetchedSerial: string | null = null
+  private _fetchedDays = 0
+
+  connectedCallback() {
+    // eslint-disable-next-line wc/guard-super-call
+    super.connectedCallback()
+    if (this._selectedDays === 0) {
+      this._selectedDays = this.days
+    }
+  }
 
   updated() {
-    if (this.hass && this.meter?.serial && this.meter.serial !== this._fetchedSerial) {
+    if (
+      this.hass &&
+      this.meter?.serial &&
+      (this.meter.serial !== this._fetchedSerial ||
+        this._selectedDays !== this._fetchedDays)
+    ) {
       this._fetchHistory()
     }
   }
 
   private async _fetchHistory() {
     this._fetchedSerial = this.meter.serial
+    this._fetchedDays = this._selectedDays
     this._loading = true
     try {
-      const resp = await getConsumptionHistory(this.hass, this.meter.serial!, 7)
+      const resp = await getConsumptionHistory(
+        this.hass,
+        this.meter.serial!,
+        this._selectedDays
+      )
       this._history = resp.entries
     } catch {
       this._history = []
     }
     this._loading = false
+  }
+
+  private _onRangeChanged(e: CustomEvent<{ value: number }>) {
+    this._selectedDays = e.detail.value
+  }
+
+  private _formatLabel(dateStr: string, totalDays: number): string {
+    const locale = this.hass?.language ?? 'en'
+    const d = new Date(dateStr + 'T00:00:00')
+    if (totalDays <= 14) {
+      return d.toLocaleDateString(locale, { weekday: 'short' })
+    }
+    if (totalDays <= 31) {
+      return d.toLocaleDateString(locale, { day: 'numeric' })
+    }
+    return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
   }
 
   private _ensureChartData(): void {
@@ -62,7 +101,8 @@ class EonConsumptionView extends LitElement {
       this._memoizedHistory === this._history &&
       this._memoizedMeterType === meterType &&
       this._memoizedUnitRate === unitRate &&
-      this._memoizedStandingCharge === standingCharge
+      this._memoizedStandingCharge === standingCharge &&
+      this._memoizedSelectedDays === this._selectedDays
     ) {
       return
     }
@@ -71,12 +111,11 @@ class EonConsumptionView extends LitElement {
     this._memoizedMeterType = meterType
     this._memoizedUnitRate = unitRate
     this._memoizedStandingCharge = standingCharge
+    this._memoizedSelectedDays = this._selectedDays
 
-    const locale = this.hass?.language ?? 'en'
-    this._chartLabels = this._history.map((e) => {
-      const d = new Date(e.date + 'T00:00:00')
-      return d.toLocaleDateString(locale, { weekday: 'short' })
-    })
+    this._chartLabels = this._history.map((e) =>
+      this._formatLabel(e.date, this._selectedDays)
+    )
 
     const barColor =
       this.meter?.type === 'gas' ? 'rgba(255, 152, 0, 0.7)' : 'rgba(3, 169, 244, 0.7)'
@@ -110,15 +149,22 @@ class EonConsumptionView extends LitElement {
     this._ensureChartData()
 
     return html`
-      <div class="stats">
-        ${this.meter?.daily_consumption != null
-          ? html`<div class="stat">
-              <span class="stat-value"
-                >${this.meter.daily_consumption}<span class="unit">kWh</span></span
-              >
-              <span class="stat-label">Today</span>
-            </div>`
-          : nothing}
+      <div class="consumption-header">
+        <div class="stats">
+          ${this.meter?.daily_consumption != null
+            ? html`<div class="stat">
+                <span class="stat-value"
+                  >${this.meter.daily_consumption}<span class="unit">kWh</span></span
+                >
+                <span class="stat-label">Today</span>
+              </div>`
+            : nothing}
+        </div>
+
+        <eon-range-picker
+          .value=${this._selectedDays}
+          @range-changed=${this._onRangeChanged}
+        ></eon-range-picker>
       </div>
 
       ${this._history.length > 0

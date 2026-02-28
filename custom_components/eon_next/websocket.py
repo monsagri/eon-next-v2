@@ -35,6 +35,12 @@ from .statistics import statistic_id_for_meter
 
 _LOGGER = logging.getLogger(__name__)
 
+WS_CONSUMPTION_HISTORY_SCHEMA = {
+    vol.Required("type"): "eon_next/consumption_history",
+    vol.Required("meter_serial"): str,
+    vol.Optional("days", default=7): vol.All(int, vol.Range(min=1, max=365)),
+}
+
 
 def async_setup_websocket(hass: HomeAssistant) -> None:
     """Register all EON Next WebSocket commands."""
@@ -152,11 +158,7 @@ def _find_meter_info(
 
 
 @websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
-    {
-        vol.Required("type"): "eon_next/consumption_history",
-        vol.Required("meter_serial"): str,
-        vol.Optional("days", default=7): vol.All(int, vol.Range(min=1, max=30)),
-    }
+    WS_CONSUMPTION_HISTORY_SCHEMA
 )
 @websocket_api.async_response  # pyright: ignore[reportPrivateImportUsage]
 async def ws_consumption_history(

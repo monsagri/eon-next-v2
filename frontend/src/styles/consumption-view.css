@@ -7,10 +7,18 @@
   color: var(--eon-text-primary);
 }
 
+.consumption-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .stats {
   display: flex;
   gap: 24px;
-  margin-bottom: 12px;
 }
 
 .stat {
