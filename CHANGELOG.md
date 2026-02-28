@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.8.2](https://github.com/monsagri/eon-next-v2/compare/v1.8.1...v1.8.2) (2026-02-28)
+
+
+### Bug Fixes
+
+* **coordinator:** address review feedback for daily consumption aggregation ([102b862](https://github.com/monsagri/eon-next-v2/commit/102b86268bc312f692e13f9c3b0b0bd604320bb2))
+* **coordinator:** fix daily consumption and previous-day cost showing unknown ([bbba961](https://github.com/monsagri/eon-next-v2/commit/bbba961f030ae3cf2a256ea1a3d1c3c9652684b1))
+
 ## [1.8.1](https://github.com/monsagri/eon-next-v2/compare/v1.8.0...v1.8.1) (2026-02-28)
 
 
