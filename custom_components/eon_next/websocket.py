@@ -187,15 +187,6 @@ async def ws_consumption_history(
             days,
         )
 
-    # Fill gaps so the chart always shows all requested days.
-    today = dt_util.now().date()
-    expected = {(today - timedelta(days=i)).isoformat() for i in range(days)}
-    existing = {e.date for e in entries}
-    for d in expected - existing:
-        entries.append(ConsumptionHistoryEntry(date=d, consumption=0.0))
-    entries.sort(key=lambda e: e.date)
-    entries = entries[-days:]
-
     connection.send_result(
         msg["id"],
         dataclasses.asdict(ConsumptionHistoryResponse(entries=entries)),
