@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.7.1](https://github.com/monsagri/eon-next-v2/compare/v1.7.0...v1.7.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* **panel:** guard static path registration against duplicate aiohttp routes ([#39](https://github.com/monsagri/eon-next-v2/issues/39)) ([9e51ea2](https://github.com/monsagri/eon-next-v2/commit/9e51ea2ca2c26eb94a1b1eb7b2109c7e04f92c83))
+
 ## [1.7.0](https://github.com/monsagri/eon-next-v2/compare/v1.6.0...v1.7.0) (2026-02-28)
 
 

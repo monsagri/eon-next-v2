@@ -19,5 +19,5 @@
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/monsagri/eon-next-v2/issues",
     "requirements": [],
-    "version": "1.7.0"
+    "version": "1.7.1"
 }
