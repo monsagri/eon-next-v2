@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [Unreleased]
+
+### Features
+
+* **sensor:** add previous and next unit rate sensors for tariff-aware automations (Phase 2A)
+* **binary_sensor:** add off-peak binary sensor for time-of-use tariff automation triggers
+* **event:** add current day rates event entity with today's full rate schedule
+* **sensor:** add export unit rate and export daily consumption sensors for solar/export meters
+* add tariff rate calculation helpers with API schedule and pattern registry fallback
+
 ## [1.8.2](https://github.com/monsagri/eon-next-v2/compare/v1.8.1...v1.8.2) (2026-02-28)
 
 
@@ -26,22 +36,6 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Features
 
 * **frontend:** add time-range picker, MTD cost, card editors, and accessibility (Phase 4) ([#41](https://github.com/monsagri/eon-next-v2/issues/41)) ([506e158](https://github.com/monsagri/eon-next-v2/commit/506e158d06d2ba101ded4c41977e23a5fdd197e8))
-
-## [Unreleased]
-
-### Features
-
-* **frontend:** add time-range picker for consumption charts (7d / 30d / 90d / 1y) with adaptive date labels
-* **frontend:** add month-to-date running cost total to the cost view
-* **frontend:** add visual config editors for all Lovelace cards (meter, summary, EV)
-* **frontend:** improve chart tooltips with styled backgrounds, formatted values, and dark-mode support
-* **frontend:** add ARIA roles and labels across panel, charts, and range picker for accessibility
-* **websocket:** extend `eon_next/consumption_history` max day range from 30 to 365
-
-### Bug Fixes
-
-* **coordinator:** derive unit rate, standing charge, and previous-day cost from tariff agreement data when the defunct daily-costs endpoint returns nothing
-* **frontend:** remove build-time version stamp that drifted from release-please managed version — the backend version badge is now the single source of truth
 
 ## [1.7.1](https://github.com/monsagri/eon-next-v2/compare/v1.7.0...v1.7.1) (2026-02-28)
 

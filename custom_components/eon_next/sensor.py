@@ -18,8 +18,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .coordinator import ev_data_key
-from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
+from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS, ElectricityMeter
 from .models import EonNextConfigEntry
+from .tariff_helpers import get_next_rate, get_previous_rate
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -57,6 +58,12 @@ async def async_setup_entry(
             entities.append(PreviousDayCostSensor(coordinator, meter))
             entities.append(CurrentUnitRateSensor(coordinator, meter))
             entities.append(CurrentTariffSensor(coordinator, meter))
+            entities.append(PreviousUnitRateSensor(coordinator, meter))
+            entities.append(NextUnitRateSensor(coordinator, meter))
+
+            if isinstance(meter, ElectricityMeter) and meter.is_export:
+                entities.append(ExportUnitRateSensor(coordinator, meter))
+                entities.append(ExportDailyConsumptionSensor(coordinator, meter))
 
         for charger in account.ev_chargers:
             entities.append(SmartChargingScheduleSensor(coordinator, charger))
@@ -422,3 +429,144 @@ class NextChargeEndSlot2Sensor(EonNextSensorBase):
         if not data:
             return None
         return _parse_timestamp(data.get("next_charge_end_2"))
+
+
+class PreviousUnitRateSensor(EonNextSensorBase):
+    """Most recent unit rate that differs from the current rate."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Previous Unit Rate"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
+        self._attr_icon = "mdi:currency-gbp"
+        self._attr_unique_id = f"{meter.serial}__previous_unit_rate"
+        self._attr_suggested_display_precision = 4
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        info = get_previous_rate(data)
+        return info.rate if info else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data
+        if not data:
+            return {}
+        info = get_previous_rate(data)
+        if not info:
+            return {}
+        attrs: dict[str, Any] = {}
+        if info.valid_from is not None:
+            attrs["valid_from"] = info.valid_from
+        if info.valid_to is not None:
+            attrs["valid_to"] = info.valid_to
+        tariff_code = data.get("tariff_code")
+        if tariff_code:
+            attrs["tariff_code"] = tariff_code
+        return attrs
+
+
+class NextUnitRateSensor(EonNextSensorBase):
+    """Next upcoming unit rate that differs from the current rate."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Next Unit Rate"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
+        self._attr_icon = "mdi:currency-gbp"
+        self._attr_unique_id = f"{meter.serial}__next_unit_rate"
+        self._attr_suggested_display_precision = 4
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        if not data:
+            return None
+        info = get_next_rate(data)
+        return info.rate if info else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data
+        if not data:
+            return {}
+        info = get_next_rate(data)
+        if not info:
+            return {}
+        attrs: dict[str, Any] = {}
+        if info.valid_from is not None:
+            attrs["valid_from"] = info.valid_from
+        if info.valid_to is not None:
+            attrs["valid_to"] = info.valid_to
+        tariff_code = data.get("tariff_code")
+        if tariff_code:
+            attrs["tariff_code"] = tariff_code
+        return attrs
+
+
+class ExportUnitRateSensor(EonNextSensorBase):
+    """Current export unit rate for export meters."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Export Unit Rate"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
+        self._attr_icon = "mdi:solar-power"
+        self._attr_unique_id = f"{meter.serial}__export_unit_rate"
+        self._attr_suggested_display_precision = 4
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("unit_rate") if data else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        attrs: dict[str, Any] = {}
+        for key in (
+            "tariff_code",
+            "tariff_name",
+            "tariff_valid_from",
+            "tariff_valid_to",
+        ):
+            val = data.get(key)
+            if val is not None and val != "":
+                attrs[key] = val
+        return attrs
+
+
+class ExportDailyConsumptionSensor(EonNextSensorBase):
+    """Daily export consumption for export meters."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Export Daily Consumption"
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_icon = "mdi:solar-power"
+        self._attr_unique_id = f"{meter.serial}__export_daily_consumption"
+
+    @property
+    def last_reset(self) -> datetime | None:
+        data = self._meter_data
+        if not data:
+            return None
+        raw = data.get("daily_consumption_last_reset")
+        if raw:
+            parsed = dt_util.parse_datetime(str(raw))
+            if parsed:
+                return dt_util.as_utc(parsed)
+        return None
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("daily_consumption") if data else None
