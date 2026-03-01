@@ -387,7 +387,11 @@ class EonNext:
     def __reset_accounts(self):
         self.accounts: list[EnergyAccount] = []
 
-    async def __get_account_numbers(self) -> list[str]:
+    async def __get_account_info(self) -> list[dict[str, Any]]:
+        """Fetch account numbers and balances from the logged-in user query.
+
+        Returns a list of dicts with ``number`` and ``balance`` keys.
+        """
         result = await self._graphql_post(
             "headerGetLoggedInUser",
             "query headerGetLoggedInUser {\n  viewer {\n    accounts {\n      ... on AccountType {\n        applications(first: 1) {\n          edges {\n            node {\n              isMigrated\n              migrationSource\n              __typename\n            }\n            __typename\n          }\n          __typename\n        }\n        balance\n        id\n        number\n        __typename\n      }\n      __typename\n    }\n    id\n    preferredName\n    __typename\n  }\n}\n",
@@ -396,9 +400,12 @@ class EonNext:
         if not self._json_contains_key_chain(result, ["data", "viewer", "accounts"]):
             raise EonNextApiError("Unable to load energy accounts")
 
-        found = []
+        found: list[dict[str, Any]] = []
         for account_entry in result["data"]["viewer"]["accounts"]:
-            found.append(account_entry["number"])
+            found.append({
+                "number": account_entry["number"],
+                "balance": account_entry.get("balance"),
+            })
 
         return found
 
@@ -406,8 +413,10 @@ class EonNext:
         if len(self.accounts) != 0:
             return
 
-        for account_number in await self.__get_account_numbers():
-            account = EnergyAccount(self, account_number)
+        for info in await self.__get_account_info():
+            account = EnergyAccount(
+                self, info["number"], balance=info.get("balance")
+            )
             await account._load_meters()
             await account._load_ev_chargers()
             self.accounts.append(account)
@@ -665,9 +674,15 @@ class EonNext:
 class EnergyAccount:
     """Represents an energy account."""
 
-    def __init__(self, api: EonNext, account_number: str):
+    def __init__(
+        self,
+        api: EonNext,
+        account_number: str,
+        balance: int | None = None,
+    ):
         self.api = api
         self.account_number = account_number
+        self.balance = balance
         self.meters: list[EnergyMeter] = []
         self.ev_chargers: list[SmartChargingDevice] = []
 
@@ -694,11 +709,15 @@ class EnergyAccount:
                     "",
                 )
                 for meter_config in electricity_point["meters"]:
+                    is_export = self._is_export_meter(
+                        supply_point_id, meter_config
+                    )
                     meter = ElectricityMeter(
                         self,
                         meter_config["id"],
                         meter_config["serialNumber"],
                         supply_point_id,
+                        is_export=is_export,
                     )
                     self.meters.append(meter)
 
@@ -775,6 +794,32 @@ class EnergyAccount:
             )
             seen.add(device_id)
 
+    @staticmethod
+    def _is_export_meter(mpan: str, meter_config: dict[str, Any]) -> bool:
+        """Detect whether an electricity meter is an export meter.
+
+        Uses two heuristics (either is sufficient):
+        1. MPAN profile class — UK export MPANs use profile class 00
+           (the first two digits when the full MPAN top-line is included).
+        2. Register names — export meters typically have registers with
+           "export" in the name.
+        """
+        # MPAN profile class check
+        if mpan and mpan[:2] == "00":
+            return True
+
+        # Register name check
+        registers = meter_config.get("registers")
+        if isinstance(registers, list):
+            for reg in registers:
+                if not isinstance(reg, dict):
+                    continue
+                name = str(reg.get("name") or "").lower()
+                if "export" in name:
+                    return True
+
+        return False
+
 
 class EnergyMeter:
     """Base class for meters."""
@@ -828,9 +873,11 @@ class ElectricityMeter(EnergyMeter):
         meter_id: str,
         serial: str,
         supply_point_id: str = "",
+        is_export: bool = False,
     ):
         super().__init__(account, meter_id, serial, supply_point_id)
         self.type = METER_TYPE_ELECTRIC
+        self.is_export = is_export
 
     async def _update(self):
         result = await self.api._graphql_post(
