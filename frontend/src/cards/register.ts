@@ -7,6 +7,7 @@
 
 import './summary-card'
 import './consumption-card'
+import './consumption-breakdown-card'
 import './cost-card'
 import './reading-card'
 import './ev-card'
@@ -38,6 +39,13 @@ window.customCards.push(
     name: 'EON Next Consumption',
     description:
       'Consumption chart and daily usage for a single meter with 7-day history.',
+    preview: true
+  },
+  {
+    type: 'eon-next-consumption-breakdown-card',
+    name: 'EON Next Cost Breakdown',
+    description:
+      'Pie chart showing usage charges vs standing charges for a single meter with day, week, and month views.',
     preview: true
   },
   {

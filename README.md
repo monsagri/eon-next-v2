@@ -98,6 +98,7 @@ The integration ships Lovelace cards that power users can add to any dashboard:
 
 - **EON Next Summary** (`custom:eon-next-summary-card`) — compact all-in-one overview.
 - **EON Next Consumption** (`custom:eon-next-consumption-card`) — daily consumption bar chart with a time-range picker (7d / 30d / 90d / 1y), missing days shown as zero, plus an estimated daily cost overlay (£) on a second y-axis when tariff pricing is available.
+- **EON Next Cost Breakdown** (`custom:eon-next-consumption-breakdown-card`) — pie chart showing usage charges vs standing charges with day, week, and month views. Helps visualise what proportion of your bill is consumption vs fixed daily standing charge.
 - **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, month-to-date running total, standing charge, and unit rate.
 - **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest meter reading, date, and tariff.
 - **EON Next EV Charger** (`custom:eon-next-ev-card`) — EV smart charging schedule status and upcoming slots.
