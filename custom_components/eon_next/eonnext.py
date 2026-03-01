@@ -80,6 +80,8 @@ query getAccountAgreements($accountNumber: String!) {
           ... on HalfHourlyTariff {
             unitRates {
               value
+              validFrom
+              validTo
             }
             standingCharge
           }
@@ -607,11 +609,15 @@ class EonNext:
                 continue
 
             unit_rate = tariff.get("unitRate")
+            unit_rates_schedule: list[dict[str, Any]] | None = None
+            tariff_is_tou = False
+
             if unit_rate is None:
                 # HalfHourlyTariff stores rates in unitRates list
                 unit_rates = tariff.get("unitRates")
                 if isinstance(unit_rates, list) and unit_rates:
                     float_values: list[float] = []
+                    schedule_entries: list[dict[str, Any]] = []
                     for r in unit_rates:
                         if not isinstance(r, dict):
                             continue
@@ -622,17 +628,35 @@ class EonNext:
                             float_values.append(float(val))
                         except (TypeError, ValueError):
                             continue
+                        schedule_entries.append({
+                            "value": float(val),
+                            "validFrom": r.get("validFrom"),
+                            "validTo": r.get("validTo"),
+                        })
                     if float_values:
                         unit_rate = sum(float_values) / len(float_values)
+                    if schedule_entries:
+                        unit_rates_schedule = schedule_entries
+
+            # Detect time-of-use: HalfHourlyTariff typename or multiple
+            # distinct rate values in the schedule.
+            typename = tariff.get("__typename") or ""
+            if typename == "HalfHourlyTariff":
+                tariff_is_tou = True
+            elif unit_rates_schedule:
+                distinct = {e["value"] for e in unit_rates_schedule}
+                tariff_is_tou = len(distinct) > 1
 
             return {
                 "tariff_name": tariff.get("displayName") or tariff.get("fullName"),
                 "tariff_code": tariff.get("tariffCode"),
-                "tariff_type": tariff.get("__typename"),
+                "tariff_type": typename,
                 "unit_rate": unit_rate,
                 "standing_charge": tariff.get("standingCharge"),
                 "valid_from": valid_from,
                 "valid_to": valid_to,
+                "unit_rates_schedule": unit_rates_schedule,
+                "tariff_is_tou": tariff_is_tou,
             }
 
         return None
