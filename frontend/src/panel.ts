@@ -13,6 +13,7 @@ import type {
 } from './types'
 
 import './components/consumption-view'
+import './components/consumption-breakdown-view'
 import './components/cost-view'
 import './components/meter-view'
 import './components/ev-schedule-view'
@@ -104,6 +105,13 @@ class EonNextPanel extends LitElement {
         <div class="card-divider"></div>
 
         <eon-cost-view .hass=${this.hass} .meter=${meter}></eon-cost-view>
+
+        <div class="card-divider"></div>
+
+        <eon-consumption-breakdown-view
+          .hass=${this.hass}
+          .meter=${meter}
+        ></eon-consumption-breakdown-view>
 
         <div class="card-divider"></div>
 
