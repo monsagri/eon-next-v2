@@ -35,6 +35,7 @@ class EonConsumptionBreakdownView extends LitElement {
 
   private _fetchedSerial: string | null = null
   private _fetchedDays = 0
+  private _requestId = 0
 
   /** Memoization keys */
   private _memoHistory: ConsumptionHistoryEntry[] | null = null
@@ -72,10 +73,13 @@ class EonConsumptionBreakdownView extends LitElement {
     this._fetchedSerial = this.meter.serial
     this._fetchedDays = days
     this._loading = true
+    const id = ++this._requestId
     try {
       const resp = await getConsumptionHistory(this.hass, this.meter.serial!, days)
+      if (id !== this._requestId) return // stale response — a newer request superseded this one
       this._history = resp.entries
     } catch {
+      if (id !== this._requestId) return
       this._history = []
     }
     this._loading = false
