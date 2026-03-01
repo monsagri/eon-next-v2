@@ -80,6 +80,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "tariff_standing_charge": None,
                         "tariff_valid_from": None,
                         "tariff_valid_to": None,
+                        "tariff_rates_schedule": None,
+                        "tariff_is_tou": False,
                     }
 
                     if (
@@ -139,6 +141,12 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         )
                         meter_data["tariff_valid_from"] = tariff.get("valid_from")
                         meter_data["tariff_valid_to"] = tariff.get("valid_to")
+                        meter_data["tariff_rates_schedule"] = tariff.get(
+                            "unit_rates_schedule"
+                        )
+                        meter_data["tariff_is_tou"] = tariff.get(
+                            "tariff_is_tou", False
+                        )
                     else:
                         # Retain previous tariff values on transient failures.
                         prev = self.data.get(meter_key, {}) if self.data else {}
@@ -151,6 +159,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 "tariff_standing_charge",
                                 "tariff_valid_from",
                                 "tariff_valid_to",
+                                "tariff_rates_schedule",
+                                "tariff_is_tou",
                             ):
                                 meter_data[key] = prev.get(key)
                             _LOGGER.debug(
