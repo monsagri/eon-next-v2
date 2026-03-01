@@ -8,6 +8,11 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ### Features
 
+* **sensor:** add previous and next unit rate sensors for tariff-aware automations (Phase 2A)
+* **binary_sensor:** add off-peak binary sensor for time-of-use tariff automation triggers
+* **event:** add current day rates event entity with today's full rate schedule
+* **sensor:** add export unit rate and export daily consumption sensors for solar/export meters
+* add tariff rate calculation helpers with API schedule and pattern registry fallback
 * **frontend:** add cost breakdown pie chart card with day/week/month views
 * **frontend:** add time-range picker for consumption charts (7d / 30d / 90d / 1y) with adaptive date labels
 * **frontend:** add month-to-date running cost total to the cost view

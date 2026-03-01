@@ -1,13 +1,13 @@
 # EON Next Integration: Available Features
 
-Date: 2026-02-28
+Date: 2026-03-01
 Scope: Implemented capabilities in this repository (`eon-next-v2`)
 
 ## Summary
 
-The integration currently provides cloud-polled monitoring for EON Next accounts through Home Assistant `sensor` entities.
+The integration currently provides cloud-polled monitoring for EON Next accounts through Home Assistant `sensor`, `binary_sensor`, and `event` entities.
 
-- Platform support: `sensor` only
+- Platform support: `sensor`, `binary_sensor`, `event`
 - Frontend: sidebar panel + Lovelace card(s)
 - Services exposed: none
 - Options flow: panel visibility, card visibility, backfill configuration
@@ -33,13 +33,27 @@ The integration currently provides cloud-polled monitoring for EON Next accounts
 - Previous day cost (total inc VAT, GBP)
 - Current tariff name (with tariff code, type, unit rate, standing charge, and validity period as attributes)
 - Current unit rate (GBP/kWh, converted from pence)
+- Previous unit rate (last rate that differed from current, for ToU tariffs)
+- Next unit rate (upcoming rate that differs from current, for ToU tariffs)
 
 Electricity meters add:
 - Electricity reading (kWh)
 
+Export electricity meters add:
+- Export unit rate (GBP/kWh)
+- Export daily consumption (kWh)
+
 Gas meters add:
 - Gas reading (m3)
 - Gas reading converted to kWh
+
+### Binary sensors (per meter)
+
+- Off-peak indicator — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs
+
+### Event entities (per meter)
+
+- Current day rates — fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window)
 
 ### EV smart charging sensors (per supported charger)
 
@@ -88,11 +102,8 @@ Gas meters add:
 
 ## Current Gaps (Not Yet Implemented)
 
-- No next/previous rate sensors (only current tariff)
-- No off-peak/time-of-use indicator sensors
-- No export tariff/export earnings sensors
 - No cost tracker entities or services
-- No binary sensors/events/calendars/switch/number/select/time/climate/water_heater platforms
+- No calendar/switch/number/select/time/climate/water_heater platforms
 - No Home Assistant services
 - No configurable update interval (options flow exists for backfill only)
 
