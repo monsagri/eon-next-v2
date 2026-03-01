@@ -152,29 +152,37 @@ def get_previous_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     if schedule and _schedule_has_time_windows(schedule):
         current = _find_current_window(schedule, now_utc)
         if current is not None:
-            current_pence = float(current["value"])
-            min_r = _min_rate_pence(schedule)
-            candidates = []
-            for e in schedule:
-                vt = _parse_dt(e.get("validTo"))
-                if vt is None or vt > now_utc:
-                    continue
-                try:
-                    val = float(e["value"])
-                except (TypeError, ValueError, KeyError):
-                    continue
-                if val != current_pence:
-                    candidates.append((vt, e))
-            if candidates:
-                candidates.sort(key=lambda x: x[0], reverse=True)
-                prev = candidates[0][1]
-                prev_val = float(prev["value"])
-                return RateInfo(
-                    rate=_pence_to_pounds(prev_val),
-                    valid_from=prev.get("validFrom"),
-                    valid_to=prev.get("validTo"),
-                    is_off_peak=(min_r is not None and prev_val == min_r),
-                )
+            try:
+                current_pence = float(current["value"])
+            except (TypeError, ValueError, KeyError):
+                current_pence = None
+            if current_pence is not None:
+                min_r = _min_rate_pence(schedule)
+                candidates = []
+                for e in schedule:
+                    vt = _parse_dt(e.get("validTo"))
+                    if vt is None or vt > now_utc:
+                        continue
+                    try:
+                        val = float(e["value"])
+                    except (TypeError, ValueError, KeyError):
+                        continue
+                    if val != current_pence:
+                        candidates.append((vt, e))
+                if candidates:
+                    candidates.sort(key=lambda x: x[0], reverse=True)
+                    prev = candidates[0][1]
+                    try:
+                        prev_val = float(prev["value"])
+                    except (TypeError, ValueError, KeyError):
+                        prev_val = None
+                    if prev_val is not None:
+                        return RateInfo(
+                            rate=_pence_to_pounds(prev_val),
+                            valid_from=prev.get("validFrom"),
+                            valid_to=prev.get("validTo"),
+                            is_off_peak=(min_r is not None and prev_val == min_r),
+                        )
 
     # Strategy 2: Pattern fallback with schedule rate values
     if schedule:
@@ -222,29 +230,37 @@ def get_next_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     if schedule and _schedule_has_time_windows(schedule):
         current = _find_current_window(schedule, now_utc)
         if current is not None:
-            current_pence = float(current["value"])
-            min_r = _min_rate_pence(schedule)
-            candidates = []
-            for e in schedule:
-                vf = _parse_dt(e.get("validFrom"))
-                if vf is None or vf <= now_utc:
-                    continue
-                try:
-                    val = float(e["value"])
-                except (TypeError, ValueError, KeyError):
-                    continue
-                if val != current_pence:
-                    candidates.append((vf, e))
-            if candidates:
-                candidates.sort(key=lambda x: x[0])
-                nxt = candidates[0][1]
-                nxt_val = float(nxt["value"])
-                return RateInfo(
-                    rate=_pence_to_pounds(nxt_val),
-                    valid_from=nxt.get("validFrom"),
-                    valid_to=nxt.get("validTo"),
-                    is_off_peak=(min_r is not None and nxt_val == min_r),
-                )
+            try:
+                current_pence = float(current["value"])
+            except (TypeError, ValueError, KeyError):
+                current_pence = None
+            if current_pence is not None:
+                min_r = _min_rate_pence(schedule)
+                candidates = []
+                for e in schedule:
+                    vf = _parse_dt(e.get("validFrom"))
+                    if vf is None or vf <= now_utc:
+                        continue
+                    try:
+                        val = float(e["value"])
+                    except (TypeError, ValueError, KeyError):
+                        continue
+                    if val != current_pence:
+                        candidates.append((vf, e))
+                if candidates:
+                    candidates.sort(key=lambda x: x[0])
+                    nxt = candidates[0][1]
+                    try:
+                        nxt_val = float(nxt["value"])
+                    except (TypeError, ValueError, KeyError):
+                        nxt_val = None
+                    if nxt_val is not None:
+                        return RateInfo(
+                            rate=_pence_to_pounds(nxt_val),
+                            valid_from=nxt.get("validFrom"),
+                            valid_to=nxt.get("validTo"),
+                            is_off_peak=(min_r is not None and nxt_val == min_r),
+                        )
 
     # Strategy 2: Pattern fallback
     if schedule:
@@ -287,7 +303,13 @@ def is_off_peak(meter_data: dict[str, Any]) -> bool | None:
         current = _find_current_window(schedule, now_utc)
         if current is not None:
             min_r = _min_rate_pence(schedule)
-            return min_r is not None and float(current["value"]) == min_r
+            try:
+                cur_val = float(current["value"])
+            except (TypeError, ValueError, KeyError):
+                cur_val = None
+            if min_r is not None and cur_val is not None:
+                return cur_val == min_r
+            return None
 
     # Pattern registry fallback
     pattern = get_tariff_pattern(tariff_code)
@@ -317,7 +339,11 @@ def get_off_peak_metadata(
         current = _find_current_window(schedule, now_utc)
         if current is not None:
             min_r = _min_rate_pence(schedule)
-            is_off = min_r is not None and float(current["value"]) == min_r
+            try:
+                cur_val = float(current["value"])
+            except (TypeError, ValueError, KeyError):
+                cur_val = None
+            is_off = min_r is not None and cur_val is not None and cur_val == min_r
             result["current_rate_name"] = "off_peak" if is_off else "peak"
             result["next_transition"] = current.get("validTo")
         return result
@@ -382,7 +408,10 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
                 continue
             if vt <= day_start_utc or vf >= day_end_utc:
                 continue
-            val = float(entry["value"])
+            try:
+                val = float(entry["value"])
+            except (TypeError, ValueError, KeyError):
+                continue
             rates.append(
                 {
                     "start": max(vf, day_start_utc).isoformat(),
