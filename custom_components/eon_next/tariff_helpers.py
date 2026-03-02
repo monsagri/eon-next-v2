@@ -128,6 +128,16 @@ def _next_transition_dt(
     return datetime.combine(tomorrow, boundaries[0], tzinfo=now_local.tzinfo)
 
 
+def _local_day_bounds(
+    day: dt_mod.date, tz: tzinfo | None
+) -> tuple[datetime, datetime]:
+    """Return local midnight bounds for a calendar day."""
+    day_start = datetime.combine(day, time.min, tzinfo=tz)
+    next_day = day + dt_mod.timedelta(days=1)
+    day_end = datetime.combine(next_day, time.min, tzinfo=tz)
+    return day_start, day_end
+
+
 # ── Public API ─────────────────────────────────────────────────
 
 
@@ -381,8 +391,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
 
     # Flat rate: single window
     if not is_tou:
-        day_start = datetime.combine(today, time.min, tzinfo=now.tzinfo)
-        day_end = day_start + timedelta(days=1)
+        day_start, day_end = _local_day_bounds(today, now.tzinfo)
         return [
             {
                 "start": day_start.isoformat(),
@@ -394,8 +403,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
 
     # API schedule with time windows — filter to today
     if schedule and _schedule_has_time_windows(schedule):
-        day_start = datetime.combine(today, time.min, tzinfo=now.tzinfo)
-        day_end = day_start + timedelta(days=1)
+        day_start, day_end = _local_day_bounds(today, now.tzinfo)
         day_start_utc = dt_util.as_utc(day_start)
         day_end_utc = dt_util.as_utc(day_end)
 
@@ -412,10 +420,12 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
                 val = float(entry["value"])
             except (TypeError, ValueError, KeyError):
                 continue
+            start_local = dt_util.as_local(max(vf, day_start_utc))
+            end_local = dt_util.as_local(min(vt, day_end_utc))
             rates.append(
                 {
-                    "start": max(vf, day_start_utc).isoformat(),
-                    "end": min(vt, day_end_utc).isoformat(),
+                    "start": start_local.isoformat(),
+                    "end": end_local.isoformat(),
                     "rate": _pence_to_pounds(val),
                     "is_off_peak": min_r is not None and val == min_r,
                 }
@@ -446,8 +456,7 @@ def _build_pattern_day_windows(
     peak_rate: float,
 ) -> list[dict[str, Any]]:
     """Construct a full day of rate windows from a tariff pattern."""
-    day_start = datetime.combine(today, time.min, tzinfo=tz)
-    day_end = day_start + timedelta(days=1)
+    day_start, day_end = _local_day_bounds(today, tz)
 
     # Collect off-peak intervals as datetime ranges within today
     dt_intervals: list[tuple[datetime, datetime]] = []

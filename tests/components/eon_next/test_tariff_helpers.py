@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 
 from custom_components.eon_next.tariff_helpers import (
-    RateInfo,
     build_day_rates,
     get_next_rate,
     get_off_peak_metadata,

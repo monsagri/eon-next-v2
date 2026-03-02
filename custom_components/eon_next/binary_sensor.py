@@ -60,8 +60,10 @@ class OffPeakBinarySensor(EonNextBinarySensorBase):
     def available(self) -> bool:
         if not super().available or self._meter_data is None:
             return False
-        # Unavailable for flat-rate tariffs
-        return self._meter_data.get("tariff_is_tou", False)
+        data = self._meter_data
+        if not data.get("tariff_is_tou", False):
+            return False
+        return is_off_peak(data) is not None
 
     @property
     def is_on(self) -> bool | None:

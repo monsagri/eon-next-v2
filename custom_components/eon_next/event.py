@@ -75,7 +75,10 @@ class CurrentDayRatesEvent(EonNextEventBase):
                 "rates_updated",
                 {"rates": self._rates, "tariff_code": self._tariff_code},
             )
+            self.async_write_ha_state()
         else:
+            self._rates = []
+            self._tariff_code = None
             self.async_write_ha_state()
 
     @property

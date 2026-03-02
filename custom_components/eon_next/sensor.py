@@ -20,7 +20,7 @@ from homeassistant.util import dt as dt_util
 from .coordinator import ev_data_key
 from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS, ElectricityMeter
 from .models import EonNextConfigEntry
-from .tariff_helpers import get_next_rate, get_previous_rate
+from .tariff_helpers import RateInfo, get_next_rate, get_previous_rate
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -442,13 +442,23 @@ class PreviousUnitRateSensor(EonNextSensorBase):
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__previous_unit_rate"
         self._attr_suggested_display_precision = 4
+        self._rate_info: RateInfo | None = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        data = self._meter_data
+        self._rate_info = get_previous_rate(data) if data else None
+        super()._handle_coordinator_update()
+
+    def _get_rate_info(self) -> RateInfo | None:
+        if self._rate_info is not None:
+            return self._rate_info
+        data = self._meter_data
+        return get_previous_rate(data) if data else None
 
     @property
     def native_value(self):
-        data = self._meter_data
-        if not data:
-            return None
-        info = get_previous_rate(data)
+        info = self._get_rate_info()
         return info.rate if info else None
 
     @property
@@ -456,7 +466,7 @@ class PreviousUnitRateSensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return {}
-        info = get_previous_rate(data)
+        info = self._get_rate_info()
         if not info:
             return {}
         attrs: dict[str, Any] = {}
@@ -481,13 +491,23 @@ class NextUnitRateSensor(EonNextSensorBase):
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__next_unit_rate"
         self._attr_suggested_display_precision = 4
+        self._rate_info: RateInfo | None = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        data = self._meter_data
+        self._rate_info = get_next_rate(data) if data else None
+        super()._handle_coordinator_update()
+
+    def _get_rate_info(self) -> RateInfo | None:
+        if self._rate_info is not None:
+            return self._rate_info
+        data = self._meter_data
+        return get_next_rate(data) if data else None
 
     @property
     def native_value(self):
-        data = self._meter_data
-        if not data:
-            return None
-        info = get_next_rate(data)
+        info = self._get_rate_info()
         return info.rate if info else None
 
     @property
@@ -495,7 +515,7 @@ class NextUnitRateSensor(EonNextSensorBase):
         data = self._meter_data
         if not data:
             return {}
-        info = get_next_rate(data)
+        info = self._get_rate_info()
         if not info:
             return {}
         attrs: dict[str, Any] = {}
