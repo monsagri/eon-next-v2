@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.9.0](https://github.com/monsagri/eon-next-v2/compare/v1.8.2...v1.9.0) (2026-03-02)
+
+
+### Features
+
+* **frontend:** add cost breakdown pie chart card with day/week/month views ([#50](https://github.com/monsagri/eon-next-v2/issues/50)) ([4e7ef94](https://github.com/monsagri/eon-next-v2/commit/4e7ef940115c5925b2a4edf929959a931a82bdbe))
+* implement A1-A3 phase 2 architectural prerequisites ([#48](https://github.com/monsagri/eon-next-v2/issues/48)) ([6209496](https://github.com/monsagri/eon-next-v2/commit/6209496e349ab99e82746481ecae2b78ce58fd18))
+* implement phase 2A tariff-aware sensors ([#51](https://github.com/monsagri/eon-next-v2/issues/51)) ([499c429](https://github.com/monsagri/eon-next-v2/commit/499c4298b73035f08cca507662e4ad9141a451e1))
+* implement phase 2b cost trackers, services, and dashboard breakdown ([1140db9](https://github.com/monsagri/eon-next-v2/commit/1140db9c84bc9be12225b74625c25826a8a4cc5d))
+
+
+### Bug Fixes
+
+* address automated review findings for phase 2b ([5439105](https://github.com/monsagri/eon-next-v2/commit/54391053445bf93168b0c3dd960847e8d46b8b69))
+* correct entity registry test config_entry argument ([5e6f43d](https://github.com/monsagri/eon-next-v2/commit/5e6f43dd25709a1c2cde844638f3aef2c3c00260))
+
 ## [Unreleased]
 
 ### Features

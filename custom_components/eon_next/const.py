@@ -1,7 +1,7 @@
 """Constants for the Eon Next integration."""
 
 DOMAIN = "eon_next"
-INTEGRATION_VERSION = "1.8.2"  # x-release-please-version
+INTEGRATION_VERSION = "1.9.0"  # x-release-please-version
 
 # Authentication
 CONF_EMAIL = "email"
