@@ -421,6 +421,21 @@ class EonNext:
             await account._load_ev_chargers()
             self.accounts.append(account)
 
+    async def async_get_account_balances(self) -> dict[str, Any]:
+        """Return latest account balances keyed by account number."""
+        balances: dict[str, Any] = {}
+        for info in await self.__get_account_info():
+            account_number = str(info.get("number") or "")
+            if not account_number:
+                continue
+            balances[account_number] = info.get("balance")
+
+        for account in self.accounts:
+            if account.account_number in balances:
+                account.balance = balances[account.account_number]
+
+        return balances
+
     async def async_get_consumption(
         self,
         meter_type: str,

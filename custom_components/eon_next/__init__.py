@@ -28,8 +28,10 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import EonNextCoordinator
+from .cost_tracker import EonNextCostTrackerManager
 from .eonnext import EonNext, EonNextApiError
 from .models import EonNextConfigEntry, EonNextRuntimeData
+from .services import async_register_services
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -136,6 +138,8 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         async_setup_websocket(hass)
         hass.data[_WEBSOCKET_REGISTERED_KEY] = True
 
+    await async_register_services(hass)
+
     return True
 
 
@@ -231,7 +235,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
 
     coordinator = EonNextCoordinator(hass, api, DEFAULT_UPDATE_INTERVAL_MINUTES)
     backfill = EonNextBackfillManager(hass, entry, api, coordinator)
+    cost_trackers = EonNextCostTrackerManager(hass, entry.entry_id, coordinator)
     await backfill.async_prime()
+    await cost_trackers.async_initialize()
 
     try:
         await coordinator.async_config_entry_first_refresh()
@@ -244,6 +250,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
         api=api,
         coordinator=coordinator,
         backfill=backfill,
+        cost_trackers=cost_trackers,
     )
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -257,6 +264,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> 
     """Unload an Eon Next config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
+        await entry.runtime_data.cost_trackers.async_shutdown()
         await entry.runtime_data.backfill.async_stop()
         await entry.runtime_data.api.async_close()
 

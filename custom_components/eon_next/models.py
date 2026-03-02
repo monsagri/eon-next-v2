@@ -12,6 +12,7 @@ from .eonnext import EonNext
 
 if TYPE_CHECKING:
     from .backfill import EonNextBackfillManager
+    from .cost_tracker import EonNextCostTrackerManager
 
 
 @dataclass(slots=True)
@@ -21,6 +22,7 @@ class EonNextRuntimeData:
     api: EonNext
     coordinator: EonNextCoordinator
     backfill: EonNextBackfillManager
+    cost_trackers: EonNextCostTrackerManager
 
 
 EonNextConfigEntry = ConfigEntry[EonNextRuntimeData]

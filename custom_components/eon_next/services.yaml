@@ -1,0 +1,58 @@
+add_cost_tracker:
+  name: Add Cost Tracker
+  description: Create a new E.ON Next cost tracker sensor.
+  fields:
+    name:
+      name: Name
+      description: Friendly name for the tracker.
+      required: true
+      selector:
+        text:
+    tracked_entity_id:
+      name: Tracked entity
+      description: Power or energy entity to track.
+      required: true
+      selector:
+        entity:
+    meter_serial:
+      name: Meter serial
+      description: Meter serial whose tariff rate is used for costing.
+      required: true
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Whether the tracker starts enabled.
+      required: false
+      default: true
+      selector:
+        boolean:
+    entry_id:
+      name: Config entry id
+      description: Optional config entry id when multiple E.ON Next entries are configured.
+      required: false
+      selector:
+        text:
+
+reset_cost_tracker:
+  name: Reset Cost Tracker
+  description: Reset one or more cost trackers to zero.
+  target:
+    entity:
+      integration: eon_next
+      domain: sensor
+
+update_cost_tracker:
+  name: Update Cost Tracker
+  description: Enable or disable one or more cost trackers.
+  target:
+    entity:
+      integration: eon_next
+      domain: sensor
+  fields:
+    enabled:
+      name: Enabled
+      description: True to enable tracking, false to pause.
+      required: true
+      selector:
+        boolean:

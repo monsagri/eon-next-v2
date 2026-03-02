@@ -1,8 +1,29 @@
 # Phase 2: Tariff Richness & Cost Intelligence
 
 Date: 2026-02-28
-Status: Draft
+Status: In Progress (updated 2026-03-02)
 Scope: Phase 2A (tariff-aware sensors) and Phase 2B (cost intelligence), plus architectural prerequisites
+
+## Status Update (2026-03-02)
+
+Recently merged into `main` (already complete):
+
+- Architectural prerequisites A1-A5
+- Phase 2A entities (previous/next unit rate, off-peak binary sensor, current day rates event, export sensors)
+
+Implemented in this Phase 2B delivery:
+
+- 2B.1 Cost tracker entities with persistent `Store` state and service management (`add_cost_tracker`, `reset_cost_tracker`, `update_cost_tracker`)
+- 2B.2 Account balance sensor, including coordinator-side periodic balance refresh
+- 2B.3 Previous day consumption sensor with entry-count/data-completeness attributes
+
+Post-Phase 2 backlog candidates (future implementation):
+
+- Top devices view/card using cost trackers, including percentage-of-today usage and trend versus yesterday
+- Cost tracker grouping/categories (for example kitchen, laundry, EV) with group-level totals
+- "Untracked share" helper/automation support (for example notify when untracked usage exceeds a threshold)
+- Tracker accuracy metadata in UI (source unit type, last update, confidence hint for integrated-power vs direct-energy sources)
+- Optional historical tracker mode with daily snapshots for week/month device-cost comparisons
 
 ## Motivation
 

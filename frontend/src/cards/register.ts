@@ -45,7 +45,7 @@ window.customCards.push(
     type: 'eon-next-consumption-breakdown-card',
     name: 'EON Next Cost Breakdown',
     description:
-      'Pie chart showing usage charges vs standing charges for a single meter with day, week, and month views.',
+      'Pie chart showing usage charges vs standing charges, plus tracker-powered tracked/untracked usage split for a single meter.',
     preview: true
   },
   {

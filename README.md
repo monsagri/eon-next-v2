@@ -12,12 +12,19 @@ Custom integration for E.ON Next accounts in Home Assistant.
   - `consumptionDataByMpxn` GraphQL fallback when REST data is unavailable.
 - Daily standing charge sensor (inc VAT) for electricity and gas.
 - Previous day total cost sensor (inc VAT) for electricity and gas.
+- Previous day consumption sensor (kWh) with data quality attributes (`entry_count`, `data_complete`).
 - Current unit rate sensor (£/kWh, inc VAT) for electricity and gas — compatible with the Energy Dashboard's "use an entity with current price" option.
 - Current tariff name sensor with agreement metadata (code, type, validity period) and published unit rate.
+- Account balance sensor per account (£), refreshed on coordinator updates.
 - Previous and next unit rate sensors — show the last/upcoming rate that differs from the current rate, enabling tariff-aware automations (e.g., "run the dishwasher when the cheap rate starts").
 - Off-peak binary sensor — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs. Supports automations with a simple `state: 'on'` trigger.
 - Current day rates event entity — fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window). Also exposes `rates` as a persistent state attribute for template sensors.
 - Export unit rate and export daily consumption sensors — created automatically for detected export meters (solar/battery export).
+- Cost tracker sensors with persistent storage and services:
+  - `eon_next.add_cost_tracker` to create a tracker for a selected power/energy entity and meter tariff.
+  - `eon_next.reset_cost_tracker` to zero one or more trackers.
+  - `eon_next.update_cost_tracker` to enable/disable one or more trackers.
+  - Cost breakdown UI now includes a default tracker-powered "tracked vs untracked usage (today)" visualization and per-tracker cost list when trackers exist for the selected meter.
 - EV smart charging sensors (when SmartFlex devices are available):
   - Smart charging schedule status.
   - Next charge start/end.

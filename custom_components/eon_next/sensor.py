@@ -13,11 +13,13 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfVolume
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .coordinator import ev_data_key
+from .cost_tracker import EonNextCostTrackerManager
 from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS, ElectricityMeter
 from .models import EonNextConfigEntry
 from .tariff_helpers import RateInfo, get_next_rate, get_previous_rate
@@ -40,9 +42,14 @@ async def async_setup_entry(
     coordinator = config_entry.runtime_data.coordinator
     api = config_entry.runtime_data.api
     backfill = config_entry.runtime_data.backfill
+    cost_trackers = config_entry.runtime_data.cost_trackers
 
     entities: list[SensorEntity] = []
     for account in api.accounts:
+        account_number = getattr(account, "account_number", None)
+        if account_number:
+            entities.append(AccountBalanceSensor(coordinator, account_number))
+
         for meter in account.meters:
             entities.append(LatestReadingDateSensor(coordinator, meter))
 
@@ -60,6 +67,7 @@ async def async_setup_entry(
             entities.append(CurrentTariffSensor(coordinator, meter))
             entities.append(PreviousUnitRateSensor(coordinator, meter))
             entities.append(NextUnitRateSensor(coordinator, meter))
+            entities.append(PreviousDayConsumptionSensor(coordinator, meter))
 
             if isinstance(meter, ElectricityMeter) and meter.is_export:
                 entities.append(ExportUnitRateSensor(coordinator, meter))
@@ -74,7 +82,24 @@ async def async_setup_entry(
 
     entities.append(HistoricalBackfillStatusSensor(coordinator, backfill))
 
+    tracker_entity_ids = cost_trackers.list_tracker_ids()
+    for tracker_id in tracker_entity_ids:
+        entities.append(CostTrackerSensor(cost_trackers, tracker_id))
+
     async_add_entities(entities)
+
+    known_tracker_ids = set(tracker_entity_ids)
+
+    @callback
+    def _handle_tracker_added(tracker_id: str) -> None:
+        if tracker_id in known_tracker_ids:
+            return
+        known_tracker_ids.add(tracker_id)
+        async_add_entities([CostTrackerSensor(cost_trackers, tracker_id)])
+
+    config_entry.async_on_unload(
+        cost_trackers.async_add_list_listener(_handle_tracker_added)
+    )
 
 
 class EonNextSensorBase(CoordinatorEntity, SensorEntity):
@@ -283,6 +308,43 @@ class PreviousDayCostSensor(EonNextSensorBase):
         return {}
 
 
+class PreviousDayConsumptionSensor(EonNextSensorBase):
+    """Yesterday's total consumption."""
+
+    def __init__(self, coordinator, meter):
+        super().__init__(coordinator, meter.serial)
+        self._attr_name = f"{meter.serial} Previous Day Consumption"
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_icon = "mdi:history"
+        self._attr_unique_id = f"{meter.serial}__previous_day_consumption"
+
+    @property
+    def last_reset(self) -> datetime | None:
+        data = self._meter_data
+        if not data:
+            return None
+        raw = data.get("previous_day_consumption_last_reset")
+        if not raw:
+            return None
+        parsed = dt_util.parse_datetime(str(raw))
+        return dt_util.as_utc(parsed) if parsed else None
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("previous_day_consumption") if data else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        return {
+            "entry_count": data.get("previous_day_consumption_entry_count", 0),
+            "data_complete": data.get("previous_day_consumption_data_complete", False),
+        }
+
+
 class CurrentUnitRateSensor(EonNextSensorBase):
     """Current energy unit rate (inc VAT) for use with the HA Energy Dashboard."""
 
@@ -331,6 +393,32 @@ class CurrentTariffSensor(EonNextSensorBase):
             if val is not None and val != "":
                 attrs[key] = val
         return attrs
+
+
+class AccountBalanceSensor(EonNextSensorBase):
+    """Account balance in pounds."""
+
+    def __init__(self, coordinator, account_number: str):
+        super().__init__(coordinator, f"account::{account_number}")
+        self._account_number = account_number
+        self._attr_name = f"{account_number} Account Balance"
+        self._attr_device_class = SensorDeviceClass.MONETARY
+        self._attr_native_unit_of_measurement = "GBP"
+        self._attr_icon = "mdi:wallet-outline"
+        self._attr_unique_id = f"{account_number}__account_balance"
+
+    @property
+    def native_value(self):
+        data = self._meter_data
+        return data.get("balance") if data else None
+
+    @property
+    def extra_state_attributes(self):
+        data = self._meter_data or {}
+        return {
+            "account_number": self._account_number,
+            "last_updated": data.get("last_updated"),
+        }
 
 
 class SmartChargingScheduleSensor(EonNextSensorBase):
@@ -590,3 +678,72 @@ class ExportDailyConsumptionSensor(EonNextSensorBase):
     def native_value(self):
         data = self._meter_data
         return data.get("daily_consumption") if data else None
+
+
+class CostTrackerSensor(RestoreEntity, SensorEntity):
+    """User-defined cost tracker sensor."""
+
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_native_unit_of_measurement = "GBP"
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_icon = "mdi:cash-plus"
+    _attr_suggested_display_precision = 4
+
+    def __init__(
+        self,
+        manager: EonNextCostTrackerManager,
+        tracker_id: str,
+    ) -> None:
+        self._manager = manager
+        self._tracker_id = tracker_id
+        self._attr_unique_id = f"cost_tracker__{tracker_id}"
+        config = self._manager.get_config(tracker_id)
+        display_name = config.name if config else tracker_id
+        self._attr_name = f"{display_name} Cost Tracker"
+
+    async def async_added_to_hass(self) -> None:
+        """Register tracker-state listener."""
+        await super().async_added_to_hass()
+
+        @callback
+        def _on_tracker_update() -> None:
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            self._manager.async_add_state_listener(self._tracker_id, _on_tracker_update)
+        )
+
+    @property
+    def available(self) -> bool:
+        return self._manager.has_tracker(self._tracker_id)
+
+    @property
+    def native_value(self):
+        state = self._manager.get_state(self._tracker_id)
+        if state is None:
+            return None
+        return state.today_cost
+
+    @property
+    def last_reset(self) -> datetime | None:
+        state = self._manager.get_state(self._tracker_id)
+        if state is None or not state.last_reset:
+            return None
+        parsed = dt_util.parse_datetime(state.last_reset)
+        return dt_util.as_utc(parsed) if parsed else None
+
+    @property
+    def extra_state_attributes(self):
+        config = self._manager.get_config(self._tracker_id)
+        state = self._manager.get_state(self._tracker_id)
+        if config is None or state is None:
+            return {}
+        return {
+            "tracked_entity": config.tracked_entity_id,
+            "meter_serial": config.meter_serial,
+            "today_consumption_kwh": round(state.today_consumption_kwh, 6),
+            "today_cost": state.today_cost,
+            "last_reset": state.last_reset,
+            "enabled": config.enabled,
+            "entry_id": self._manager.entry_id,
+        }

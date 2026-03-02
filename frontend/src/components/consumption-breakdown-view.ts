@@ -12,6 +12,12 @@ import sharedStyles from '../styles/shared.css'
 import styles from '../styles/consumption-breakdown-view.css'
 
 type PeriodMode = 'day' | 'week' | 'month'
+type CostTrackerSummary = {
+  entityId: string
+  name: string
+  cost: number
+  meterSerial: string
+}
 
 const PERIOD_OPTIONS: RangeOption[] = [
   { label: 'Day', value: 1 },
@@ -22,6 +28,8 @@ const PERIOD_OPTIONS: RangeOption[] = [
 const COLOR_CONSUMPTION = 'rgba(3, 169, 244, 0.85)'
 const COLOR_CONSUMPTION_GAS = 'rgba(255, 152, 0, 0.85)'
 const COLOR_STANDING = 'rgba(156, 39, 176, 0.75)'
+const COLOR_TRACKED = 'rgba(0, 150, 136, 0.85)'
+const COLOR_UNTRACKED = 'rgba(96, 125, 139, 0.75)'
 
 class EonConsumptionBreakdownView extends LitElement {
   static styles = [sharedStyles, styles]
@@ -48,6 +56,11 @@ class EonConsumptionBreakdownView extends LitElement {
   private _memoStandingCost = 0
   private _memoTotalCost = 0
   private _memoPeriodLabel = ''
+  private _memoTrackerItems: CostTrackerSummary[] = []
+  private _memoTrackedTodayCost = 0
+  private _memoUntrackedTodayCost = 0
+  private _memoTodayUsageCost = 0
+  private _memoTrackerSegments: PieChartSegment[] = []
 
   updated() {
     if (!this.hass || !this.meter?.serial) return
@@ -157,6 +170,69 @@ class EonConsumptionBreakdownView extends LitElement {
         : []
 
     this._memoPeriodLabel = this._buildPeriodLabel(entries)
+    this._computeTrackedTodayData()
+  }
+
+  private _computeTrackedTodayData(): void {
+    const trackers = this._costTrackersForMeter()
+    let trackedToday = 0
+    for (const tracker of trackers) trackedToday += tracker.cost
+
+    const todayUsageCost =
+      this.meter?.daily_consumption != null && this.meter?.unit_rate != null
+        ? this.meter.daily_consumption * this.meter.unit_rate
+        : 0
+    const untrackedToday = Math.max(0, todayUsageCost - trackedToday)
+
+    this._memoTrackerItems = trackers
+    this._memoTrackedTodayCost = Math.round(trackedToday * 100) / 100
+    this._memoTodayUsageCost = Math.round(todayUsageCost * 100) / 100
+    this._memoUntrackedTodayCost = Math.round(untrackedToday * 100) / 100
+
+    this._memoTrackerSegments =
+      this._memoTodayUsageCost > 0
+        ? [
+            {
+              label: 'Tracked devices',
+              value: this._memoTrackedTodayCost,
+              color: COLOR_TRACKED
+            },
+            {
+              label: 'Untracked usage',
+              value: this._memoUntrackedTodayCost,
+              color: COLOR_UNTRACKED
+            }
+          ]
+        : []
+  }
+
+  private _costTrackersForMeter(): CostTrackerSummary[] {
+    const serial = this.meter?.serial
+    if (!serial || !this.hass?.states) return []
+
+    const items: CostTrackerSummary[] = []
+    for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
+      if (!entityId.startsWith('sensor.')) continue
+      const attrs = stateObj.attributes ?? {}
+      if (attrs.meter_serial !== serial) continue
+      if (typeof attrs.tracked_entity !== 'string') continue
+      if (attrs.enabled === false) continue
+
+      const parsed = Number(stateObj.state)
+      if (!Number.isFinite(parsed) || parsed <= 0) continue
+
+      const friendlyName =
+        typeof attrs.friendly_name === 'string' ? attrs.friendly_name : entityId
+      items.push({
+        entityId,
+        name: friendlyName.replace(/\s*Cost Tracker\s*$/i, ''),
+        cost: parsed,
+        meterSerial: serial
+      })
+    }
+
+    items.sort((a, b) => b.cost - a.cost)
+    return items
   }
 
   private _entriesForPeriod(): ConsumptionHistoryEntry[] {
@@ -266,6 +342,50 @@ class EonConsumptionBreakdownView extends LitElement {
                 Standing £${this._memoStandingCost.toFixed(2)}
               </div>
             </div>
+
+            ${this._memoTrackerSegments.length > 0
+              ? html`
+                  <div class="tracker-section">
+                    <div class="tracker-title">
+                      Today usage split (from cost trackers)
+                    </div>
+                    <eon-pie-chart
+                      .segments=${this._memoTrackerSegments}
+                      ?darkMode=${darkMode}
+                    ></eon-pie-chart>
+                    <div class="legend">
+                      <div class="legend-item">
+                        <span
+                          class="legend-swatch"
+                          style="background: ${COLOR_TRACKED}"
+                        ></span>
+                        Tracked £${this._memoTrackedTodayCost.toFixed(2)}
+                      </div>
+                      <div class="legend-item">
+                        <span
+                          class="legend-swatch"
+                          style="background: ${COLOR_UNTRACKED}"
+                        ></span>
+                        Untracked £${this._memoUntrackedTodayCost.toFixed(2)}
+                      </div>
+                    </div>
+                    <div class="tracker-subtitle">
+                      Based on today’s usage estimate
+                      (£${this._memoTodayUsageCost.toFixed(2)}).
+                    </div>
+                    <div class="tracker-list">
+                      ${this._memoTrackerItems.map(
+                        (item) => html`
+                          <div class="tracker-row">
+                            <span class="tracker-name">${item.name}</span>
+                            <span class="tracker-cost">£${item.cost.toFixed(2)}</span>
+                          </div>
+                        `
+                      )}
+                    </div>
+                  </div>
+                `
+              : nothing}
           `
         : this._loading
           ? html`<div class="chart-placeholder">Loading…</div>`

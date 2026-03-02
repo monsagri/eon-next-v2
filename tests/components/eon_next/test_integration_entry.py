@@ -160,6 +160,19 @@ def _status_entity_id(hass: HomeAssistant, entry: MockConfigEntry) -> str:
     raise AssertionError("Missing historical backfill status entity")
 
 
+def _cost_tracker_entity_id(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    tracker_id: str,
+) -> str:
+    registry = er.async_get(hass)
+    expected_unique_id = f"cost_tracker__{tracker_id}"
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if registry_entry.unique_id == expected_unique_id:
+            return registry_entry.entity_id
+    raise AssertionError(f"Missing cost tracker entity for {tracker_id}")
+
+
 def _patch_integration(
     monkeypatch: pytest.MonkeyPatch,
     fake_api: FakeApi,
@@ -277,6 +290,101 @@ async def test_unload_entry_closes_api_client(
 
     assert fake_api.closed is True
     assert entry.state is ConfigEntryState.NOT_LOADED
+
+
+@pytest.mark.asyncio
+async def test_add_cost_tracker_service_creates_tracker_entity(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Adding a cost tracker via service should create a new sensor entity."""
+    del enable_custom_integrations
+    fake_api = FakeApi(refresh_login_result=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _setup_entry(hass, entry)
+    entry.runtime_data.cost_trackers._store.async_save = AsyncMock()  # noqa: SLF001
+
+    await hass.services.async_call(
+        DOMAIN,
+        "add_cost_tracker",
+        {
+            "name": "Washing Machine",
+            "tracked_entity_id": "sensor.washer_energy",
+            "meter_serial": "electric-meter-1",
+            "enabled": True,
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    tracker_entity = _cost_tracker_entity_id(hass, entry, "washing_machine")
+    state = hass.states.get(tracker_entity)
+    assert state is not None
+    assert state.state == "0.0"
+    assert state.attributes["tracked_entity"] == "sensor.washer_energy"
+    assert state.attributes["meter_serial"] == "electric-meter-1"
+    assert state.attributes["enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_reset_and_update_cost_tracker_services(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reset/update services should mutate tracker manager state."""
+    del enable_custom_integrations
+    fake_api = FakeApi(refresh_login_result=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _setup_entry(hass, entry)
+    entry.runtime_data.cost_trackers._store.async_save = AsyncMock()  # noqa: SLF001
+
+    await hass.services.async_call(
+        DOMAIN,
+        "add_cost_tracker",
+        {
+            "name": "Dryer",
+            "tracked_entity_id": "sensor.dryer_energy",
+            "meter_serial": "electric-meter-1",
+        },
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    manager = entry.runtime_data.cost_trackers
+    tracker_id = "dryer"
+    tracker_entity = _cost_tracker_entity_id(hass, entry, tracker_id)
+
+    tracker_state = manager.get_state(tracker_id)
+    assert tracker_state is not None
+    tracker_state.today_cost = 2.5
+    tracker_state.today_consumption_kwh = 7.25
+
+    await hass.services.async_call(
+        DOMAIN,
+        "reset_cost_tracker",
+        {"entity_id": tracker_entity},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert tracker_state.today_cost == 0.0
+    assert tracker_state.today_consumption_kwh == 0.0
+
+    await hass.services.async_call(
+        DOMAIN,
+        "update_cost_tracker",
+        {"entity_id": tracker_entity, "enabled": False},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    tracker_config = manager.get_config(tracker_id)
+    assert tracker_config is not None
+    assert tracker_config.enabled is False
 
 
 class FakeApiWithApiError(FakeApi):

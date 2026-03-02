@@ -49,8 +49,20 @@ class EonNextCoordinator(DataUpdateCoordinator):
         """Fetch data from the Eon Next API."""
         data: dict[str, dict[str, Any]] = {}
         errors: list[str] = []
+        balances = await self._fetch_account_balances()
+        balance_updated_at = dt_util.utcnow().isoformat()
 
         for account in self.api.accounts:
+            account_key = f"account::{account.account_number}"
+            if balances and account.account_number in balances:
+                account.balance = balances[account.account_number]
+            data[account_key] = {
+                "type": "account",
+                "account_number": account.account_number,
+                "balance": self._pence_to_pounds(account.balance),
+                "last_updated": balance_updated_at,
+            }
+
             account_tariffs = await self._fetch_tariff_data(account)
 
             for meter in account.meters:
@@ -71,6 +83,10 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "daily_consumption_last_reset": None,
                         "standing_charge": None,
                         "previous_day_cost": None,
+                        "previous_day_consumption": None,
+                        "previous_day_consumption_entry_count": 0,
+                        "previous_day_consumption_data_complete": False,
+                        "previous_day_consumption_last_reset": None,
                         "cost_period": None,
                         "unit_rate": None,
                         "tariff_name": None,
@@ -101,6 +117,19 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         meter_data["daily_consumption_last_reset"] = daily[
                             "last_reset"
                         ]
+                        yesterday = self._aggregate_yesterday_consumption_details(
+                            consumption
+                        )
+                        meter_data["previous_day_consumption"] = yesterday["total"]
+                        meter_data["previous_day_consumption_entry_count"] = yesterday[
+                            "entry_count"
+                        ]
+                        meter_data["previous_day_consumption_data_complete"] = (
+                            yesterday["entry_count"] >= 44
+                        )
+                        meter_data["previous_day_consumption_last_reset"] = (
+                            self._yesterday_midnight_iso()
+                        )
 
                         if self._statistics_import_enabled:
                             try:
@@ -258,6 +287,17 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                 )
                                 self._cost_warning_logged.add(meter.serial)
 
+                    if consumption is None:
+                        prev = self.data.get(meter_key, {}) if self.data else {}
+                        for k in (
+                            "previous_day_consumption",
+                            "previous_day_consumption_entry_count",
+                            "previous_day_consumption_data_complete",
+                            "previous_day_consumption_last_reset",
+                        ):
+                            if prev.get(k) is not None:
+                                meter_data[k] = prev.get(k)
+
                     data[meter_key] = meter_data
 
                 except EonNextAuthError as err:
@@ -332,6 +372,18 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 account.account_number,
                 err,
             )
+            return None
+
+    async def _fetch_account_balances(self) -> dict[str, Any] | None:
+        """Fetch account balances and refresh account objects."""
+        try:
+            return await self.api.async_get_account_balances()
+        except EonNextAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"Authentication failed fetching account balances: {err}"
+            ) from err
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.warning("Account balance refresh failed: %s", err)
             return None
 
     async def _fetch_daily_costs(self, meter) -> dict[str, Any] | None:
@@ -529,6 +581,55 @@ class EonNextCoordinator(DataUpdateCoordinator):
         if count < min_entries:
             return None
         return round(total, 3)
+
+    @staticmethod
+    def _aggregate_yesterday_consumption_details(
+        consumption_results: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Return yesterday kWh total and contributing entry count."""
+        yesterday = (dt_util.now() - timedelta(days=1)).date()
+        total = 0.0
+        count = 0
+
+        for entry in consumption_results:
+            interval_start = entry.get("interval_start") or ""
+            parsed_start = dt_util.parse_datetime(str(interval_start))
+            if parsed_start is None:
+                continue
+
+            if parsed_start.tzinfo is None:
+                parsed_start = parsed_start.replace(tzinfo=timezone.utc)
+
+            local_start = dt_util.as_local(parsed_start)
+            if local_start.date() != yesterday:
+                continue
+
+            consumption = entry.get("consumption")
+            if consumption is None:
+                continue
+            try:
+                val = float(consumption)
+            except (TypeError, ValueError):
+                continue
+
+            total += val
+            count += 1
+
+        return {
+            "total": round(total, 3) if count else None,
+            "entry_count": count,
+        }
+
+    @staticmethod
+    def _yesterday_midnight_iso() -> str:
+        """Return yesterday's local midnight in ISO 8601 format."""
+        yesterday_midnight = (dt_util.now() - timedelta(days=1)).replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        return yesterday_midnight.isoformat()
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
