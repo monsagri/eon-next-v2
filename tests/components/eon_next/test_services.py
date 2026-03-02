@@ -97,14 +97,14 @@ async def test_reset_and_update_cost_tracker_target_entities(hass) -> None:
         "sensor",
         DOMAIN,
         "cost_tracker__washer",
-        config_entry=entry.entry_id,
+        config_entry=entry,
         suggested_object_id="washer_cost_tracker",
     )
     non_tracker_entry = registry.async_get_or_create(
         "sensor",
         DOMAIN,
         "not_a_cost_tracker",
-        config_entry=entry.entry_id,
+        config_entry=entry,
         suggested_object_id="other_sensor",
     )
 
