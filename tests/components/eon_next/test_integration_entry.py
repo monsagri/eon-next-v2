@@ -293,6 +293,64 @@ async def test_unload_entry_closes_api_client(
 
 
 @pytest.mark.asyncio
+async def test_data_only_update_does_not_reload_entry(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Persisting a rotated refresh token must not reload the integration."""
+    del enable_custom_integrations
+    fake_api = FakeApi(refresh_login_result=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _setup_entry(hass, entry)
+    runtime_data_before = entry.runtime_data
+
+    with patch.object(
+        hass.config_entries, "async_reload", new=AsyncMock()
+    ) as mock_reload:
+        # Simulate the API client persisting a rotated refresh token, i.e.
+        # a data-only entry update that fires the update listener.
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_REFRESH_TOKEN: "rotated-token"},
+        )
+        await hass.async_block_till_done()
+
+    mock_reload.assert_not_called()
+    # Runtime data is untouched: no teardown/rebuild happened.
+    assert entry.runtime_data is runtime_data_before
+    assert entry.data[CONF_REFRESH_TOKEN] == "rotated-token"
+
+
+@pytest.mark.asyncio
+async def test_options_update_reloads_entry(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Changing options must still trigger a reload."""
+    del enable_custom_integrations
+    fake_api = FakeApi(refresh_login_result=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _setup_entry(hass, entry)
+
+    with patch.object(
+        hass.config_entries, "async_reload", new=AsyncMock()
+    ) as mock_reload:
+        hass.config_entries.async_update_entry(
+            entry,
+            options={CONF_BACKFILL_ENABLED: True},
+        )
+        await hass.async_block_till_done()
+
+    mock_reload.assert_called_once_with(entry.entry_id)
+
+
+@pytest.mark.asyncio
 async def test_add_cost_tracker_service_creates_tracker_entity(
     hass: HomeAssistant,
     enable_custom_integrations: None,
