@@ -31,7 +31,7 @@ from .const import (
     DOMAIN,
 )
 from .eonnext import EonNextApiError, METER_TYPE_ELECTRIC, METER_TYPE_GAS
-from .statistics import async_import_consumption_statistics, statistic_id_for_meter
+from .statistics import async_import_historical_statistics, statistic_id_for_meter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,9 +86,8 @@ class EonNextBackfillManager:
         self._listeners: list[Callable[[], None]] = []
 
     async def async_prime(self) -> None:
-        """Load state and sync coordinator import guard before first refresh."""
+        """Load persisted backfill state before the first refresh."""
         await self._ensure_state_loaded()
-        await self._sync_statistics_import_guard()
 
     async def async_start(self) -> None:
         """Start background backfill loop."""
@@ -228,18 +227,6 @@ class EonNextBackfillManager:
             return True
         meter_state = self._state["meters"]
         return all(meter_state.get(meter.serial, {}).get("done", False) for meter in meters)
-
-    async def _sync_statistics_import_guard(self) -> None:
-        meters = self._eligible_meters()
-        should_pause = (
-            self._backfill_enabled()
-            and self._state is not None
-            and (
-                not self._state["initialized"] or not self._all_done_for_meters(meters)
-            )
-        )
-        self.coordinator.set_statistics_import_enabled(not should_pause)
-        self._notify_listeners()
 
     @callback
     def get_status(self) -> BackfillStatus:
@@ -412,7 +399,6 @@ class EonNextBackfillManager:
 
         await self._initialize_or_reset_progress(meters)
         await self._clear_existing_statistics(meters)
-        await self._sync_statistics_import_guard()
 
         if self._all_done_for_meters(meters):
             return
@@ -420,95 +406,104 @@ class EonNextBackfillManager:
         requests_remaining = self._backfill_requests_per_run()
         chunk_days = self._backfill_chunk_days()
         delay_seconds = self._backfill_delay_seconds()
-        today = dt_util.now().date()
-        # Backfill only complete days: today is owned exclusively by the
-        # coordinator's half-hourly import.  Importing today's partial daily
-        # bucket here would be double-counted once half-hourly hours arrive.
-        yesterday = today - timedelta(days=1)
         made_progress = False
 
-        for meter in meters:
-            if requests_remaining <= 0:
-                break
+        # Spend the per-run request budget across meters, allowing multiple
+        # chunks per meter per cycle.  Live imports are never suspended now —
+        # each chunk is spliced in and later sums recomputed — so there is no
+        # reason to limit a cycle to one chunk per meter.
+        while requests_remaining > 0 and not self._all_done_for_meters(meters):
+            progressed_this_pass = False
 
-            meter_state = self._state["meters"].setdefault(
-                meter.serial,
-                {"next_start": today.isoformat(), "done": False},
-            )
-            if meter_state["done"]:
-                continue
+            for meter in meters:
+                if requests_remaining <= 0:
+                    break
 
-            try:
-                start_date = date.fromisoformat(meter_state["next_start"])
-            except ValueError:
-                start_date = today
+                today = dt_util.now().date()
+                # Backfill only complete days: today is owned exclusively by the
+                # coordinator's half-hourly import; importing today's partial
+                # daily bucket would be double-counted once half-hours arrive.
+                yesterday = today - timedelta(days=1)
 
-            if start_date > yesterday:
-                meter_state["done"] = True
+                meter_state = self._state["meters"].setdefault(
+                    meter.serial,
+                    {"next_start": today.isoformat(), "done": False},
+                )
+                if meter_state["done"]:
+                    continue
+
+                try:
+                    start_date = date.fromisoformat(meter_state["next_start"])
+                except ValueError:
+                    start_date = today
+
+                if start_date > yesterday:
+                    meter_state["done"] = True
+                    await self._save_state()
+                    continue
+
+                end_date = min(start_date + timedelta(days=chunk_days - 1), yesterday)
+                period_from = f"{start_date.isoformat()}T00:00:00Z"
+                period_to = f"{(end_date + timedelta(days=1)).isoformat()}T00:00:00Z"
+                day_count = (end_date - start_date).days + 1
+                try:
+                    result = await self.api.async_get_consumption(
+                        meter.type,
+                        meter.supply_point_id,
+                        meter.serial,
+                        group_by="day",
+                        page_size=day_count,
+                        period_from=period_from,
+                        period_to=period_to,
+                    )
+                except EonNextApiError as err:
+                    # Transport/server error: leave the cursor untouched so this
+                    # chunk is retried next cycle instead of leaving a permanent
+                    # hole in history.
+                    _LOGGER.debug(
+                        "Backfill chunk %s→%s failed for meter %s; will retry: %s",
+                        start_date,
+                        end_date,
+                        meter.serial,
+                        err,
+                    )
+                    requests_remaining -= 1
+                    continue
+
+                consumption = result.get("results") if result else None
+                if consumption:
+                    await async_import_historical_statistics(
+                        self.hass,
+                        meter.serial,
+                        meter.type,
+                        consumption,
+                    )
+
+                meter_state["next_start"] = (end_date + timedelta(days=1)).isoformat()
+                meter_state["done"] = end_date >= yesterday
                 await self._save_state()
-                continue
-
-            end_date = min(start_date + timedelta(days=chunk_days - 1), yesterday)
-            period_from = f"{start_date.isoformat()}T00:00:00Z"
-            period_to = f"{(end_date + timedelta(days=1)).isoformat()}T00:00:00Z"
-            day_count = (end_date - start_date).days + 1
-            try:
-                result = await self.api.async_get_consumption(
-                    meter.type,
-                    meter.supply_point_id,
-                    meter.serial,
-                    group_by="day",
-                    page_size=day_count,
-                    period_from=period_from,
-                    period_to=period_to,
-                )
-            except EonNextApiError as err:
-                # Transport/server error: leave the cursor untouched so this
-                # chunk is retried next cycle instead of leaving a permanent
-                # hole in history.
-                _LOGGER.debug(
-                    "Backfill chunk %s→%s failed for meter %s; will retry: %s",
-                    start_date,
-                    end_date,
-                    meter.serial,
-                    err,
-                )
+                made_progress = True
+                progressed_this_pass = True
                 requests_remaining -= 1
-                continue
 
-            consumption = result.get("results") if result else None
-            if consumption:
-                await async_import_consumption_statistics(
-                    self.hass,
-                    meter.serial,
-                    meter.type,
-                    consumption,
-                )
+                if requests_remaining > 0 and delay_seconds > 0:
+                    if await self._wait_or_stop(delay_seconds):
+                        return
 
-            meter_state["next_start"] = (end_date + timedelta(days=1)).isoformat()
-            meter_state["done"] = end_date >= yesterday
-            await self._save_state()
-            made_progress = True
-            requests_remaining -= 1
-
-            if requests_remaining > 0 and delay_seconds > 0:
-                if await self._wait_or_stop(delay_seconds):
-                    return
+            if not progressed_this_pass:
+                # No meter advanced this pass (all done, or all erroring with
+                # budget exhausted); stop to avoid spinning.
+                break
 
         if made_progress and self._all_done_for_meters(meters):
             _LOGGER.info("Historical backfill completed")
 
-        await self._sync_statistics_import_guard()
-
     async def _async_run(self) -> None:
         await self._ensure_state_loaded()
-        await self._sync_statistics_import_guard()
         while not self._stop_event.is_set():
             try:
                 if self._backfill_enabled():
                     await self._run_backfill_cycle()
-                else:
-                    await self._sync_statistics_import_guard()
             except Exception as err:  # pylint: disable=broad-except
                 _LOGGER.warning("Historical backfill cycle failed: %s", err)
 

@@ -182,7 +182,7 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
     import_mock = AsyncMock()
     monkeypatch.setattr(
         backfill_module,
-        "async_import_consumption_statistics",
+        "async_import_historical_statistics",
         import_mock,
     )
     monkeypatch.setattr(
@@ -198,8 +198,6 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
     # Advanced from yesterday to today; done because it reached yesterday.
     assert manager._state["meters"]["m1"]["next_start"] == _REF_DATE_ISO
     assert manager._state["meters"]["m1"]["done"] is True
-    # paused while pending, resumed when completed
-    assert manager.coordinator.set_statistics_import_enabled.call_args_list[-1].args == (True,)
 
 
 @pytest.mark.asyncio
@@ -232,7 +230,7 @@ async def test_run_backfill_cycle_leaves_cursor_on_api_error(monkeypatch) -> Non
     import_mock = AsyncMock()
     monkeypatch.setattr(
         backfill_module,
-        "async_import_consumption_statistics",
+        "async_import_historical_statistics",
         import_mock,
     )
     monkeypatch.setattr(

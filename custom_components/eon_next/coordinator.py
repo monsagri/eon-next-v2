@@ -39,12 +39,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(minutes=update_interval_minutes),
         )
         self.api = api
-        self._statistics_import_enabled = True
         self._cost_warning_logged: set[str] = set()
-
-    def set_statistics_import_enabled(self, enabled: bool) -> None:
-        """Enable or disable automatic statistics imports during updates."""
-        self._statistics_import_enabled = enabled
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the Eon Next API."""
@@ -138,11 +133,10 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         # statistics.  Daily-granularity fallback covers today
                         # as one partial midnight bucket; importing it would be
                         # double-counted once half-hourly hours arrive (and the
-                        # historical backfill owns complete past days).
-                        if (
-                            self._statistics_import_enabled
-                            and consumption_granularity == "half_hour"
-                        ):
+                        # historical backfill owns complete past days).  Live
+                        # imports always run now — the historical backfill
+                        # recomputes sums instead of suspending them.
+                        if consumption_granularity == "half_hour":
                             try:
                                 await async_import_consumption_statistics(
                                     self.hass,

@@ -11,9 +11,15 @@ import custom_components.eon_next.statistics as stats_module
 from custom_components.eon_next.statistics import (
     StatisticsLookupError,
     _group_consumption_by_hour,
+    _merge_and_recompute_series,
     async_import_consumption_statistics,
     statistic_id_for_meter,
 )
+
+
+def _h(hour: int) -> datetime:
+    """A UTC hour bucket derived from the reference date."""
+    return _REF_DT.replace(hour=hour)
 
 # Dynamic reference date so tests remain valid regardless of when they run.
 _REF_DT = datetime.now(tz=timezone.utc).replace(
@@ -81,3 +87,35 @@ async def test_import_skips_when_last_stat_lookup_fails(monkeypatch) -> None:
     )
 
     add_mock.assert_not_called()
+
+
+# --- 2.4/2.5: recompute-forward historical splice ---
+
+
+class TestMergeAndRecomputeSeries:
+    def test_splices_new_hours_below_and_shifts_existing_sums(self) -> None:
+        """Inserting an earlier hour raises every later cumulative sum by its kWh."""
+        # existing: h2=10kWh (sum 10), h3=5kWh (sum 15) from baseline 0.
+        existing = [(_h(2), 10.0), (_h(3), 15.0)]
+        new = {_h(1): 4.0}
+        result = _merge_and_recompute_series(0.0, existing, new)
+        assert result == [(_h(1), 4.0), (_h(2), 14.0), (_h(3), 19.0)]
+
+    def test_new_value_overwrites_existing_hour(self) -> None:
+        existing = [(_h(2), 10.0)]
+        result = _merge_and_recompute_series(0.0, existing, {_h(2): 3.0})
+        assert result == [(_h(2), 3.0)]
+
+    def test_baseline_offset_is_preserved(self) -> None:
+        """A nonzero baseline just shifts the whole series — deltas unchanged."""
+        existing = [(_h(2), 110.0)]  # h2 = 10kWh above baseline 100
+        result = _merge_and_recompute_series(100.0, existing, {_h(1): 5.0})
+        assert result == [(_h(1), 105.0), (_h(2), 115.0)]
+
+    def test_output_is_monotonic(self) -> None:
+        existing = [(_h(4), 8.0), (_h(6), 12.0)]
+        new = {_h(1): 3.0, _h(5): 2.0}
+        result = _merge_and_recompute_series(0.0, existing, new)
+        sums = [s for _, s in result]
+        assert sums == sorted(sums)
+        assert all(b >= a for a, b in zip(sums, sums[1:]))

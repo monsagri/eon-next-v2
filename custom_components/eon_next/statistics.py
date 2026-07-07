@@ -164,6 +164,31 @@ async def _get_last_stat(
     return None, 0.0
 
 
+def _build_statistic_metadata(
+    meter_serial: str, meter_type: str, statistic_id: str
+) -> dict[str, Any]:
+    """Build the StatisticMetaData kwargs for a meter's consumption stat."""
+    fuel = "gas" if meter_type == METER_TYPE_GAS else "electricity"
+    metadata_dict: dict[str, Any] = {
+        "has_sum": True,
+        "name": f"{meter_serial} {fuel.title()} Consumption",
+        "source": DOMAIN,
+        "statistic_id": statistic_id,
+        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "unit_class": "energy",
+    }
+
+    # Use mean_type (modern HA) with has_mean fallback (older HA).
+    try:
+        from homeassistant.components.recorder.models import StatisticMeanType
+
+        metadata_dict["mean_type"] = StatisticMeanType.NONE
+    except ImportError:
+        metadata_dict["has_mean"] = False
+
+    return metadata_dict
+
+
 async def async_import_consumption_statistics(
     hass: HomeAssistant,
     meter_serial: str,
@@ -175,6 +200,11 @@ async def async_import_consumption_statistics(
     Aggregates half-hourly (or daily) entries into hourly buckets, retrieves
     the last known cumulative sum, and calls ``async_add_external_statistics``
     so the Energy Dashboard shows consumption in the correct time period.
+
+    This is the *append-only* live path: it only writes hours newer than the
+    latest existing statistic.  Historical backfill uses
+    :func:`async_import_historical_statistics`, which can splice earlier hours
+    in and rewrite subsequent sums.
     """
     from homeassistant.components.recorder.models import (
         StatisticData,
@@ -196,24 +226,8 @@ async def async_import_consumption_statistics(
             meter_serial,
         )
         return
-    fuel = "gas" if meter_type == METER_TYPE_GAS else "electricity"
 
-    metadata_dict: dict[str, Any] = {
-        "has_sum": True,
-        "name": f"{meter_serial} {fuel.title()} Consumption",
-        "source": DOMAIN,
-        "statistic_id": statistic_id,
-        "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "unit_class": "energy",
-    }
-
-    # Use mean_type (modern HA) with has_mean fallback (older HA).
-    try:
-        from homeassistant.components.recorder.models import StatisticMeanType
-
-        metadata_dict["mean_type"] = StatisticMeanType.NONE
-    except ImportError:
-        metadata_dict["has_mean"] = False
+    metadata_dict = _build_statistic_metadata(meter_serial, meter_type, statistic_id)
 
     sorted_hours = sorted(hourly.keys())
     if not sorted_hours:
@@ -255,4 +269,168 @@ async def async_import_consumption_statistics(
         "Imported %d hourly statistics for %s",
         len(statistics),
         statistic_id,
+    )
+
+
+def _merge_and_recompute_series(
+    baseline_sum: float,
+    existing: list[tuple[datetime, float]],
+    new_hourly: dict[datetime, float],
+) -> list[tuple[datetime, float]]:
+    """Splice new hours into an existing series and recompute cumulative sums.
+
+    ``existing`` is the list of ``(hour, cumulative_sum)`` rows already stored
+    from the first affected hour onward, sorted ascending; ``baseline_sum`` is
+    the cumulative sum of the row immediately *before* them (0.0 if none).
+
+    Per-hour consumption is reconstructed from the differences between
+    consecutive cumulative sums, new hours overwrite existing ones, and the
+    whole range is re-accumulated from ``baseline_sum`` so the series stays
+    monotonic.  Returns ``(hour, cumulative_sum)`` for every hour in the range.
+    """
+    per_hour: dict[datetime, float] = {}
+
+    # Reconstruct each existing hour's own consumption from the sum deltas.
+    prev_sum = baseline_sum
+    for hour, cumulative in existing:
+        per_hour[hour] = round(cumulative - prev_sum, 3)
+        prev_sum = cumulative
+
+    # New (backfilled) values are authoritative for their hour.
+    for hour, kwh in new_hourly.items():
+        per_hour[hour] = round(kwh, 3)
+
+    # Re-accumulate from the baseline across the merged, ordered hours.
+    result: list[tuple[datetime, float]] = []
+    running = baseline_sum
+    for hour in sorted(per_hour):
+        running = round(running + per_hour[hour], 3)
+        result.append((hour, running))
+    return result
+
+
+async def _fetch_baseline_and_existing(
+    hass: HomeAssistant,
+    statistic_id: str,
+    chunk_min: datetime,
+    end: datetime,
+) -> tuple[float, list[tuple[datetime, float]]]:
+    """Return the baseline sum before *chunk_min* and existing rows in range.
+
+    Raises :class:`StatisticsLookupError` on any recorder failure so the caller
+    skips the import rather than corrupting the series.
+    """
+    try:
+        from homeassistant.helpers.recorder import get_instance
+        from homeassistant.components.recorder.statistics import (
+            statistics_during_period,
+        )
+
+        def _rows(start: datetime, stop: datetime) -> list[Any]:
+            data = statistics_during_period(
+                hass, start, stop, {statistic_id}, "hour", None, {"sum"}
+            )
+            return list(data.get(statistic_id, []))
+
+        instance = get_instance(hass)
+
+        # Baseline: the newest stored row strictly before the chunk.
+        before_rows = await instance.async_add_executor_job(
+            _rows, chunk_min - timedelta(days=3650), chunk_min
+        )
+        baseline_sum = 0.0
+        for row in before_rows:
+            start_dt = _row_start(row)
+            if start_dt is not None and start_dt < chunk_min:
+                baseline_sum = float(row.get("sum", 0.0) or 0.0)
+
+        # Existing rows from the chunk start onward (these get rewritten).
+        after_rows = await instance.async_add_executor_job(_rows, chunk_min, end)
+        existing: list[tuple[datetime, float]] = []
+        for row in after_rows:
+            start_dt = _row_start(row)
+            if start_dt is None or start_dt < chunk_min:
+                continue
+            existing.append((start_dt, float(row.get("sum", 0.0) or 0.0)))
+        existing.sort(key=lambda item: item[0])
+        return baseline_sum, existing
+    except Exception as err:  # pylint: disable=broad-except
+        raise StatisticsLookupError(
+            f"statistics lookup failed for {statistic_id}: {err}"
+        ) from err
+
+
+def _row_start(row: dict[str, Any]) -> datetime | None:
+    start_ts = row.get("start")
+    if isinstance(start_ts, (int, float)):
+        return dt_util.utc_from_timestamp(float(start_ts))
+    return None
+
+
+async def async_import_historical_statistics(
+    hass: HomeAssistant,
+    meter_serial: str,
+    meter_type: str,
+    consumption_entries: list[dict[str, Any]],
+) -> None:
+    """Import *historical* consumption without suspending live imports.
+
+    Unlike the append-only live path, this splices earlier hours into the
+    existing series and rewrites every subsequent cumulative sum so the series
+    stays monotonic — letting the historical backfill run concurrently with
+    live 30-minute imports.  Adding a constant to all later sums does not
+    change the per-period deltas the Energy Dashboard displays.
+    """
+    from homeassistant.components.recorder.models import (
+        StatisticData,
+        StatisticMetaData,
+    )
+    from homeassistant.components.recorder.statistics import (
+        async_add_external_statistics,
+    )
+
+    hourly = _group_consumption_by_hour(consumption_entries)
+    if not hourly:
+        return
+
+    statistic_id = statistic_id_for_meter(meter_serial, meter_type)
+    if statistic_id is None:
+        _LOGGER.warning(
+            "Unknown meter type '%s' for serial %s; skipping statistics import",
+            meter_type,
+            meter_serial,
+        )
+        return
+
+    chunk_min = min(hourly)
+    end = _hour_start(dt_util.utcnow()) + timedelta(hours=1)
+
+    try:
+        baseline_sum, existing = await _fetch_baseline_and_existing(
+            hass, statistic_id, chunk_min, end
+        )
+    except StatisticsLookupError as err:
+        _LOGGER.warning(
+            "Skipping historical statistics import for %s: %s", statistic_id, err
+        )
+        return
+
+    series = _merge_and_recompute_series(baseline_sum, existing, hourly)
+    if not series:
+        return
+
+    metadata_dict = _build_statistic_metadata(meter_serial, meter_type, statistic_id)
+    statistics = [
+        StatisticData(start=hour, state=cumulative, sum=cumulative)
+        for hour, cumulative in series
+    ]
+
+    async_add_external_statistics(
+        hass, StatisticMetaData(**metadata_dict), statistics
+    )
+    _LOGGER.debug(
+        "Backfilled %d hourly statistics for %s (rewrote from %s)",
+        len(statistics),
+        statistic_id,
+        chunk_min.isoformat(),
     )
