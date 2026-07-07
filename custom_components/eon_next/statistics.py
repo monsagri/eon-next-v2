@@ -25,6 +25,16 @@ _LOGGER = logging.getLogger(__name__)
 _VALID_ID_CHAR = re.compile(r"[^a-z0-9]")
 
 
+class StatisticsLookupError(Exception):
+    """Raised when the last-statistic lookup fails for a recorder reason.
+
+    Distinct from a genuine "no prior statistic exists" result: a lookup
+    failure (busy DB, migration, recorder unavailable) must abort the import
+    cycle rather than fall back to a zero sum base, which would overwrite
+    existing rows with regressed cumulative sums.
+    """
+
+
 def _sanitize_id(value: str) -> str:
     """Convert a string to a valid statistic ID component."""
     sanitized = _VALID_ID_CHAR.sub("_", value.lower())
@@ -89,7 +99,13 @@ async def _get_last_stat(
     statistic_id: str,
     before: datetime,
 ) -> tuple[datetime | None, float]:
-    """Retrieve latest timestamp and cumulative sum for a statistics ID."""
+    """Retrieve latest timestamp and cumulative sum for a statistics ID.
+
+    Returns ``(None, 0.0)`` only when no prior statistic genuinely exists.
+    Raises :class:`StatisticsLookupError` on any recorder failure so the
+    caller can skip the import cycle instead of restarting the cumulative
+    sum from zero (which would regress existing rows).
+    """
     try:
         from homeassistant.helpers.recorder import get_instance
         from homeassistant.components.recorder.statistics import (
@@ -138,12 +154,13 @@ async def _get_last_stat(
             )
             return last_start, float(latest.get("sum", 0.0) or 0.0)
     except Exception as err:  # pylint: disable=broad-except
-        _LOGGER.debug(
-            "Could not retrieve last statistics sum for %s: %s",
-            statistic_id,
-            err,
-        )
+        # Do not fall back to a zero base: importing with last_sum=0.0 and no
+        # skip guard would overwrite the existing rows with regressed sums.
+        raise StatisticsLookupError(
+            f"last-statistic lookup failed for {statistic_id}: {err}"
+        ) from err
 
+    # No prior statistic exists — a legitimate fresh start at zero.
     return None, 0.0
 
 
@@ -201,7 +218,16 @@ async def async_import_consumption_statistics(
     sorted_hours = sorted(hourly.keys())
     if not sorted_hours:
         return
-    last_start, last_sum = await _get_last_stat(hass, statistic_id, sorted_hours[0])
+    try:
+        last_start, last_sum = await _get_last_stat(
+            hass, statistic_id, sorted_hours[0]
+        )
+    except StatisticsLookupError as err:
+        # Skip this cycle entirely rather than import with a guessed base.
+        _LOGGER.warning(
+            "Skipping statistics import for %s: %s", statistic_id, err
+        )
+        return
 
     statistics: list[StatisticData] = []
     cumulative_sum = last_sum

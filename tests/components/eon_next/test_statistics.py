@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
 
+import pytest
+
+import custom_components.eon_next.statistics as stats_module
 from custom_components.eon_next.statistics import (
+    StatisticsLookupError,
     _group_consumption_by_hour,
+    async_import_consumption_statistics,
     statistic_id_for_meter,
 )
 
@@ -49,3 +55,29 @@ def test_group_consumption_by_hour_handles_mixed_timestamps() -> None:
         _REF_DT.replace(hour=0): 4.0,
         _REF_DT.replace(hour=2): 3.0,
     }
+
+
+@pytest.mark.asyncio
+async def test_import_skips_when_last_stat_lookup_fails(monkeypatch) -> None:
+    """A recorder lookup failure must skip the import entirely (spec 02, 2.1).
+
+    Importing with a guessed zero base would overwrite existing rows with
+    regressed cumulative sums (a large negative spike in the Energy Dashboard).
+    """
+
+    async def _raise(*_args, **_kwargs):
+        raise StatisticsLookupError("recorder busy")
+
+    monkeypatch.setattr(stats_module, "_get_last_stat", _raise)
+
+    import homeassistant.components.recorder.statistics as recorder_stats
+
+    add_mock = MagicMock()
+    monkeypatch.setattr(recorder_stats, "async_add_external_statistics", add_mock)
+
+    entries = [{"interval_start": f"{_REF_DATE_STR}T00:00:00Z", "consumption": 1.0}]
+    await async_import_consumption_statistics(
+        MagicMock(), "ABC-123", "electricity", entries
+    )
+
+    add_mock.assert_not_called()
