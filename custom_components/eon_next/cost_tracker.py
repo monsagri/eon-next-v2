@@ -15,6 +15,7 @@ from homeassistant.util import slugify
 
 from .const import DOMAIN
 from .coordinator import EonNextCoordinator
+from .tariff_helpers import get_current_rate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -318,7 +319,12 @@ class EonNextCostTrackerManager:
         meter_data = self.coordinator.data.get(meter_serial) if self.coordinator.data else None
         if not meter_data:
             return None
-        value = meter_data.get("unit_rate")
+        # Resolve the rate for the current half-hour window at event time so
+        # time-of-use trackers (e.g. overnight EV charging) accrue at the
+        # correct rate instead of a flat/average rate.  Fall back to the
+        # coordinator's published unit_rate if no tariff data is available.
+        rate_info = get_current_rate(meter_data)
+        value = rate_info.rate if rate_info is not None else meter_data.get("unit_rate")
         parsed = self._parse_float(value)
         return parsed if parsed is not None and parsed >= 0 else None
 
