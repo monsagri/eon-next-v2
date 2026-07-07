@@ -113,6 +113,12 @@ query getAccountAgreements($accountNumber: String!) {
 """
 
 
+# Treat the access token as expired this many seconds before its real
+# expiry, so a token is proactively refreshed rather than sent moments
+# before it lapses (or being rejected under mild server clock skew).
+_TOKEN_EXPIRY_MARGIN_SECONDS = 60
+
+
 class EonNextAuthError(Exception):
     """Raised when authentication fails."""
 
@@ -211,7 +217,7 @@ class EonNext:
         token_expires = self.auth["token"]["expires"]
         if token_expires is None or not isinstance(token_expires, int | float):
             return False
-        if token_expires <= self.__current_timestamp():
+        if token_expires <= self.__current_timestamp() + _TOKEN_EXPIRY_MARGIN_SECONDS:
             return False
         return True
 
@@ -242,6 +248,29 @@ class EonNext:
 
             return self.auth["token"]["token"]
 
+    async def _force_token_refresh(self) -> bool:
+        """Force a new access token after a server 401, ignoring the cache.
+
+        The cached access token can look valid locally yet be rejected by the
+        server (mild clock skew, or expiry between issue and arrival).  This
+        invalidates it and refreshes once under the auth lock so a single 401
+        is retried transparently rather than escalating to a re-auth prompt.
+        Returns ``True`` if a valid token was obtained.
+        """
+        async with self._auth_lock:
+            # Drop the cached access token so the refresh cannot short-circuit.
+            self.auth["token"]["token"] = None
+            self.auth["token"]["expires"] = None
+            if self.__refresh_token_is_valid():
+                await self.__login_with_refresh_token()
+            else:
+                await self.login_with_username_and_password(
+                    self.username,
+                    self.password,
+                    initialise=False,
+                )
+            return self.__auth_token_is_valid()
+
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(
@@ -264,48 +293,60 @@ class EonNext:
         if variables is None:
             variables = {}
 
-        headers: dict[str, str] = {}
-        if authenticated:
-            headers["authorization"] = f"JWT {await self.__auth_token()}"
+        # Authenticated calls get one transparent refresh-and-retry on a 401/403
+        # (or auth-shaped GraphQL error) before escalating to re-auth.
+        attempted_refresh = False
+        while True:
+            headers: dict[str, str] = {}
+            if authenticated:
+                headers["authorization"] = f"JWT {await self.__auth_token()}"
 
-        session = await self._get_session()
-        try:
-            async with session.post(
-                f"{API_BASE_URL}/graphql/",
-                json={"operationName": operation, "variables": variables, "query": query},
-                headers=headers,
-            ) as response:
-                if authenticated and response.status in (401, 403):
-                    raise EonNextAuthError("Authentication rejected by API")
+            session = await self._get_session()
+            try:
+                async with session.post(
+                    f"{API_BASE_URL}/graphql/",
+                    json={"operationName": operation, "variables": variables, "query": query},
+                    headers=headers,
+                ) as response:
+                    if authenticated and response.status in (401, 403):
+                        if not attempted_refresh:
+                            attempted_refresh = True
+                            if await self._force_token_refresh():
+                                continue
+                        raise EonNextAuthError("Authentication rejected by API")
 
-                try:
-                    result = await response.json(content_type=None)
-                except aiohttp.ContentTypeError as err:
-                    text = await response.text()
-                    _LOGGER.debug(
-                        "Non-JSON response for %s (status %s): %s",
-                        operation,
-                        response.status,
-                        text[:500],
-                    )
-                    raise EonNextApiError("Invalid API response") from err
+                    try:
+                        result = await response.json(content_type=None)
+                    except aiohttp.ContentTypeError as err:
+                        text = await response.text()
+                        _LOGGER.debug(
+                            "Non-JSON response for %s (status %s): %s",
+                            operation,
+                            response.status,
+                            text[:500],
+                        )
+                        raise EonNextApiError("Invalid API response") from err
 
-                if self._has_auth_error(result.get("errors")):
-                    raise EonNextAuthError("Authentication failed")
+                    if self._has_auth_error(result.get("errors")):
+                        if authenticated and not attempted_refresh:
+                            attempted_refresh = True
+                            if await self._force_token_refresh():
+                                continue
+                        raise EonNextAuthError("Authentication failed")
 
-                errors = result.get("errors")
-                if errors and isinstance(errors, list):
-                    _LOGGER.warning(
-                        "GraphQL errors in %s response: %s",
-                        operation,
-                        [e.get("message", str(e)) for e in errors if isinstance(e, dict)],
-                    )
+                    errors = result.get("errors")
+                    if errors and isinstance(errors, list):
+                        _LOGGER.warning(
+                            "GraphQL errors in %s response: %s",
+                            operation,
+                            [e.get("message", str(e)) for e in errors if isinstance(e, dict)],
+                        )
 
-                return result
+                    return result
 
-        except aiohttp.ClientError as err:
-            _LOGGER.error("GraphQL request failed for %s: %s", operation, err)
-            raise EonNextApiError(f"API request failed: {err}") from err
+            except aiohttp.ClientError as err:
+                _LOGGER.error("GraphQL request failed for %s: %s", operation, err)
+                raise EonNextApiError(f"API request failed: {err}") from err
 
     async def login_with_username_and_password(
         self,
@@ -450,8 +491,6 @@ class EonNext:
         if not supply_point_id:
             return None
 
-        token = await self.__auth_token()
-
         if meter_type == METER_TYPE_ELECTRIC:
             url = f"{API_BASE_URL}/electricity-meter-points/{supply_point_id}/meters/{serial}/consumption/"
         elif meter_type == METER_TYPE_GAS:
@@ -464,33 +503,42 @@ class EonNext:
             params["period_from"] = period_from
         if period_to:
             params["period_to"] = period_to
-        headers = {"Authorization": f"JWT {token}"}
 
-        session = await self._get_session()
-        try:
-            async with session.get(url, params=params, headers=headers) as response:
-                if response.status in (401, 403):
-                    raise EonNextAuthError("Authentication rejected by API")
+        # One transparent refresh-and-retry on a 401/403 before escalating.
+        attempted_refresh = False
+        while True:
+            token = await self.__auth_token()
+            headers = {"Authorization": f"JWT {token}"}
 
-                if response.status == 200:
-                    data = await response.json()
-                    if "results" in data:
-                        return data
-                    # 200 with no results key: genuine "no data for this
-                    # period" — distinct from a transport error below.
-                    return None
+            session = await self._get_session()
+            try:
+                async with session.get(url, params=params, headers=headers) as response:
+                    if response.status in (401, 403):
+                        if not attempted_refresh:
+                            attempted_refresh = True
+                            if await self._force_token_refresh():
+                                continue
+                        raise EonNextAuthError("Authentication rejected by API")
 
-                # Non-200 is a transport/server error, not "no data".  Raise so
-                # callers (backfill, coordinator) can retry the same period
-                # instead of silently advancing past a permanent hole.
+                    if response.status == 200:
+                        data = await response.json()
+                        if "results" in data:
+                            return data
+                        # 200 with no results key: genuine "no data for this
+                        # period" — distinct from a transport error below.
+                        return None
+
+                    # Non-200 is a transport/server error, not "no data".  Raise
+                    # so callers (backfill, coordinator) can retry the same
+                    # period instead of silently advancing past a permanent hole.
+                    raise EonNextApiError(
+                        f"REST consumption endpoint returned status {response.status}"
+                    )
+            except aiohttp.ClientError as err:
+                _LOGGER.debug("REST consumption request failed for %s: %s", serial, err)
                 raise EonNextApiError(
-                    f"REST consumption endpoint returned status {response.status}"
-                )
-        except aiohttp.ClientError as err:
-            _LOGGER.debug("REST consumption request failed for %s: %s", serial, err)
-            raise EonNextApiError(
-                f"REST consumption request failed for {serial}: {err}"
-            ) from err
+                    f"REST consumption request failed for {serial}: {err}"
+                ) from err
 
     async def async_get_consumption_data_by_mpxn_range(
         self,
