@@ -272,7 +272,9 @@ class StandingChargeSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Standing Charge"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_native_unit_of_measurement = "GBP"
-        self._attr_state_class = SensorStateClass.TOTAL
+        # No state_class: this is a fixed daily fee, not a cumulative total.
+        # TOTAL without last_reset records price changes / source flips as
+        # spurious statistics deltas, which the conventions doc forbids.
         self._attr_icon = "mdi:cash-clock"
         self._attr_unique_id = f"{meter.serial}__standing_charge"
 
@@ -290,7 +292,9 @@ class PreviousDayCostSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Previous Day Cost"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_native_unit_of_measurement = "GBP"
-        self._attr_state_class = SensorStateClass.TOTAL
+        # No state_class: this is a rolling per-day snapshot, not a cumulative
+        # total.  TOTAL without last_reset would record it as meaningless
+        # drifting cumulative deltas.
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__previous_day_cost"
 
@@ -316,7 +320,9 @@ class PreviousDayConsumptionSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Previous Day Consumption"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.MEASUREMENT
+        # No state_class: ENERGY permits only TOTAL/TOTAL_INCREASING, and this
+        # is a yesterday-total snapshot, not a live meter reading.  MEASUREMENT
+        # with ENERGY is an invalid combination HA raises a repair issue for.
         self._attr_icon = "mdi:history"
         self._attr_unique_id = f"{meter.serial}__previous_day_consumption"
 
@@ -340,7 +346,9 @@ class CurrentUnitRateSensor(EonNextSensorBase):
     def __init__(self, coordinator, meter):
         super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Current Unit Rate"
-        self._attr_device_class = SensorDeviceClass.MONETARY
+        # No device_class: MONETARY requires an ISO 4217 currency unit, but a
+        # unit rate is a price per kWh (GBP/kWh).  Pairing MONETARY with that
+        # unit makes HA raise a repair issue for every rate sensor per meter.
         self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__current_unit_rate"
@@ -514,7 +522,9 @@ class PreviousUnitRateSensor(EonNextSensorBase):
     def __init__(self, coordinator, meter):
         super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Previous Unit Rate"
-        self._attr_device_class = SensorDeviceClass.MONETARY
+        # No device_class: MONETARY requires an ISO 4217 currency unit, but a
+        # unit rate is a price per kWh (GBP/kWh).  Pairing MONETARY with that
+        # unit makes HA raise a repair issue for every rate sensor per meter.
         self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__previous_unit_rate"
@@ -563,7 +573,9 @@ class NextUnitRateSensor(EonNextSensorBase):
     def __init__(self, coordinator, meter):
         super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Next Unit Rate"
-        self._attr_device_class = SensorDeviceClass.MONETARY
+        # No device_class: MONETARY requires an ISO 4217 currency unit, but a
+        # unit rate is a price per kWh (GBP/kWh).  Pairing MONETARY with that
+        # unit makes HA raise a repair issue for every rate sensor per meter.
         self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
         self._attr_icon = "mdi:currency-gbp"
         self._attr_unique_id = f"{meter.serial}__next_unit_rate"
@@ -612,7 +624,9 @@ class ExportUnitRateSensor(EonNextSensorBase):
     def __init__(self, coordinator, meter):
         super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Export Unit Rate"
-        self._attr_device_class = SensorDeviceClass.MONETARY
+        # No device_class: MONETARY requires an ISO 4217 currency unit, but a
+        # unit rate is a price per kWh (GBP/kWh).  Pairing MONETARY with that
+        # unit makes HA raise a repair issue for every rate sensor per meter.
         self._attr_native_unit_of_measurement = f"GBP/{UnitOfEnergy.KILO_WATT_HOUR}"
         self._attr_icon = "mdi:solar-power"
         self._attr_unique_id = f"{meter.serial}__export_unit_rate"
