@@ -97,6 +97,7 @@ Conservative defaults:
 After installation, an **EON Next** entry appears in the Home Assistant sidebar. It provides a zero-config overview of your meters, consumption, costs, and EV charging status.
 
 - The sidebar panel is enabled by default. To hide it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
+- On phones (including the iOS/Android Companion apps) a menu button in the panel header opens the Home Assistant sidebar, so you can always navigate away from the dashboard.
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
 - "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
 - "Month to date" cost is shown as a running total computed from daily consumption history.
