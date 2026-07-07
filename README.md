@@ -67,6 +67,11 @@ If credentials expire or your password changes, Home Assistant will prompt for r
 
 In `1.2.0`, the `Daily Consumption` sensor state class changed to `total` and now provides a data-driven `last_reset` for improved Energy Dashboard compatibility. If your instance still has long-term statistics from older semantics (such as `measurement` or `total_increasing`), you may need to recreate affected statistics/dashboard cards.
 
+Several sensors had invalid device-class/state-class combinations corrected to stop Home Assistant repair issues and spurious long-term statistics:
+
+- The unit-rate sensors (`Current`/`Previous`/`Next`/`Export Unit Rate`) no longer use the `monetary` device class — a `£/kWh` price is not an ISO-4217 currency amount. They keep their value and unit; only the device class is removed.
+- `Standing Charge`, `Previous Day Cost`, and `Previous Day Consumption` no longer carry a `state_class`, as they are fixed fees or per-day snapshots rather than cumulative totals. They stop generating long-term statistics; if your instance has old statistics for these entities you may recreate or delete them.
+
 ## Historical Backfill (Configurable)
 
 The integration now supports a slow, resumable historical backfill for Energy Dashboard statistics.
