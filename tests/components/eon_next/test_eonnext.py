@@ -7,12 +7,18 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from datetime import datetime, timedelta, timezone
+
 from custom_components.eon_next.eonnext import (
+    EnergyAccount,
     EonNext,
     EonNextApiError,
     EonNextAuthError,
     METER_TYPE_ELECTRIC,
 )
+
+_PAST_ISO = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat()
+_FUTURE_ISO = (datetime.now(tz=timezone.utc) + timedelta(days=1)).isoformat()
 
 
 def _seed_valid_auth(api: EonNext) -> int:
@@ -223,5 +229,67 @@ async def test_graphql_retries_once_on_401_then_succeeds() -> None:
     assert result == {"data": {"ok": True}}
     api._force_token_refresh.assert_awaited_once()
     assert len(session.headers_seen) == 2
+
+
+# --- #53: filter out inactive (replaced) meters ---
+
+
+class TestMeterIsInactive:
+    def test_no_active_to_is_kept(self) -> None:
+        assert EnergyAccount._meter_is_inactive({"serialNumber": "S"}) is False
+        assert EnergyAccount._meter_is_inactive({"activeTo": None}) is False
+
+    def test_past_active_to_is_inactive(self) -> None:
+        assert EnergyAccount._meter_is_inactive({"activeTo": _PAST_ISO}) is True
+
+    def test_future_active_to_is_active(self) -> None:
+        assert EnergyAccount._meter_is_inactive({"activeTo": _FUTURE_ISO}) is False
+
+    def test_unparseable_active_to_is_kept(self) -> None:
+        # Don't hide a meter on bad data.
+        assert EnergyAccount._meter_is_inactive({"activeTo": "garbage"}) is False
+
+    def test_zulu_suffix_is_parsed(self) -> None:
+        zulu = _PAST_ISO.replace("+00:00", "Z")
+        assert EnergyAccount._meter_is_inactive({"activeTo": zulu}) is True
+
+
+@pytest.mark.asyncio
+async def test_load_meters_skips_inactive() -> None:
+    """_load_meters drops meters whose activeTo is in the past."""
+    api = EonNext()
+    account = EnergyAccount(api, "ACC-1")
+    result = {
+        "data": {
+            "properties": [
+                {
+                    "electricityMeterPoints": [
+                        {
+                            "mpan": "1200000000000",
+                            "meters": [
+                                {"id": "e1", "serialNumber": "ACTIVE-E", "activeTo": None},
+                                {"id": "e2", "serialNumber": "OLD-E", "activeTo": _PAST_ISO},
+                            ],
+                        }
+                    ],
+                    "gasMeterPoints": [
+                        {
+                            "mprn": "9100000000",
+                            "meters": [
+                                {"id": "g1", "serialNumber": "ACTIVE-G", "activeTo": _FUTURE_ISO},
+                                {"id": "g2", "serialNumber": "OLD-G", "activeTo": _PAST_ISO},
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    api._graphql_post = AsyncMock(return_value=result)  # type: ignore[method-assign]
+
+    await account._load_meters()
+
+    serials = {meter.serial for meter in account.meters}
+    assert serials == {"ACTIVE-E", "ACTIVE-G"}
 
 

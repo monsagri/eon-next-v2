@@ -776,6 +776,8 @@ class EnergyAccount:
                     "",
                 )
                 for meter_config in electricity_point["meters"]:
+                    if self._meter_is_inactive(meter_config):
+                        continue
                     is_export = self._is_export_meter(
                         supply_point_id, meter_config
                     )
@@ -791,6 +793,8 @@ class EnergyAccount:
             for gas_point in prop["gasMeterPoints"]:
                 supply_point_id = gas_point.get("mprn") or gas_point.get("id", "")
                 for meter_config in gas_point["meters"]:
+                    if self._meter_is_inactive(meter_config):
+                        continue
                     meter = GasMeter(
                         self,
                         meter_config["id"],
@@ -798,6 +802,35 @@ class EnergyAccount:
                         supply_point_id,
                     )
                     self.meters.append(meter)
+
+    @staticmethod
+    def _meter_is_inactive(meter_config: dict[str, Any]) -> bool:
+        """Return True when a meter's ``activeTo`` is set and already past.
+
+        Replaced meters keep coming back from the API (with ``activeTo`` in the
+        past) even though ``includeInactive`` is false, and would otherwise
+        create stale entities and dashboard rows for meters that no longer
+        exist.  Meters with no ``activeTo`` are current and always kept.
+        """
+        active_to = meter_config.get("activeTo")
+        if not active_to:
+            return False
+        try:
+            parsed = datetime.datetime.fromisoformat(
+                str(active_to).replace("Z", "+00:00")
+            )
+        except (TypeError, ValueError):
+            # Unparseable date: keep the meter rather than hide it on bad data.
+            return False
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+        serial = meter_config.get("serialNumber")
+        is_inactive = parsed <= datetime.datetime.now(datetime.timezone.utc)
+        if is_inactive:
+            _LOGGER.debug(
+                "Skipping inactive meter %s (activeTo=%s)", serial, active_to
+            )
+        return is_inactive
 
     async def _load_ev_chargers(self):
         """Load SmartFlex EV devices if available for the account."""
