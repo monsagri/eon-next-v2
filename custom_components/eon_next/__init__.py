@@ -181,7 +181,19 @@ async def _async_reconcile_frontend(
 async def _async_update_listener(
     hass: HomeAssistant, entry: EonNextConfigEntry
 ) -> None:
-    """Handle config entry option updates."""
+    """Reload the entry when its options change.
+
+    The update listener fires on *any* ``async_update_entry`` call,
+    including data-only updates such as persisting a rotated refresh
+    token. Reloading on those tears down the aiohttp session mid-request
+    and flaps entities, so only reload when the options actually changed.
+    """
+    runtime_data = getattr(entry, "runtime_data", None)
+    new_options = dict(entry.options)
+    if runtime_data is not None:
+        if runtime_data.options == new_options:
+            return
+        runtime_data.options = new_options
     await hass.config_entries.async_reload(entry.entry_id)
 
 
@@ -251,6 +263,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
         coordinator=coordinator,
         backfill=backfill,
         cost_trackers=cost_trackers,
+        options=dict(entry.options),
     )
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
