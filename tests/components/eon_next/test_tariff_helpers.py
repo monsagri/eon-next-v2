@@ -10,10 +10,13 @@ import pytest
 
 from custom_components.eon_next.tariff_helpers import (
     build_day_rates,
+    cost_consumption_entries,
+    get_current_rate,
     get_next_rate,
     get_off_peak_metadata,
     get_previous_rate,
     is_off_peak,
+    rate_for_timestamp,
 )
 
 # Dynamic reference time: today at 03:00 UTC — inside a typical off-peak
@@ -338,3 +341,101 @@ class TestEdgeCases:
             info = get_next_rate(data)
         assert info is not None
         assert info.rate == 0.15
+
+
+# ═══════════════════════════════════════════════════════════════
+# get_current_rate (4.1)
+# ═══════════════════════════════════════════════════════════════
+
+
+class TestGetCurrentRate:
+    def test_returns_none_when_no_unit_rate(self) -> None:
+        assert get_current_rate({}) is None
+
+    def test_flat_rate_returns_flat(self) -> None:
+        info = get_current_rate(_flat_meter_data(0.22))
+        assert info is not None
+        assert info.rate == 0.22
+        assert info.is_off_peak is False
+
+    def test_tou_api_schedule_returns_current_window(self) -> None:
+        """At 03:00 UTC we're in the 7p off-peak window — not the mean."""
+        data = _tou_meter_data_with_schedule()
+        with _patch_utcnow():
+            info = get_current_rate(data)
+        assert info is not None
+        assert info.rate == pytest.approx(0.07)
+        assert info.is_off_peak is True
+
+    def test_tou_does_not_return_schedule_mean(self) -> None:
+        """The mean of 7/25/25 is 19p; the current window must win."""
+        data = _tou_meter_data_with_schedule()
+        with _patch_utcnow():
+            info = get_current_rate(data)
+        assert info is not None
+        assert info.rate != pytest.approx(0.19)
+
+    def test_tou_pattern_fallback_off_peak(self) -> None:
+        """Pattern-only NEXT-DRIVE at 04:00 local off-peak -> min rate 7p."""
+        data = _tou_meter_data_pattern_only()
+        with _patch_utcnow(), _patch_now(_local_at(4)):
+            info = get_current_rate(data)
+        assert info is not None
+        assert info.rate == pytest.approx(0.07)
+        assert info.is_off_peak is True
+
+
+# ═══════════════════════════════════════════════════════════════
+# rate_for_timestamp + cost_consumption_entries (4.2 / 4.3)
+# ═══════════════════════════════════════════════════════════════
+
+
+class TestRateForTimestamp:
+    def test_flat_rate_any_time(self) -> None:
+        rate = rate_for_timestamp(_flat_meter_data(0.22), _REF_DATE)
+        assert rate == pytest.approx(0.22)
+
+    def test_off_peak_window(self) -> None:
+        # 03:00 UTC falls in the 02:00–05:00 off-peak (7p) window.
+        rate = rate_for_timestamp(
+            _tou_meter_data_with_schedule(), _REF_DATE.replace(hour=3)
+        )
+        assert rate == pytest.approx(0.07)
+
+    def test_peak_window(self) -> None:
+        # 06:00 UTC falls in the 05:00–08:00 peak (25p) window.
+        rate = rate_for_timestamp(
+            _tou_meter_data_with_schedule(), _REF_DATE.replace(hour=6)
+        )
+        assert rate == pytest.approx(0.25)
+
+
+class TestCostConsumptionEntries:
+    def test_prices_each_entry_against_its_window(self) -> None:
+        data = _tou_meter_data_with_schedule()
+        entries = [
+            {"interval_start": _ts(3), "consumption": 1.0},  # off-peak 7p
+            {"interval_start": _ts(6), "consumption": 2.0},  # peak 25p
+        ]
+        # 1.0*0.07 + 2.0*0.25 = 0.57 (not 3.0 * mean).
+        assert cost_consumption_entries(data, entries) == pytest.approx(0.57)
+
+    def test_flat_rate_sums_at_flat(self) -> None:
+        data = _flat_meter_data(0.20)
+        entries = [
+            {"interval_start": _ts(3), "consumption": 1.0},
+            {"interval_start": _ts(6), "consumption": 2.5},
+        ]
+        assert cost_consumption_entries(data, entries) == pytest.approx(0.70)
+
+    def test_returns_none_when_nothing_priced(self) -> None:
+        assert cost_consumption_entries({}, []) is None
+
+    def test_skips_malformed_entries(self) -> None:
+        data = _flat_meter_data(0.20)
+        entries = [
+            {"interval_start": None, "consumption": 5},
+            {"interval_start": _ts(3), "consumption": "bad"},
+            {"interval_start": _ts(3), "consumption": 1.0},
+        ]
+        assert cost_consumption_entries(data, entries) == pytest.approx(0.20)

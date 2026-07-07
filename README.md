@@ -72,6 +72,8 @@ Several sensors had invalid device-class/state-class combinations corrected to s
 - The unit-rate sensors (`Current`/`Previous`/`Next`/`Export Unit Rate`) no longer use the `monetary` device class — a `£/kWh` price is not an ISO-4217 currency amount. They keep their value and unit; only the device class is removed.
 - `Standing Charge`, `Previous Day Cost`, and `Previous Day Consumption` no longer carry a `state_class`, as they are fixed fees or per-day snapshots rather than cumulative totals. They stop generating long-term statistics; if your instance has old statistics for these entities you may recreate or delete them.
 
+On time-of-use tariffs (e.g. Next Drive), the `Current Unit Rate` sensor now reports the rate for the current half-hour window instead of the schedule average, `Previous Day Cost` prices each half-hour against its own rate window, and cost trackers accrue at the live time-of-use rate. Expect these values to differ from earlier releases where a flat/average rate was used.
+
 ## Historical Backfill (Configurable)
 
 The integration now supports a slow, resumable historical backfill for Energy Dashboard statistics.

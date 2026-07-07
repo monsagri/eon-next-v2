@@ -315,6 +315,27 @@ class TestPreviousDayCostComputation:
         assert cost == pytest.approx(5.81)
 
 
+class TestYesterdayEntries:
+    """_yesterday_entries returns the raw entries that fall on yesterday."""
+
+    def test_filters_to_yesterday_local(self) -> None:
+        entries = [
+            _make_entry(f"{_YESTERDAY}T00:00:00+00:00", 1.0),
+            _make_entry(f"{_YESTERDAY}T23:30:00+00:00", 2.0),
+            _make_entry(f"{_TODAY}T00:00:00+00:00", 3.0),  # today, excluded
+            _make_entry("not-a-date", 9.0),  # unparseable, excluded
+        ]
+        with _patch_now():
+            result = EonNextCoordinator._yesterday_entries(entries)
+        assert len(result) == 2
+        assert all(e["interval_start"].startswith(str(_YESTERDAY)) for e in result)
+
+    def test_empty_when_no_yesterday(self) -> None:
+        entries = [_make_entry(f"{_TODAY}T12:00:00+00:00", 1.0)]
+        with _patch_now():
+            assert EonNextCoordinator._yesterday_entries(entries) == []
+
+
 class TestFetchConsumptionGranularity:
     """_fetch_consumption reports the granularity that was actually used.
 

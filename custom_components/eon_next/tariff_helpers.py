@@ -295,6 +295,144 @@ def get_next_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     return RateInfo(rate=float(unit_rate))
 
 
+def get_current_rate(meter_data: dict[str, Any]) -> RateInfo | None:
+    """Get the unit rate (GBP/kWh) applicable right now.
+
+    For flat tariffs this is the single rate.  For time-of-use tariffs it
+    resolves the current half-hour window (via the API schedule, falling back
+    to the tariff pattern) rather than the schedule mean — the mean is only
+    used as a last resort when no window can be resolved.  Returns ``None``
+    when no rate data is available.
+    """
+    unit_rate = meter_data.get("tariff_unit_rate")
+    if unit_rate is None:
+        return None
+
+    is_tou = meter_data.get("tariff_is_tou", False)
+    if not is_tou:
+        return RateInfo(rate=float(unit_rate))
+
+    schedule = meter_data.get("tariff_rates_schedule") or []
+    tariff_code = meter_data.get("tariff_code")
+    now_utc = dt_util.utcnow()
+
+    # Strategy 1: API schedule with time windows.
+    if schedule and _schedule_has_time_windows(schedule):
+        current = _find_current_window(schedule, now_utc)
+        if current is not None:
+            try:
+                cur_pence = float(current["value"])
+            except (TypeError, ValueError, KeyError):
+                cur_pence = None
+            if cur_pence is not None:
+                min_r = _min_rate_pence(schedule)
+                return RateInfo(
+                    rate=_pence_to_pounds(cur_pence),
+                    valid_from=current.get("validFrom"),
+                    valid_to=current.get("validTo"),
+                    is_off_peak=(min_r is not None and cur_pence == min_r),
+                )
+
+    # Strategy 2: pattern fallback with schedule rate values.
+    if schedule:
+        distinct = _distinct_rates_pence(schedule)
+        if len(distinct) >= 2:
+            pattern = get_tariff_pattern(tariff_code)
+            if pattern and pattern.windows:
+                in_off_peak = _time_in_off_peak_windows(
+                    dt_util.now().time(), pattern.windows
+                )
+                if in_off_peak:
+                    return RateInfo(
+                        rate=_pence_to_pounds(distinct[0]), is_off_peak=True
+                    )
+                return RateInfo(
+                    rate=_pence_to_pounds(distinct[-1]), is_off_peak=False
+                )
+
+    # Last resort: the schedule mean.
+    return RateInfo(rate=float(unit_rate))
+
+
+def rate_for_timestamp(
+    meter_data: dict[str, Any], when_utc: datetime
+) -> float | None:
+    """Return the unit rate (GBP/kWh) applicable at *when_utc*.
+
+    Same resolution order as :func:`get_current_rate` but for an arbitrary
+    (historical) instant — used to price past consumption per half-hour
+    window.  Returns ``None`` only when no rate data exists at all.
+    """
+    unit_rate = meter_data.get("tariff_unit_rate")
+    if unit_rate is None:
+        return None
+
+    is_tou = meter_data.get("tariff_is_tou", False)
+    if not is_tou:
+        return float(unit_rate)
+
+    schedule = meter_data.get("tariff_rates_schedule") or []
+    tariff_code = meter_data.get("tariff_code")
+
+    # Strategy 1: a schedule window that actually covers this instant.
+    if schedule and _schedule_has_time_windows(schedule):
+        window = _find_current_window(schedule, when_utc)
+        if window is not None:
+            try:
+                return _pence_to_pounds(float(window["value"]))
+            except (TypeError, ValueError, KeyError):
+                pass
+
+    # Strategy 2: pattern by time-of-day (the schedule rarely spans past days).
+    if schedule:
+        distinct = _distinct_rates_pence(schedule)
+        if len(distinct) >= 2:
+            pattern = get_tariff_pattern(tariff_code)
+            if pattern and pattern.windows:
+                local_time = dt_util.as_local(when_utc).time()
+                if _time_in_off_peak_windows(local_time, pattern.windows):
+                    return _pence_to_pounds(distinct[0])
+                return _pence_to_pounds(distinct[-1])
+
+    # Last resort: the schedule mean.
+    return float(unit_rate)
+
+
+def cost_consumption_entries(
+    meter_data: dict[str, Any],
+    entries: list[dict[str, Any]],
+) -> float | None:
+    """Cost half-hourly consumption entries per applicable rate window.
+
+    Each entry (``interval_start`` + ``consumption`` kWh) is priced against
+    the rate in effect at its own interval — correct for time-of-use tariffs
+    where a flat/average rate materially misprices overnight-heavy usage.
+    Returns the total energy cost in GBP (excluding standing charge), or
+    ``None`` when nothing could be priced.
+    """
+    total = 0.0
+    priced_any = False
+    for entry in entries:
+        interval_start = entry.get("interval_start")
+        consumption = entry.get("consumption")
+        if interval_start is None or consumption is None:
+            continue
+        when = _parse_dt(str(interval_start))
+        if when is None:
+            continue
+        try:
+            kwh = float(consumption)
+        except (TypeError, ValueError):
+            continue
+        rate = rate_for_timestamp(meter_data, dt_util.as_utc(when))
+        if rate is None:
+            continue
+        total += kwh * rate
+        priced_any = True
+
+    return round(total, 4) if priced_any else None
+
+
 def is_off_peak(meter_data: dict[str, Any]) -> bool | None:
     """Determine whether the current time falls in an off-peak period.
 

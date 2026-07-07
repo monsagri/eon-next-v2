@@ -18,6 +18,7 @@ from .eonnext import (
     METER_TYPE_GAS,
 )
 from .statistics import async_import_consumption_statistics
+from .tariff_helpers import cost_consumption_entries, get_current_rate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -218,12 +219,14 @@ class EonNextCoordinator(DataUpdateCoordinator):
 
                     # Fall back to tariff-derived values for cost fields
                     # that the defunct daily-costs endpoint can no longer
-                    # provide.
-                    if (
-                        meter_data.get("unit_rate") is None
-                        and meter_data.get("tariff_unit_rate") is not None
-                    ):
-                        meter_data["unit_rate"] = meter_data["tariff_unit_rate"]
+                    # provide.  For time-of-use tariffs this resolves the
+                    # rate for the *current* half-hour window rather than the
+                    # schedule mean, so the "Current Unit Rate" sensor and the
+                    # Energy Dashboard price the right rate.
+                    if meter_data.get("unit_rate") is None:
+                        current_rate = get_current_rate(meter_data)
+                        if current_rate is not None:
+                            meter_data["unit_rate"] = current_rate.rate
                     if (
                         meter_data.get("standing_charge") is None
                         and meter_data.get("tariff_standing_charge") is not None
@@ -233,29 +236,32 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         ]
 
                     # Compute previous-day cost from consumption + tariff
-                    # data when the cost endpoint cannot provide it.
+                    # data when the cost endpoint cannot provide it.  Each
+                    # half-hour is priced against its own rate window, so
+                    # time-of-use tariffs (where overnight usage dominates by
+                    # design) are costed correctly instead of at a flat mean.
                     # Require at least 44 half-hourly entries to avoid
                     # under-reporting from incomplete data.
-                    _ur = meter_data.get("unit_rate")
                     _sc = meter_data.get("standing_charge")
                     if (
                         meter_data.get("previous_day_cost") is None
                         and consumption is not None
-                        and _ur is not None
                         and _sc is not None
                     ):
-                        yesterday_kwh = self._aggregate_yesterday_consumption(
-                            consumption, min_entries=44
-                        )
-                        if yesterday_kwh is not None:
-                            meter_data["previous_day_cost"] = round(
-                                yesterday_kwh * float(_ur) + float(_sc),
-                                4,
+                        yesterday_entries = self._yesterday_entries(consumption)
+                        if len(yesterday_entries) >= 44:
+                            energy_cost = cost_consumption_entries(
+                                meter_data, yesterday_entries
                             )
-                            yesterday = (
-                                dt_util.now() - timedelta(days=1)
-                            ).date()
-                            meter_data["cost_period"] = yesterday.isoformat()
+                            if energy_cost is not None:
+                                meter_data["previous_day_cost"] = round(
+                                    energy_cost + float(_sc),
+                                    4,
+                                )
+                                yesterday = (
+                                    dt_util.now() - timedelta(days=1)
+                                ).date()
+                                meter_data["cost_period"] = yesterday.isoformat()
 
                     # Final fallback: retain previous cost values for any
                     # fields still None to avoid flipping sensors to
@@ -636,6 +642,24 @@ class EonNextCoordinator(DataUpdateCoordinator):
             "total": round(total, 3) if count else None,
             "entry_count": count,
         }
+
+    @staticmethod
+    def _yesterday_entries(
+        consumption_results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Return the raw consumption entries that fall on yesterday (local)."""
+        yesterday = (dt_util.now() - timedelta(days=1)).date()
+        entries: list[dict[str, Any]] = []
+        for entry in consumption_results:
+            interval_start = entry.get("interval_start") or ""
+            parsed_start = dt_util.parse_datetime(str(interval_start))
+            if parsed_start is None:
+                continue
+            if parsed_start.tzinfo is None:
+                parsed_start = parsed_start.replace(tzinfo=timezone.utc)
+            if dt_util.as_local(parsed_start).date() == yesterday:
+                entries.append(entry)
+        return entries
 
     @staticmethod
     def _yesterday_midnight_iso() -> str:
