@@ -81,6 +81,7 @@ The integration now supports a slow, resumable historical backfill for Energy Da
 - Configure it in **Settings -> Devices & Services -> Eon Next -> Configure**.
 - Backfill progress is persisted and resumes across Home Assistant restarts.
 - To ensure a true full-history rebuild, enable the option to clear/rebuild existing Eon statistics first.
+- Backfill now runs **alongside** live 30-minute imports rather than suspending them: each historical chunk is spliced into the existing statistics and later cumulative sums are recomputed, so your current-day Energy Dashboard data keeps updating while history fills in.
 
 Conservative defaults:
 
