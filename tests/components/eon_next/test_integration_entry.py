@@ -22,7 +22,7 @@ from custom_components.eon_next.const import (
     DOMAIN,
 )
 from custom_components.eon_next.coordinator import EonNextCoordinator
-from custom_components.eon_next.eonnext import EonNextApiError
+from custom_components.eon_next.eonnext import EonNextApiError, EonNextAuthError
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import recorder as recorder_helper
@@ -521,3 +521,76 @@ async def test_setup_raises_config_entry_not_ready_on_password_api_error(
     # Refresh token login returned False, so password fallback was attempted.
     assert fake_api.refresh_login_calls == ["refresh-token"]
     assert fake_api.password_login_calls == [("user@example.com", "secret")]
+
+
+class FakeApiWithAuthError(FakeApi):
+    """FakeApi variant that raises EonNextAuthError on a login call."""
+
+    def __init__(
+        self,
+        *,
+        refresh_raises: bool = False,
+        password_raises: bool = False,
+    ) -> None:
+        super().__init__(refresh_login_result=False, password_login_result=False)
+        self._refresh_raises = refresh_raises
+        self._password_raises = password_raises
+
+    async def login_with_refresh_token(self, token: str) -> bool:
+        self.refresh_login_calls.append(token)
+        if self._refresh_raises:
+            raise EonNextAuthError("token rejected")
+        return self.refresh_login_result
+
+    async def login_with_username_and_password(
+        self,
+        username: str,
+        password: str,
+    ) -> bool:
+        self.password_login_calls.append((username, password))
+        if self._password_raises:
+            raise EonNextAuthError("credentials rejected")
+        return self.password_login_result
+
+
+@pytest.mark.asyncio
+async def test_setup_maps_auth_error_to_config_entry_auth_failed(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An EonNextAuthError during setup should trigger re-auth, not a bare error."""
+    del enable_custom_integrations
+    fake_api = FakeApiWithAuthError(password_raises=True)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _ensure_recorder(hass)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # ConfigEntryAuthFailed => SETUP_ERROR and a re-auth flow is started.
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    assert fake_api.closed is True
+
+
+@pytest.mark.asyncio
+async def test_setup_auth_failed_when_password_login_returns_false(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Both logins failing (no exception) is an auth failure, not a retry."""
+    del enable_custom_integrations
+    fake_api = FakeApi(refresh_login_result=False, password_login_result=False)
+    _patch_integration(monkeypatch, fake_api)
+    entry = _mock_entry()
+
+    await _ensure_recorder(hass)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    assert fake_api.closed is True

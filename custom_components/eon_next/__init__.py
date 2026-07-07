@@ -29,7 +29,7 @@ from .const import (
 )
 from .coordinator import EonNextCoordinator
 from .cost_tracker import EonNextCostTrackerManager
-from .eonnext import EonNext, EonNextApiError
+from .eonnext import EonNext, EonNextAuthError
 from .models import EonNextConfigEntry, EonNextRuntimeData
 from .services import async_register_services
 
@@ -215,49 +215,58 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
     api.username = entry.data[CONF_EMAIL]
     api.password = entry.data[CONF_PASSWORD]
 
-    # Try stored refresh token first to avoid a redundant username/password login.
-    stored_refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
-    if stored_refresh_token:
-        try:
+    # All login, account/meter loading, and manager initialisation is wrapped
+    # so that a failure is mapped to the correct HA outcome (re-auth vs retry)
+    # and the owned aiohttp session is always closed — otherwise an auth blip
+    # or malformed payload escapes as a bare "Error" and leaks a session per
+    # setup retry ("Unclosed client session").
+    try:
+        # Try stored refresh token first to avoid a redundant password login.
+        stored_refresh_token = entry.data.get(CONF_REFRESH_TOKEN)
+        if stored_refresh_token:
             authenticated = await api.login_with_refresh_token(stored_refresh_token)
-        except EonNextApiError as err:
-            await api.async_close()
-            raise ConfigEntryNotReady(
-                f"Unable to reach E.ON Next API: {err}"
-            ) from err
-        if authenticated:
-            _LOGGER.debug("Authenticated using stored refresh token")
-        else:
-            _LOGGER.debug("Stored refresh token expired, falling back to credentials")
+            if authenticated:
+                _LOGGER.debug("Authenticated using stored refresh token")
+            else:
+                _LOGGER.debug(
+                    "Stored refresh token expired, falling back to credentials"
+                )
 
-    # Fall back to username/password if refresh token was unavailable or failed.
-    if not authenticated:
-        try:
+        # Fall back to username/password if refresh token was unavailable.
+        if not authenticated:
             authenticated = await api.login_with_username_and_password(
                 entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]
             )
-        except EonNextApiError as err:
-            await api.async_close()
-            raise ConfigEntryNotReady(
-                f"Unable to reach E.ON Next API: {err}"
-            ) from err
-        if not authenticated:
-            await api.async_close()
-            raise ConfigEntryAuthFailed("Failed to authenticate with Eon Next")
+            if not authenticated:
+                raise ConfigEntryAuthFailed("Failed to authenticate with Eon Next")
 
-    coordinator = EonNextCoordinator(hass, api, DEFAULT_UPDATE_INTERVAL_MINUTES)
-    backfill = EonNextBackfillManager(hass, entry, api, coordinator)
-    cost_trackers = EonNextCostTrackerManager(hass, entry.entry_id, coordinator)
-    await backfill.async_prime()
-    await cost_trackers.async_initialize()
+        coordinator = EonNextCoordinator(hass, api, DEFAULT_UPDATE_INTERVAL_MINUTES)
+        backfill = EonNextBackfillManager(hass, entry, api, coordinator)
+        cost_trackers = EonNextCostTrackerManager(hass, entry.entry_id, coordinator)
+        await backfill.async_prime()
+        await cost_trackers.async_initialize()
 
-    try:
         await coordinator.async_config_entry_first_refresh()
-    except Exception:
+        await backfill.async_start()
+    except (ConfigEntryAuthFailed, ConfigEntryNotReady):
+        # Already classified (e.g. by the coordinator's first refresh); close
+        # the owned session and propagate unchanged.
         await api.async_close()
         raise
+    except EonNextAuthError as err:
+        await api.async_close()
+        raise ConfigEntryAuthFailed(
+            "Authentication with E.ON Next failed"
+        ) from err
+    except Exception as err:  # pylint: disable=broad-except
+        # Any other failure (API/transport blip, malformed payload, storage
+        # error) is transient — let HA retry setup rather than showing an
+        # unhandled error, and never leak the session.
+        await api.async_close()
+        raise ConfigEntryNotReady(
+            f"Error setting up E.ON Next integration: {err}"
+        ) from err
 
-    await backfill.async_start()
     entry.runtime_data = EonNextRuntimeData(
         api=api,
         coordinator=coordinator,
