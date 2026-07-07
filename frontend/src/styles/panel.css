@@ -8,7 +8,8 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 8px;
   margin-bottom: 24px;
 }
 
@@ -18,12 +19,21 @@
   color: var(--eon-text-primary);
 }
 
+/* Sidebar toggle — the only way back to the HA menu inside the iOS app.
+   ha-menu-button hides itself when the sidebar is already docked. */
+.header .menu-button {
+  --mdc-icon-button-size: 40px;
+  color: var(--eon-text-primary);
+  margin-left: -8px;
+}
+
 .version-badge {
   font-size: 0.75em;
   color: var(--eon-text-secondary);
   background: var(--eon-divider);
   padding: 2px 8px;
   border-radius: 12px;
+  margin-left: auto;
 }
 
 .grid {

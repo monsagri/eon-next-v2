@@ -35,6 +35,28 @@ class EonNextPanel extends LitElement {
   )
 
   render() {
+    // The header (with the sidebar toggle) renders in every state so the panel
+    // is never a dead end — notably in the iOS Companion app, where the panel
+    // fills the webview and the hamburger is the only way back to the sidebar.
+    return html` ${this._renderHeader()} ${this._renderBody()} `
+  }
+
+  private _renderHeader() {
+    const version = this._version.data?.version
+    return html`
+      <div class="header">
+        <ha-menu-button
+          class="menu-button"
+          .hass=${this.hass}
+          .narrow=${this.narrow}
+        ></ha-menu-button>
+        <h1>EON Next Energy</h1>
+        ${version ? html`<span class="version-badge">v${version}</span>` : nothing}
+      </div>
+    `
+  }
+
+  private _renderBody() {
     if (this._summary.loading) {
       return html`
         <div class="loading" role="status" aria-label="Loading energy data">
@@ -57,14 +79,8 @@ class EonNextPanel extends LitElement {
     }
 
     const { data } = this._summary
-    const version = this._version.data?.version
 
     return html`
-      <div class="header">
-        <h1>EON Next Energy</h1>
-        ${version ? html`<span class="version-badge">v${version}</span>` : nothing}
-      </div>
-
       ${!data?.meters.length && !data?.ev_chargers.length
         ? html`<div class="empty-state">
             <ha-icon
