@@ -22,6 +22,9 @@ _LOGGER = logging.getLogger(__name__)
 _STORE_VERSION = 1
 _STORE_KEY_SUFFIX = "cost_trackers"
 
+# Debounce window for persisting tracker state on high-frequency updates.
+_SAVE_DELAY_SECONDS = 15
+
 VALID_POWER_UNITS = {"W", "kW"}
 VALID_ENERGY_UNITS = {"Wh", "kWh"}
 
@@ -270,7 +273,8 @@ class EonNextCostTrackerManager:
             6,
         )
         runtime.state.today_cost = round(runtime.state.today_cost + (delta_kwh * rate), 4)
-        await self._save()
+        # Debounced: this fires on every tracked-entity state change.
+        self._delay_save()
         self._notify_state_listeners(tracker_id)
 
     def _delta_kwh(
@@ -371,7 +375,8 @@ class EonNextCostTrackerManager:
         except (TypeError, ValueError):
             return None
 
-    async def _save(self) -> None:
+    def _snapshot(self) -> dict[str, Any]:
+        """Build the serializable storage payload for all trackers."""
         trackers: list[dict[str, Any]] = []
         for runtime in self._trackers.values():
             trackers.append(
@@ -388,4 +393,19 @@ class EonNextCostTrackerManager:
                     "last_energy_unit": runtime.state.last_energy_unit,
                 }
             )
-        await self._store.async_save({"trackers": trackers})
+        return {"trackers": trackers}
+
+    async def _save(self) -> None:
+        """Persist immediately (for structural changes and shutdown)."""
+        await self._store.async_save(self._snapshot())
+
+    @callback
+    def _delay_save(self) -> None:
+        """Persist on a debounce.
+
+        Tracked energy/power entities can update every few seconds; writing
+        storage on every update would be an I/O storm and wear flash/SD cards.
+        ``async_delay_save`` coalesces bursts into one write, and a pending
+        delayed write is flushed by the immediate ``_save`` in async_shutdown.
+        """
+        self._store.async_delay_save(self._snapshot, _SAVE_DELAY_SECONDS)

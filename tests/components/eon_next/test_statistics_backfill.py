@@ -66,13 +66,24 @@ def _entry(when: datetime, kwh: float) -> dict:
     return {"interval_start": when.isoformat(), "consumption": kwh}
 
 
+async def _flush(hass: HomeAssistant) -> None:
+    """Drain the recorder queue so writes are committed and readable.
+
+    The historical import reads back existing rows to recompute sums, so each
+    write must be durable before the next import runs.
+    """
+    from homeassistant.helpers.recorder import get_instance
+
+    await hass.async_block_till_done()
+    await get_instance(hass).async_block_till_done()
+    await hass.async_block_till_done()
+
+
 async def _read_sums(hass: HomeAssistant, meter: str) -> list[float]:
     from homeassistant.helpers.recorder import get_instance
 
     stat_id = statistic_id_for_meter(meter, "electricity")
-    # Flush the recorder queue so the external-statistics writes are durable.
-    await hass.async_block_till_done()
-    await get_instance(hass).async_block_till_done()
+    await _flush(hass)
 
     data = await get_instance(hass).async_add_executor_job(
         statistics_during_period,
@@ -100,6 +111,7 @@ async def test_earlier_chunk_splices_and_shifts_sums(hass: HomeAssistant) -> Non
         [_entry(_DAY_A, 1.0), _entry(_DAY_A + timedelta(hours=1), 1.0)],
     )
     assert await _read_sums(hass, meter) == [1.0, 2.0]
+    await _flush(hass)
 
     # Day B is earlier: it splices in below A, shifting A's sums up by B's total
     # while A's per-hour deltas (1.0 each) are preserved.
@@ -125,6 +137,7 @@ async def test_live_append_survives_later_backfill(hass: HomeAssistant) -> None:
         hass, meter, "electricity", [_entry(_DAY_A, 3.0)]
     )
     assert await _read_sums(hass, meter) == [3.0]
+    await _flush(hass)
 
     # Backfill an earlier day; the live row's sum shifts up but its delta holds.
     await async_import_historical_statistics(
