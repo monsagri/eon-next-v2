@@ -30,7 +30,7 @@ from .const import (
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
     DOMAIN,
 )
-from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS
+from .eonnext import EonNextApiError, METER_TYPE_ELECTRIC, METER_TYPE_GAS
 from .statistics import async_import_consumption_statistics, statistic_id_for_meter
 
 _LOGGER = logging.getLogger(__name__)
@@ -421,6 +421,10 @@ class EonNextBackfillManager:
         chunk_days = self._backfill_chunk_days()
         delay_seconds = self._backfill_delay_seconds()
         today = dt_util.now().date()
+        # Backfill only complete days: today is owned exclusively by the
+        # coordinator's half-hourly import.  Importing today's partial daily
+        # bucket here would be double-counted once half-hourly hours arrive.
+        yesterday = today - timedelta(days=1)
         made_progress = False
 
         for meter in meters:
@@ -439,24 +443,39 @@ class EonNextBackfillManager:
             except ValueError:
                 start_date = today
 
-            if start_date > today:
+            if start_date > yesterday:
                 meter_state["done"] = True
                 await self._save_state()
                 continue
 
-            end_date = min(start_date + timedelta(days=chunk_days - 1), today)
+            end_date = min(start_date + timedelta(days=chunk_days - 1), yesterday)
             period_from = f"{start_date.isoformat()}T00:00:00Z"
             period_to = f"{(end_date + timedelta(days=1)).isoformat()}T00:00:00Z"
             day_count = (end_date - start_date).days + 1
-            result = await self.api.async_get_consumption(
-                meter.type,
-                meter.supply_point_id,
-                meter.serial,
-                group_by="day",
-                page_size=day_count,
-                period_from=period_from,
-                period_to=period_to,
-            )
+            try:
+                result = await self.api.async_get_consumption(
+                    meter.type,
+                    meter.supply_point_id,
+                    meter.serial,
+                    group_by="day",
+                    page_size=day_count,
+                    period_from=period_from,
+                    period_to=period_to,
+                )
+            except EonNextApiError as err:
+                # Transport/server error: leave the cursor untouched so this
+                # chunk is retried next cycle instead of leaving a permanent
+                # hole in history.
+                _LOGGER.debug(
+                    "Backfill chunk %s→%s failed for meter %s; will retry: %s",
+                    start_date,
+                    end_date,
+                    meter.serial,
+                    err,
+                )
+                requests_remaining -= 1
+                continue
+
             consumption = result.get("results") if result else None
             if consumption:
                 await async_import_consumption_statistics(
@@ -467,7 +486,7 @@ class EonNextBackfillManager:
                 )
 
             meter_state["next_start"] = (end_date + timedelta(days=1)).isoformat()
-            meter_state["done"] = end_date >= today
+            meter_state["done"] = end_date >= yesterday
             await self._save_state()
             made_progress = True
             requests_remaining -= 1

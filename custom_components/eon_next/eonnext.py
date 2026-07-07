@@ -476,17 +476,21 @@ class EonNext:
                     data = await response.json()
                     if "results" in data:
                         return data
+                    # 200 with no results key: genuine "no data for this
+                    # period" — distinct from a transport error below.
                     return None
 
-                _LOGGER.debug(
-                    "REST consumption endpoint returned status %s for %s",
-                    response.status,
-                    serial,
+                # Non-200 is a transport/server error, not "no data".  Raise so
+                # callers (backfill, coordinator) can retry the same period
+                # instead of silently advancing past a permanent hole.
+                raise EonNextApiError(
+                    f"REST consumption endpoint returned status {response.status}"
                 )
-                return None
         except aiohttp.ClientError as err:
             _LOGGER.debug("REST consumption request failed for %s: %s", serial, err)
-            return None
+            raise EonNextApiError(
+                f"REST consumption request failed for {serial}: {err}"
+            ) from err
 
     async def async_get_consumption_data_by_mpxn_range(
         self,

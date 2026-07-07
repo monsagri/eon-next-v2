@@ -8,8 +8,9 @@ so that date-dependent logic is deterministic.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -312,3 +313,65 @@ class TestPreviousDayCostComputation:
         cost = round(yesterday_kwh * unit_rate + standing_charge, 4)
         # 24.0 * 0.22 + 0.53 = 5.81
         assert cost == pytest.approx(5.81)
+
+
+class TestFetchConsumptionGranularity:
+    """_fetch_consumption reports the granularity that was actually used.
+
+    The coordinator gates the external-statistics import on this so that
+    daily-granularity fallback data (which covers *today* as one partial
+    midnight bucket) is never imported and double-counted (spec 02, 2.3).
+    """
+
+    @staticmethod
+    def _coordinator(api) -> EonNextCoordinator:
+        # Bypass the HA DataUpdateCoordinator base init: _fetch_consumption
+        # only depends on self.api.
+        coord = EonNextCoordinator.__new__(EonNextCoordinator)
+        coord.api = api
+        return coord
+
+    @staticmethod
+    def _meter() -> SimpleNamespace:
+        return SimpleNamespace(
+            type="electricity", supply_point_id="sp-1", serial="m1"
+        )
+
+    @pytest.mark.asyncio
+    async def test_reports_half_hour_when_available(self) -> None:
+        api = SimpleNamespace(
+            async_get_consumption=AsyncMock(
+                return_value={"results": [{"interval_start": "x", "consumption": 1}]}
+            )
+        )
+        coord = self._coordinator(api)
+        entries, granularity = await coord._fetch_consumption(self._meter())
+        assert granularity == "half_hour"
+        assert entries == [{"interval_start": "x", "consumption": 1}]
+        api.async_get_consumption.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_reports_day_on_daily_fallback(self) -> None:
+        api = SimpleNamespace(
+            async_get_consumption=AsyncMock(
+                side_effect=[
+                    {"results": []},  # half-hourly empty -> fall back
+                    {"results": [{"interval_start": "x", "consumption": 2}]},
+                ]
+            )
+        )
+        coord = self._coordinator(api)
+        entries, granularity = await coord._fetch_consumption(self._meter())
+        assert granularity == "day"
+        assert entries == [{"interval_start": "x", "consumption": 2}]
+        assert api.async_get_consumption.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_reports_none_when_no_data(self) -> None:
+        api = SimpleNamespace(
+            async_get_consumption=AsyncMock(return_value={"results": []})
+        )
+        coord = self._coordinator(api)
+        entries, granularity = await coord._fetch_consumption(self._meter())
+        assert entries is None
+        assert granularity is None
