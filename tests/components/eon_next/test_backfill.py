@@ -167,15 +167,17 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
         },
         [meter],
     )
+    # Cursor starts at yesterday: backfill only imports complete days, so
+    # yesterday is the newest chunk it will process (today is coordinator-owned).
     manager._state = {
         "initialized": True,
         "rebuild_done": True,
         "lookback_days": 3650,
-        "meters": {"m1": {"next_start": _REF_DATE_ISO, "done": False}},
+        "meters": {"m1": {"next_start": _REF_PREV_ISO, "done": False}},
     }
     manager._save_state = AsyncMock()  # type: ignore[method-assign]
     manager.api.async_get_consumption = AsyncMock(  # type: ignore[attr-defined]
-        return_value={"results": [{"interval_start": _REF_DATE_ISO, "consumption": 1.5}]}
+        return_value={"results": [{"interval_start": _REF_PREV_ISO, "consumption": 1.5}]}
     )
     import_mock = AsyncMock()
     monkeypatch.setattr(
@@ -193,10 +195,59 @@ async def test_run_backfill_cycle_advances_cursor_and_imports(monkeypatch) -> No
 
     manager.api.async_get_consumption.assert_awaited_once()
     import_mock.assert_awaited_once()
-    assert manager._state["meters"]["m1"]["next_start"] == _REF_NEXT_ISO
+    # Advanced from yesterday to today; done because it reached yesterday.
+    assert manager._state["meters"]["m1"]["next_start"] == _REF_DATE_ISO
     assert manager._state["meters"]["m1"]["done"] is True
     # paused while pending, resumed when completed
     assert manager.coordinator.set_statistics_import_enabled.call_args_list[-1].args == (True,)
+
+
+@pytest.mark.asyncio
+async def test_run_backfill_cycle_leaves_cursor_on_api_error(monkeypatch) -> None:
+    """A transport error must not advance the cursor (spec 02, 2.2).
+
+    Advancing past a failed chunk leaves a permanent, never-retried hole while
+    the state machine falsely reports progress.
+    """
+    meter = _meter("m1", "electricity")
+    manager = _manager(
+        {
+            CONF_BACKFILL_ENABLED: True,
+            CONF_BACKFILL_CHUNK_DAYS: 1,
+            CONF_BACKFILL_REQUESTS_PER_RUN: 1,
+            CONF_BACKFILL_DELAY_SECONDS: 0,
+        },
+        [meter],
+    )
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 3650,
+        "meters": {"m1": {"next_start": _REF_PREV_ISO, "done": False}},
+    }
+    manager._save_state = AsyncMock()  # type: ignore[method-assign]
+    manager.api.async_get_consumption = AsyncMock(  # type: ignore[attr-defined]
+        side_effect=backfill_module.EonNextApiError("boom")
+    )
+    import_mock = AsyncMock()
+    monkeypatch.setattr(
+        backfill_module,
+        "async_import_consumption_statistics",
+        import_mock,
+    )
+    monkeypatch.setattr(
+        backfill_module.dt_util,
+        "now",
+        lambda: _REF_DT.replace(hour=12),
+    )
+
+    await manager._run_backfill_cycle()
+
+    manager.api.async_get_consumption.assert_awaited_once()
+    import_mock.assert_not_awaited()
+    # Cursor untouched and not marked done: the chunk is retried next cycle.
+    assert manager._state["meters"]["m1"]["next_start"] == _REF_PREV_ISO
+    assert manager._state["meters"]["m1"]["done"] is False
 
 
 # --- meters_progress attribute tests ---

@@ -109,7 +109,9 @@ class EonNextCoordinator(DataUpdateCoordinator):
                             meter.latest_reading
                         )
 
-                    consumption = await self._fetch_consumption(meter)
+                    consumption, consumption_granularity = (
+                        await self._fetch_consumption(meter)
+                    )
                     if consumption is not None:
                         meter_data["consumption"] = consumption
                         daily = self._aggregate_daily_consumption(consumption)
@@ -131,7 +133,15 @@ class EonNextCoordinator(DataUpdateCoordinator):
                             self._yesterday_midnight_iso()
                         )
 
-                        if self._statistics_import_enabled:
+                        # Only half-hourly data is imported into external
+                        # statistics.  Daily-granularity fallback covers today
+                        # as one partial midnight bucket; importing it would be
+                        # double-counted once half-hourly hours arrive (and the
+                        # historical backfill owns complete past days).
+                        if (
+                            self._statistics_import_enabled
+                            and consumption_granularity == "half_hour"
+                        ):
                             try:
                                 await async_import_consumption_statistics(
                                     self.hass,
@@ -400,11 +410,18 @@ class EonNextCoordinator(DataUpdateCoordinator):
             )
             return None
 
-    async def _fetch_consumption(self, meter) -> list[dict[str, Any]] | None:
+    async def _fetch_consumption(
+        self, meter
+    ) -> tuple[list[dict[str, Any]] | None, str | None]:
         """Fetch consumption data, preferring half-hourly granularity.
 
         Tries half-hourly REST data first (up to 96 half-hour slots,
         approximately two days), then falls back to daily REST data.
+
+        Returns ``(entries, granularity)`` where granularity is
+        ``"half_hour"`` or ``"day"``.  Callers must not import daily-granularity
+        data into external statistics: today's partial daily bucket would be
+        double-counted once the half-hourly hours become available.
         """
         # Try half-hourly data first.  Fetch two full days (96 slots) so
         # that yesterday's data is always complete even when today's entries
@@ -419,7 +436,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 page_size=96,
             )
             if result and "results" in result and len(result["results"]) > 0:
-                return result["results"]
+                return result["results"], "half_hour"
         except EonNextAuthError:
             raise
         except Exception as err:  # pylint: disable=broad-except
@@ -439,7 +456,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 page_size=7,
             )
             if result and "results" in result and len(result["results"]) > 0:
-                return result["results"]
+                return result["results"], "day"
         except EonNextAuthError:
             raise
         except Exception as err:  # pylint: disable=broad-except
@@ -449,7 +466,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 err,
             )
 
-        return None
+        return None, None
 
     @staticmethod
     def _pence_to_pounds(value: Any) -> float | None:
