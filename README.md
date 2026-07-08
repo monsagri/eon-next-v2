@@ -18,8 +18,8 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Account balance sensor per account (£), refreshed on coordinator updates.
 - Previous and next unit rate sensors — show the last/upcoming rate that differs from the current rate, enabling tariff-aware automations (e.g., "run the dishwasher when the cheap rate starts").
 - Off-peak binary sensor — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs. Supports automations with a simple `state: 'on'` trigger. The off-peak sensor and the Current/Previous/Next unit-rate sensors now update exactly at each rate-window boundary (not only on the 30-minute poll), so "switch loads at the boundary" automations fire on time.
-- Current day rates event entity — fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window). Also exposes `rates` as a persistent state attribute for template sensors.
-- Export unit rate and export daily consumption sensors — created automatically for detected export meters (solar/battery export).
+- Current day rates event entity — fires `rates_updated` when the day's rate schedule or tariff changes (and at midnight rollover), not on every 30-minute poll, with today's full rate schedule (start, end, rate, is_off_peak per window). Also exposes `rates` as a persistent state attribute for template sensors.
+- Export unit rate and export daily consumption sensors — created automatically for detected export meters (solar/battery export). Export meters get these dedicated Export sensors only; the generic daily-consumption and current-unit-rate sensors are not created for them (they would read the same values), so an export meter no longer shows duplicate entity pairs.
 - Cost tracker sensors with persistent storage and services:
   - `eon_next.add_cost_tracker` to create a tracker for a selected power/energy entity and meter tariff.
   - `eon_next.reset_cost_tracker` to zero one or more trackers.
@@ -77,6 +77,8 @@ Several sensors had invalid device-class/state-class combinations corrected to s
 On time-of-use tariffs (e.g. Next Drive), the `Current Unit Rate` sensor now reports the rate for the current half-hour window instead of the schedule average, `Previous Day Cost` prices each half-hour against its own rate window, and cost trackers accrue at the live time-of-use rate. Expect these values to differ from earlier releases where a flat/average rate was used.
 
 The meter register-reading sensors (`Electricity`, `Gas kWh`, `Gas`) now use the `total_increasing` state class (a monotonic meter counter) and keep the reading's decimal precision instead of rounding to whole units. If your instance has older `total` long-term statistics for these entities you may need to recreate them.
+
+Export meters no longer create the generic `Daily Consumption` and `Current Unit Rate` sensors — they duplicated the values already shown by the dedicated `Export Daily Consumption` and `Export Unit Rate` sensors. On existing installs those two generic entities become unavailable for export meters and can be deleted from the entity registry; the export equivalents are unchanged.
 
 ## Historical Backfill (Configurable)
 

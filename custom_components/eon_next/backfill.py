@@ -524,11 +524,15 @@ class EonNextBackfillManager:
 
                 consumption = result.get("results") if result else None
                 if consumption:
+                    # Backfill fetches daily buckets; flag it so a day the
+                    # coordinator already imported at half-hourly resolution is
+                    # not double-counted when the cursor reaches yesterday.
                     await async_import_historical_statistics(
                         self.hass,
                         meter.serial,
                         meter.type,
                         consumption,
+                        daily_granularity=True,
                     )
 
                 meter_state["next_start"] = (end_date + timedelta(days=1)).isoformat()
