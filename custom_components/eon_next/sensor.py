@@ -65,16 +65,26 @@ async def async_setup_entry(
                 entities.append(LatestGasCubicMetersSensor(coordinator, meter))
                 entities.append(LatestGasKwhSensor(coordinator, meter))
 
-            entities.append(DailyConsumptionSensor(coordinator, meter))
+            is_export_meter = (
+                isinstance(meter, ElectricityMeter) and meter.is_export
+            )
+
+            # Export meters get dedicated Export* variants below.  The generic
+            # daily-consumption and current-rate sensors read the very same
+            # coordinator keys, so creating both would register duplicate
+            # entities with identical values — skip the generic pair here.
+            if not is_export_meter:
+                entities.append(DailyConsumptionSensor(coordinator, meter))
+                entities.append(CurrentUnitRateSensor(coordinator, meter))
+
             entities.append(StandingChargeSensor(coordinator, meter))
             entities.append(PreviousDayCostSensor(coordinator, meter))
-            entities.append(CurrentUnitRateSensor(coordinator, meter))
             entities.append(CurrentTariffSensor(coordinator, meter))
             entities.append(PreviousUnitRateSensor(coordinator, meter))
             entities.append(NextUnitRateSensor(coordinator, meter))
             entities.append(PreviousDayConsumptionSensor(coordinator, meter))
 
-            if isinstance(meter, ElectricityMeter) and meter.is_export:
+            if is_export_meter:
                 entities.append(ExportUnitRateSensor(coordinator, meter))
                 entities.append(ExportDailyConsumptionSensor(coordinator, meter))
 

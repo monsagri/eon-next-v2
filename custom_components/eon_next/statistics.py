@@ -276,6 +276,8 @@ def _merge_and_recompute_series(
     baseline_sum: float,
     existing: list[tuple[datetime, float]],
     new_hourly: dict[datetime, float],
+    *,
+    daily_granularity: bool = False,
 ) -> list[tuple[datetime, float]]:
     """Splice new hours into an existing series and recompute cumulative sums.
 
@@ -287,6 +289,13 @@ def _merge_and_recompute_series(
     consecutive cumulative sums, new hours overwrite existing ones, and the
     whole range is re-accumulated from ``baseline_sum`` so the series stays
     monotonic.  Returns ``(hour, cumulative_sum)`` for every hour in the range.
+
+    When ``daily_granularity`` is set, each entry in ``new_hourly`` represents a
+    whole local day collapsed into one hour bucket.  A daily bucket that landed
+    on a day the coordinator already populated with finer half-hourly rows would
+    only overwrite one of that day's ~24 hours and leave the rest — inflating
+    the day by ~2x.  So a daily bucket is skipped for any day already covered by
+    more than one existing row; the finer rows are more accurate and preserved.
     """
     per_hour: dict[datetime, float] = {}
 
@@ -296,8 +305,19 @@ def _merge_and_recompute_series(
         per_hour[hour] = round(cumulative - prev_sum, 3)
         prev_sum = cumulative
 
+    effective_new = dict(new_hourly)
+    if daily_granularity:
+        # A daily bucket's own hour is the day's local midnight in UTC, so the
+        # local day spans exactly [day_hour, day_hour + 24h) — tz-robust without
+        # any local-time conversion here.
+        for day_hour in list(effective_new):
+            day_end = day_hour + timedelta(hours=24)
+            finer_existing = sum(1 for h in per_hour if day_hour <= h < day_end)
+            if finer_existing > 1:
+                del effective_new[day_hour]
+
     # New (backfilled) values are authoritative for their hour.
-    for hour, kwh in new_hourly.items():
+    for hour, kwh in effective_new.items():
         per_hour[hour] = round(kwh, 3)
 
     # Re-accumulate from the baseline across the merged, ordered hours.
@@ -372,6 +392,8 @@ async def async_import_historical_statistics(
     meter_serial: str,
     meter_type: str,
     consumption_entries: list[dict[str, Any]],
+    *,
+    daily_granularity: bool = False,
 ) -> None:
     """Import *historical* consumption without suspending live imports.
 
@@ -380,7 +402,12 @@ async def async_import_historical_statistics(
     stays monotonic — letting the historical backfill run concurrently with
     live 30-minute imports.  Adding a constant to all later sums does not
     change the per-period deltas the Energy Dashboard displays.
+
+    Set ``daily_granularity`` when ``consumption_entries`` are daily buckets so
+    a day the coordinator already imported at half-hourly resolution is not
+    double-counted (see :func:`_merge_and_recompute_series`).
     """
+    from homeassistant.helpers.recorder import get_instance
     from homeassistant.components.recorder.models import (
         StatisticData,
         StatisticMetaData,
@@ -415,7 +442,9 @@ async def async_import_historical_statistics(
         )
         return
 
-    series = _merge_and_recompute_series(baseline_sum, existing, hourly)
+    series = _merge_and_recompute_series(
+        baseline_sum, existing, hourly, daily_granularity=daily_granularity
+    )
     if not series:
         return
 
@@ -428,6 +457,13 @@ async def async_import_historical_statistics(
     async_add_external_statistics(
         hass, StatisticMetaData(**metadata_dict), statistics
     )
+    # Make this write durable before returning.  The recompute-forward design
+    # reads existing rows back to rebase later sums, so a same-cycle consecutive
+    # chunk (requests_per_run > 1 with delay_seconds = 0) must not read a stale
+    # baseline and emit a regressive, non-monotonic sum.  ``async_add_external_
+    # statistics`` only queues the write; block until the recorder has applied
+    # it so the next read — and any reader — sees a committed series.
+    await get_instance(hass).async_block_till_done()
     _LOGGER.debug(
         "Backfilled %d hourly statistics for %s (rewrote from %s)",
         len(statistics),
