@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.9.1](https://github.com/monsagri/eon-next-v2/compare/v1.9.0...v1.9.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **auth:** refresh-and-retry once on 401 instead of forcing re-auth ([94448ff](https://github.com/monsagri/eon-next-v2/commit/94448ff4e39385394ce596fa7cf2aec6a59423d0))
+* **backfill:** close statistics double-count and read-after-write; dedupe export sensors ([97ae8f3](https://github.com/monsagri/eon-next-v2/commit/97ae8f355a73af66d59d4e970ad357770a58ffb3))
+* **backfill:** import history without suspending live statistics ([3ffb303](https://github.com/monsagri/eon-next-v2/commit/3ffb303bd4c1715cfa84c91244a3da1d0aed3305))
+* **backfill:** stop permanent history holes and today double-counting ([35cea11](https://github.com/monsagri/eon-next-v2/commit/35cea11d6673b3e295e43ed3c3b6bf235297223a))
+* **cost-tracker:** debounce storage writes on tracked-entity updates ([689f586](https://github.com/monsagri/eon-next-v2/commit/689f586b21b9791c1da444f17c1ad7783f504da4))
+* **meters:** skip inactive meters so replaced meters disappear ([#53](https://github.com/monsagri/eon-next-v2/issues/53)) ([9b48b78](https://github.com/monsagri/eon-next-v2/commit/9b48b78b820ec5e251c8f4181eaa94acb57c62f4))
+* **panel:** add sidebar toggle so the dashboard isn't a dead end on iOS ([#54](https://github.com/monsagri/eon-next-v2/issues/54)) ([08e3fbb](https://github.com/monsagri/eon-next-v2/commit/08e3fbbf75898d7440a45df3338b31eb88ba1c3a))
+* reload entry only on options change to stop refresh-token reload loop ([1dbf23c](https://github.com/monsagri/eon-next-v2/commit/1dbf23c3c7ec19fe5e4492bac20f60a19949e8ab))
+* resolve remaining medium/low code-review findings ([c46ef9f](https://github.com/monsagri/eon-next-v2/commit/c46ef9f8328ca8c2fa69746aee847a41fbe856b8))
+* **sensor:** correct invalid device-class/state-class combinations ([5497fe9](https://github.com/monsagri/eon-next-v2/commit/5497fe9ebd99008a1ffb8ba525cb0ccb65dc1e85))
+* **setup:** map setup errors to re-auth/retry and never leak the session ([f30af97](https://github.com/monsagri/eon-next-v2/commit/f30af97b47ac9011df9522b98e96f71d3e0094ac))
+* **statistics:** skip import when last-stat lookup fails ([a1195d4](https://github.com/monsagri/eon-next-v2/commit/a1195d4ebe40288e5410558f47bc1525fe104474))
+* **tariff:** price time-of-use tariffs by current window, not the mean ([670a292](https://github.com/monsagri/eon-next-v2/commit/670a292827ba90423eee08dc2d4ee872f07ba34f))
+
 ## [1.9.0](https://github.com/monsagri/eon-next-v2/compare/v1.8.2...v1.9.0) (2026-03-02)
 
 
