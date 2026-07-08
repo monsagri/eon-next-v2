@@ -21,3 +21,21 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # HACS downloads the `eon_next.zip` asset (hacs.json: zip_release) instead of
+      # the source zipball, which makes the asset's GitHub download_count a real
+      # install/upgrade counter. Zip the *contents* of the integration dir (files at
+      # zip root) so HACS extracts them straight into custom_components/eon_next/.
+      - name: Check out release commit
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+
+      - name: Build and attach HACS zip asset
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          cd custom_components/eon_next
+          zip -r "$GITHUB_WORKSPACE/eon_next.zip" .
+          gh release upload "$TAG" "$GITHUB_WORKSPACE/eon_next.zip" --clobber
