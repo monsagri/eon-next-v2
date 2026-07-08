@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.9.2](https://github.com/monsagri/eon-next-v2/compare/v1.9.1...v1.9.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **panel:** stop WebSocket request storm on panel load ([21a0115](https://github.com/monsagri/eon-next-v2/commit/21a01151b6f28430fcf147d3d2d35f7990a3bf28))
+
 ## [1.9.1](https://github.com/monsagri/eon-next-v2/compare/v1.9.0...v1.9.1) (2026-07-08)
 
 
