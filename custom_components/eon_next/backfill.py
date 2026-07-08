@@ -30,7 +30,12 @@ from .const import (
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
     DOMAIN,
 )
-from .eonnext import EonNextApiError, METER_TYPE_ELECTRIC, METER_TYPE_GAS
+from .eonnext import (
+    EonNextApiError,
+    EonNextAuthError,
+    METER_TYPE_ELECTRIC,
+    METER_TYPE_GAS,
+)
 from .statistics import async_import_historical_statistics, statistic_id_for_meter
 
 _LOGGER = logging.getLogger(__name__)
@@ -213,6 +218,19 @@ class EonNextBackfillManager:
                 meters.append(meter)
         return meters
 
+    @staticmethod
+    def _utc_boundary_iso(day: date) -> str:
+        """Local midnight of *day* as a UTC ISO 8601 timestamp.
+
+        Chunk boundaries must be true local-day edges: formatting a local date
+        with a literal ``Z`` labels a local midnight as UTC, shifting the
+        window by the local offset (an hour off during BST for the whole UK).
+        """
+        return (
+            dt_util.as_utc(dt_util.start_of_local_day(day))
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
+
     async def _wait_or_stop(self, seconds: int) -> bool:
         try:
             await asyncio.wait_for(self._stop_event.wait(), timeout=max(1, seconds))
@@ -319,8 +337,9 @@ class EonNextBackfillManager:
         lookback_days = self._backfill_lookback_days()
         today = dt_util.now().date()
         start = today - timedelta(days=lookback_days - 1)
+        stored_lookback = int(self._state["lookback_days"])
 
-        if not self._state["initialized"] or self._state["lookback_days"] != lookback_days:
+        if not self._state["initialized"]:
             self._state["initialized"] = True
             self._state["rebuild_done"] = False
             self._state["lookback_days"] = lookback_days
@@ -336,7 +355,34 @@ class EonNextBackfillManager:
             )
             return
 
+        if lookback_days > stored_lookback:
+            # Window extended further back: move each meter's cursor to the new
+            # (earlier) start so the newly-included older days are fetched, and
+            # re-run the rebuild step.  A *shrink* deliberately does NOT wipe
+            # progress or clear statistics outside the new window — that would
+            # destroy already-imported history the user asked to keep.
+            self._state["lookback_days"] = lookback_days
+            self._state["rebuild_done"] = False
+            for meter in meters:
+                self._state["meters"][meter.serial] = {
+                    "next_start": start.isoformat(),
+                    "done": False,
+                }
+            await self._save_state()
+            _LOGGER.debug(
+                "Extended historical backfill window to %d days (from %s)",
+                lookback_days,
+                start,
+            )
+            return
+
         changed = False
+        if lookback_days < stored_lookback:
+            # Record the smaller window (for status/UX) but keep progress and
+            # existing statistics intact.
+            self._state["lookback_days"] = lookback_days
+            changed = True
+
         for meter in meters:
             if meter.serial in self._state["meters"]:
                 continue
@@ -376,7 +422,13 @@ class EonNextBackfillManager:
             return
 
         done = asyncio.Event()
-        get_instance(self.hass).async_clear_statistics(statistic_ids, on_done=done.set)
+        # The recorder calls ``on_done`` from the recorder thread; ``Event.set``
+        # is not thread-safe, so hop back onto the event loop to wake the waiter
+        # promptly instead of appearing to time out.
+        get_instance(self.hass).async_clear_statistics(
+            statistic_ids,
+            on_done=lambda: self.hass.loop.call_soon_threadsafe(done.set),
+        )
         try:
             await asyncio.wait_for(done.wait(), timeout=120)
         except asyncio.TimeoutError:
@@ -443,8 +495,8 @@ class EonNextBackfillManager:
                     continue
 
                 end_date = min(start_date + timedelta(days=chunk_days - 1), yesterday)
-                period_from = f"{start_date.isoformat()}T00:00:00Z"
-                period_to = f"{(end_date + timedelta(days=1)).isoformat()}T00:00:00Z"
+                period_from = self._utc_boundary_iso(start_date)
+                period_to = self._utc_boundary_iso(end_date + timedelta(days=1))
                 day_count = (end_date - start_date).days + 1
                 try:
                     result = await self.api.async_get_consumption(
@@ -504,6 +556,15 @@ class EonNextBackfillManager:
             try:
                 if self._backfill_enabled():
                     await self._run_backfill_cycle()
+            except EonNextAuthError as err:
+                # A bad/expired token during backfill must start HA re-auth,
+                # not be swallowed as a warning — otherwise the loop hammers
+                # the API with a dead token every cycle forever.
+                _LOGGER.warning(
+                    "Historical backfill stopping to trigger re-auth: %s", err
+                )
+                self.entry.async_start_reauth(self.hass)
+                break
             except Exception as err:  # pylint: disable=broad-except
                 _LOGGER.warning("Historical backfill cycle failed: %s", err)
 

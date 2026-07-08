@@ -13,7 +13,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfVolume
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -22,7 +21,13 @@ from .coordinator import ev_data_key
 from .cost_tracker import EonNextCostTrackerManager
 from .eonnext import METER_TYPE_ELECTRIC, METER_TYPE_GAS, ElectricityMeter
 from .models import EonNextConfigEntry
-from .tariff_helpers import RateInfo, get_next_rate, get_previous_rate
+from .tariff_entity import TariffBoundaryRefreshMixin
+from .tariff_helpers import (
+    RateInfo,
+    get_current_rate,
+    get_next_rate,
+    get_previous_rate,
+)
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -97,8 +102,17 @@ async def async_setup_entry(
         known_tracker_ids.add(tracker_id)
         async_add_entities([CostTrackerSensor(cost_trackers, tracker_id)])
 
+    @callback
+    def _handle_tracker_removed(tracker_id: str) -> None:
+        # The manager already removed the registry entity; drop it from the
+        # known set so the same id can be re-created later.
+        known_tracker_ids.discard(tracker_id)
+
     config_entry.async_on_unload(
         cost_trackers.async_add_list_listener(_handle_tracker_added)
+    )
+    config_entry.async_on_unload(
+        cost_trackers.async_add_remove_listener(_handle_tracker_removed)
     )
 
 
@@ -129,7 +143,12 @@ class HistoricalBackfillStatusSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = "Historical Backfill Status"
         self._attr_icon = "mdi:database-clock-outline"
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
-        self._attr_unique_id = "eon_next__historical_backfill_status"
+        # Include entry_id so a second E.ON account can register its own status
+        # sensor instead of colliding on a shared unique_id.  Existing installs
+        # are migrated from the old hard-coded id in __init__.async_setup_entry.
+        self._attr_unique_id = (
+            f"{backfill_manager.entry.entry_id}__historical_backfill_status"
+        )
 
     async def async_added_to_hass(self) -> None:
         """Register status listener when entity is added."""
@@ -188,7 +207,10 @@ class LatestElectricKwhSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Electricity"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.TOTAL
+        # Register readings are a monotonic cumulative counter: TOTAL_INCREASING
+        # so a glitched lower reading is treated as a reset, not a negative
+        # delta into long-term statistics.
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_icon = "mdi:meter-electric-outline"
         self._attr_unique_id = f"{meter.serial}__electricity_kwh"
 
@@ -206,7 +228,8 @@ class LatestGasKwhSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Gas kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.TOTAL
+        # Cumulative register-derived total — see LatestElectricKwhSensor.
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_icon = "mdi:meter-gas-outline"
         self._attr_unique_id = f"{meter.serial}__gas_kwh"
 
@@ -224,7 +247,8 @@ class LatestGasCubicMetersSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Gas"
         self._attr_device_class = SensorDeviceClass.GAS
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
-        self._attr_state_class = SensorStateClass.TOTAL
+        # Cumulative gas volume register — monotonic counter.
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_icon = "mdi:meter-gas-outline"
         self._attr_unique_id = f"{meter.serial}__gas_m3"
 
@@ -340,7 +364,7 @@ class PreviousDayConsumptionSensor(EonNextSensorBase):
         }
 
 
-class CurrentUnitRateSensor(EonNextSensorBase):
+class CurrentUnitRateSensor(TariffBoundaryRefreshMixin, EonNextSensorBase):
     """Current energy unit rate (inc VAT) for use with the HA Energy Dashboard."""
 
     def __init__(self, coordinator, meter):
@@ -357,7 +381,15 @@ class CurrentUnitRateSensor(EonNextSensorBase):
     @property
     def native_value(self):
         data = self._meter_data
-        return data.get("unit_rate") if data else None
+        if not data:
+            return None
+        # Resolve the current half-hour window live so the value is correct at
+        # the boundary (the boundary mixin writes state there), not only at the
+        # 30-minute coordinator poll.  Falls back to the coordinator snapshot.
+        info = get_current_rate(data)
+        if info is not None:
+            return info.rate
+        return data.get("unit_rate")
 
 
 class CurrentTariffSensor(EonNextSensorBase):
@@ -516,7 +548,7 @@ class NextChargeEndSlot2Sensor(EonNextSensorBase):
         return _parse_timestamp(data.get("next_charge_end_2"))
 
 
-class PreviousUnitRateSensor(EonNextSensorBase):
+class PreviousUnitRateSensor(TariffBoundaryRefreshMixin, EonNextSensorBase):
     """Most recent unit rate that differs from the current rate."""
 
     def __init__(self, coordinator, meter):
@@ -532,10 +564,9 @@ class PreviousUnitRateSensor(EonNextSensorBase):
         self._rate_info: RateInfo | None = None
 
     @callback
-    def _handle_coordinator_update(self) -> None:
+    def _recompute_tariff_state(self) -> None:
         data = self._meter_data
         self._rate_info = get_previous_rate(data) if data else None
-        super()._handle_coordinator_update()
 
     def _get_rate_info(self) -> RateInfo | None:
         if self._rate_info is not None:
@@ -567,7 +598,7 @@ class PreviousUnitRateSensor(EonNextSensorBase):
         return attrs
 
 
-class NextUnitRateSensor(EonNextSensorBase):
+class NextUnitRateSensor(TariffBoundaryRefreshMixin, EonNextSensorBase):
     """Next upcoming unit rate that differs from the current rate."""
 
     def __init__(self, coordinator, meter):
@@ -583,10 +614,9 @@ class NextUnitRateSensor(EonNextSensorBase):
         self._rate_info: RateInfo | None = None
 
     @callback
-    def _handle_coordinator_update(self) -> None:
+    def _recompute_tariff_state(self) -> None:
         data = self._meter_data
         self._rate_info = get_next_rate(data) if data else None
-        super()._handle_coordinator_update()
 
     def _get_rate_info(self) -> RateInfo | None:
         if self._rate_info is not None:
@@ -683,8 +713,12 @@ class ExportDailyConsumptionSensor(EonNextSensorBase):
         return data.get("daily_consumption") if data else None
 
 
-class CostTrackerSensor(RestoreEntity, SensorEntity):
-    """User-defined cost tracker sensor."""
+class CostTrackerSensor(SensorEntity):
+    """User-defined cost tracker sensor.
+
+    State is restored from the manager's ``Store`` (loaded before entities are
+    created), so ``RestoreEntity`` is not used.
+    """
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = "GBP"

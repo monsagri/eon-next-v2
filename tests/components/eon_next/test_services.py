@@ -47,6 +47,12 @@ async def test_add_cost_tracker_routes_by_meter_serial(hass) -> None:
     _, manager_b, _ = _make_entry(hass, serial="meter-b")
     await async_register_services(hass)
 
+    hass.states.async_set(
+        "sensor.washer_energy",
+        "0",
+        {"unit_of_measurement": "kWh", "device_class": "energy"},
+    )
+
     await hass.services.async_call(
         DOMAIN,
         "add_cost_tracker",
@@ -74,6 +80,12 @@ async def test_add_cost_tracker_with_unknown_meter_raises(hass) -> None:
     _make_entry(hass, serial="meter-a")
     await async_register_services(hass)
 
+    hass.states.async_set(
+        "sensor.dryer_energy",
+        "0",
+        {"unit_of_measurement": "kWh", "device_class": "energy"},
+    )
+
     with pytest.raises(ServiceValidationError, match="Unable to resolve config entry"):
         await hass.services.async_call(
             DOMAIN,
@@ -82,6 +94,31 @@ async def test_add_cost_tracker_with_unknown_meter_raises(hass) -> None:
                 "name": "Dryer",
                 "tracked_entity_id": "sensor.dryer_energy",
                 "meter_serial": "does-not-exist",
+            },
+            blocking=True,
+        )
+
+
+@pytest.mark.asyncio
+async def test_add_cost_tracker_rejects_non_energy_entity(hass) -> None:
+    """add_cost_tracker should reject a tracked entity that isn't power/energy."""
+    _make_entry(hass, serial="meter-a")
+    await async_register_services(hass)
+
+    hass.states.async_set(
+        "sensor.temperature",
+        "21",
+        {"unit_of_measurement": "°C", "device_class": "temperature"},
+    )
+
+    with pytest.raises(ServiceValidationError, match="power or energy"):
+        await hass.services.async_call(
+            DOMAIN,
+            "add_cost_tracker",
+            {
+                "name": "Thermostat",
+                "tracked_entity_id": "sensor.temperature",
+                "meter_serial": "meter-a",
             },
             blocking=True,
         )
@@ -112,10 +149,19 @@ async def test_reset_and_update_cost_tracker_target_entities(hass) -> None:
     await hass.services.async_call(
         DOMAIN,
         "reset_cost_tracker",
-        {"entity_id": [tracker_entry.entity_id, non_tracker_entry.entity_id]},
+        {"entity_id": tracker_entry.entity_id},
         blocking=True,
     )
     manager.async_reset_tracker.assert_awaited_once_with("washer")
+
+    # Explicitly naming a non-tracker entity is a mistake, not a silent no-op.
+    with pytest.raises(ServiceValidationError, match="Not E.ON Next cost tracker"):
+        await hass.services.async_call(
+            DOMAIN,
+            "reset_cost_tracker",
+            {"entity_id": [tracker_entry.entity_id, non_tracker_entry.entity_id]},
+            blocking=True,
+        )
 
     await hass.services.async_call(
         DOMAIN,

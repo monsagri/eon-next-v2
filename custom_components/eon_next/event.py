@@ -66,20 +66,28 @@ class CurrentDayRatesEvent(EonNextEventBase):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Fire rates_updated event on each coordinator refresh."""
+        """Fire rates_updated only when the schedule or tariff actually changes.
+
+        The coordinator refreshes every 30 min; firing an identical event each
+        time was ~48 duplicate events/day/meter written to the recorder.  The
+        rate windows carry today's dates, so a midnight rollover still changes
+        the output and fires exactly once.
+        """
         data = self._meter_data
+        new_rates = build_day_rates(data) if data is not None else []
+        new_code = data.get("tariff_code") if data is not None else None
+
+        if new_rates == self._rates and new_code == self._tariff_code:
+            return
+
+        self._rates = new_rates
+        self._tariff_code = new_code
         if data is not None:
-            self._rates = build_day_rates(data)
-            self._tariff_code = data.get("tariff_code")
             self._trigger_event(
                 "rates_updated",
                 {"rates": self._rates, "tariff_code": self._tariff_code},
             )
-            self.async_write_ha_state()
-        else:
-            self._rates = []
-            self._tariff_code = None
-            self.async_write_ha_state()
+        self.async_write_ha_state()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

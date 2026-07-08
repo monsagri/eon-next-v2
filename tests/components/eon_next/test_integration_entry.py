@@ -154,8 +154,9 @@ async def _ensure_recorder(hass: HomeAssistant) -> None:
 
 def _status_entity_id(hass: HomeAssistant, entry: MockConfigEntry) -> str:
     registry = er.async_get(hass)
+    expected_unique_id = f"{entry.entry_id}__historical_backfill_status"
     for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
-        if registry_entry.unique_id == "eon_next__historical_backfill_status":
+        if registry_entry.unique_id == expected_unique_id:
             return registry_entry.entity_id
     raise AssertionError("Missing historical backfill status entity")
 
@@ -365,6 +366,12 @@ async def test_add_cost_tracker_service_creates_tracker_entity(
     await _setup_entry(hass, entry)
     entry.runtime_data.cost_trackers._store.async_save = AsyncMock()  # noqa: SLF001
 
+    hass.states.async_set(
+        "sensor.washer_energy",
+        "0",
+        {"unit_of_measurement": "kWh", "device_class": "energy"},
+    )
+
     await hass.services.async_call(
         DOMAIN,
         "add_cost_tracker",
@@ -401,6 +408,12 @@ async def test_reset_and_update_cost_tracker_services(
 
     await _setup_entry(hass, entry)
     entry.runtime_data.cost_trackers._store.async_save = AsyncMock()  # noqa: SLF001
+
+    hass.states.async_set(
+        "sensor.dryer_energy",
+        "0",
+        {"unit_of_measurement": "kWh", "device_class": "energy"},
+    )
 
     await hass.services.async_call(
         DOMAIN,

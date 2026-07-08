@@ -8,9 +8,10 @@ import os
 from typing import Any
 
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 
 from .backfill import EonNextBackfillManager
 from .const import (
@@ -197,6 +198,27 @@ async def _async_update_listener(
     await hass.config_entries.async_reload(entry.entry_id)
 
 
+async def _async_migrate_unique_ids(
+    hass: HomeAssistant, entry: EonNextConfigEntry
+) -> None:
+    """Migrate legacy entity unique_ids to entry-scoped ids.
+
+    The historical-backfill status sensor used a hard-coded unique_id, which
+    collided when a second E.ON account was added.  Move it to an entry-scoped
+    id in place so existing installs keep the same entity.
+    """
+    legacy = "eon_next__historical_backfill_status"
+    new = f"{entry.entry_id}__historical_backfill_status"
+
+    @callback
+    def _migrate(entity_entry: er.RegistryEntry) -> dict[str, str] | None:
+        if entity_entry.unique_id == legacy:
+            return {"new_unique_id": new}
+        return None
+
+    await er.async_migrate_entries(hass, entry.entry_id, _migrate)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Set up Eon Next from a config entry."""
     api = EonNext()
@@ -274,6 +296,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
         cost_trackers=cost_trackers,
         options=dict(entry.options),
     )
+
+    await _async_migrate_unique_ids(hass, entry)
+
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

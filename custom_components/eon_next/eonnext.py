@@ -119,6 +119,16 @@ query getAccountAgreements($accountNumber: String!) {
 _TOKEN_EXPIRY_MARGIN_SECONDS = 60
 
 
+def _iso_date(value: Any) -> datetime.date | None:
+    """Parse the calendar-date portion of an ISO date/datetime string."""
+    if not value:
+        return None
+    try:
+        return datetime.date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
 class EonNextAuthError(Exception):
     """Raised when authentication fails."""
 
@@ -193,16 +203,30 @@ class EonNext:
         }
 
     def __store_authentication(self, kraken_token: dict):
-        issued_at = kraken_token["payload"]["iat"]
+        # Validate the token shape up front: a missing/renamed field must
+        # surface as an auth error (→ re-auth) rather than a raw
+        # KeyError/TypeError escaping the login methods.
+        try:
+            payload = kraken_token["payload"]
+            issued_at = payload["iat"]
+            access_token = kraken_token["token"]
+            access_expires = payload["exp"]
+            refresh_token = kraken_token["refreshToken"]
+            refresh_expires_in = kraken_token["refreshExpiresIn"]
+        except (KeyError, TypeError) as err:
+            raise EonNextAuthError(
+                "Malformed authentication token payload"
+            ) from err
+
         self.auth = {
             "issued": issued_at,
             "token": {
-                "token": kraken_token["token"],
-                "expires": kraken_token["payload"]["exp"],
+                "token": access_token,
+                "expires": access_expires,
             },
             "refresh": {
-                "token": kraken_token["refreshToken"],
-                "expires": issued_at + kraken_token["refreshExpiresIn"],
+                "token": refresh_token,
+                "expires": issued_at + refresh_expires_in,
             },
         }
         if self._on_token_update is not None:
@@ -327,6 +351,18 @@ class EonNext:
                         )
                         raise EonNextApiError("Invalid API response") from err
 
+                    # A CDN/proxy error page can be valid JSON that is a list or
+                    # null rather than the expected object; treat anything else
+                    # as a transport error instead of letting ``.get`` raise
+                    # ``AttributeError`` outside the client's error taxonomy.
+                    if not isinstance(result, dict):
+                        _LOGGER.debug(
+                            "Unexpected non-object GraphQL body for %s (status %s)",
+                            operation,
+                            response.status,
+                        )
+                        raise EonNextApiError("Invalid API response")
+
                     if self._has_auth_error(result.get("errors")):
                         if authenticated and not attempted_refresh:
                             attempted_refresh = True
@@ -384,7 +420,14 @@ class EonNext:
                 await self.__init_accounts()
             return True
 
-        _LOGGER.error("Authentication failed: %s", result.get("errors", "Unknown error"))
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            summary: Any = [
+                e.get("message", "error") for e in errors if isinstance(e, dict)
+            ] or "Unknown error"
+        else:
+            summary = "Unknown error"
+        _LOGGER.error("Authentication failed: %s", summary)
         self.__reset_authentication()
         return False
 
@@ -540,43 +583,6 @@ class EonNext:
                     f"REST consumption request failed for {serial}: {err}"
                 ) from err
 
-    async def async_get_consumption_data_by_mpxn_range(
-        self,
-        mpxn: str,
-        start_date: datetime.date,
-        end_date: datetime.date,
-    ) -> list[dict[str, Any]] | None:
-        """Fetch daily consumption data for a specific date range via GraphQL.
-
-        Note: The consumptionDataByMpxn query has been removed from the Kraken
-        API.  This stub returns None so callers fall back to REST consumption.
-        """
-        return None
-
-    async def async_get_consumption_data_by_mpxn(
-        self,
-        mpxn: str,
-        days: int = 7,
-    ) -> list[dict[str, Any]] | None:
-        """Fetch daily consumption data via GraphQL.
-
-        Note: The consumptionDataByMpxn query has been removed from the Kraken
-        API.  This stub returns None so callers fall back to REST consumption.
-        """
-        return None
-
-    async def async_get_daily_costs(
-        self,
-        mpxn: str,
-    ) -> dict[str, Any] | None:
-        """Fetch cost and standing charge data for a recent complete day.
-
-        Note: The consumptionDataByMpxn query that powered this method has been
-        removed from the Kraken API.  Returns None until a replacement query is
-        available; callers already handle None gracefully.
-        """
-        return None
-
     async def async_get_smart_charging_schedule(
         self,
         device_id: str,
@@ -660,9 +666,16 @@ class EonNext:
         """Return the currently active agreement from a list.
 
         An agreement is active when ``validFrom <= today`` and either
-        ``validTo`` is null/empty or ``validTo >= today``.
+        ``validTo`` is null/empty or ``validTo >= today``.  ``validFrom`` /
+        ``validTo`` are ISO datetimes (e.g. ``2026-07-08T00:00:00+00:00``);
+        they are compared as calendar dates so an agreement starting today is
+        not skipped for its whole first day by a lexical string comparison.
         """
         if not isinstance(agreements, list):
+            return None
+
+        today = _iso_date(today_iso)
+        if today is None:
             return None
 
         for agreement in agreements:
@@ -672,12 +685,14 @@ class EonNext:
             valid_from = agreement.get("validFrom") or ""
             valid_to = agreement.get("validTo") or ""
 
-            # Skip agreements with no known start date.
-            if not valid_from:
+            # Skip agreements with no known (parseable) start date.
+            valid_from_date = _iso_date(valid_from)
+            if valid_from_date is None:
                 continue
-            if valid_from > today_iso:
+            if valid_from_date > today:
                 continue
-            if valid_to and valid_to < today_iso:
+            valid_to_date = _iso_date(valid_to)
+            if valid_to_date is not None and valid_to_date < today:
                 continue
 
             tariff = agreement.get("tariff")
@@ -898,15 +913,12 @@ class EnergyAccount:
     def _is_export_meter(mpan: str, meter_config: dict[str, Any]) -> bool:
         """Detect whether an electricity meter is an export meter.
 
-        Uses two heuristics (either is sufficient):
-        1. MPAN profile class — UK export MPANs use profile class 00
-           (the first two digits when the full MPAN top-line is included).
-        2. Register names — export meters typically have registers with
-           "export" in the name.
+        Detection relies on register names: export meters have registers with
+        "export" in the name.  (A profile-class check on the MPAN is not
+        possible here — the API returns the 13-digit MPAN core, not the full
+        top-line that carries the profile class.)
         """
-        # MPAN profile class check
-        if mpan and mpan[:2] == "00":
-            return True
+        del mpan  # unused — kept for call-site symmetry / future top-line data
 
         # Register name check
         registers = meter_config.get("registers")
@@ -948,7 +960,7 @@ class EnergyMeter:
     def get_serial(self) -> str:
         return self.serial
 
-    def _convert_datetime_str_to_date(self, datetime_str: str) -> datetime.date | None:
+    def _convert_datetime_str_to_date(self, datetime_str: Any) -> datetime.date | None:
         try:
             return datetime.date.fromisoformat(str(datetime_str).split("T", 1)[0])
         except ValueError as err:
@@ -959,6 +971,29 @@ class EnergyMeter:
                 err,
             )
             return None
+
+    def _apply_latest_reading(self, edges: list[dict[str, Any]]) -> None:
+        """Set latest_reading/date from the newest reading edge, if any.
+
+        Preserves decimal precision (register reads can be fractional — e.g.
+        gas m³) and guards a meter with no registers so an empty list does not
+        raise ``IndexError`` and abort the whole coordinator update.
+        """
+        if not edges:
+            return
+        node = edges[0].get("node") or {}
+        registers = node.get("registers") or []
+        if not registers:
+            _LOGGER.debug("No registers in latest reading for meter %s", self.serial)
+            return
+        try:
+            self.latest_reading = float(registers[0]["value"])
+        except (TypeError, ValueError, KeyError):
+            _LOGGER.debug("Unparseable register value for meter %s", self.serial)
+            return
+        self.latest_reading_date = self._convert_datetime_str_to_date(
+            node.get("readAt")
+        )
 
     async def _update(self):
         pass
@@ -994,12 +1029,7 @@ class ElectricityMeter(EnergyMeter):
             _LOGGER.warning("Unable to load readings for meter %s", self.serial)
             return
 
-        readings = result["data"]["readings"]["edges"]
-        if len(readings) > 0:
-            self.latest_reading = round(float(readings[0]["node"]["registers"][0]["value"]))
-            self.latest_reading_date = self._convert_datetime_str_to_date(
-                readings[0]["node"]["readAt"]
-            )
+        self._apply_latest_reading(result["data"]["readings"]["edges"])
 
 
 class GasMeter(EnergyMeter):
@@ -1030,12 +1060,7 @@ class GasMeter(EnergyMeter):
             _LOGGER.warning("Unable to load readings for meter %s", self.serial)
             return
 
-        readings = result["data"]["readings"]["edges"]
-        if len(readings) > 0:
-            self.latest_reading = round(float(readings[0]["node"]["registers"][0]["value"]))
-            self.latest_reading_date = self._convert_datetime_str_to_date(
-                readings[0]["node"]["readAt"]
-            )
+        self._apply_latest_reading(result["data"]["readings"]["edges"])
 
     def get_latest_reading_kwh(self, m3_value: float) -> float:
         """Convert gas m3 reading to kWh."""
@@ -1044,4 +1069,7 @@ class GasMeter(EnergyMeter):
         kwh = m3_value * GAS_VOLUME_CORRECTION
         kwh = kwh * GAS_CALORIC_VALUE
         kwh = kwh / 3.6
-        return round(kwh)
+        # Keep sub-kWh precision (whole-kWh rounding loses real consumption on
+        # small deltas).  Calorific value is a fixed approximation (38) — real
+        # per-period values vary and would need a dedicated API source.
+        return round(kwh, 3)

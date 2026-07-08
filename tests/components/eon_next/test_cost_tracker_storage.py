@@ -21,6 +21,11 @@ def _manager_with_mock_store(trackers=None) -> EonNextCostTrackerManager:
     mgr._store.async_save = AsyncMock()
     mgr._store.async_delay_save = Mock()
     mgr._trackers = trackers or {}
+    mgr._shutdown = False
+    mgr._unsub_midnight = None
+    mgr._pending_tasks = set()
+    mgr._remove_listeners = []
+    mgr._state_listeners = {}
     return mgr
 
 

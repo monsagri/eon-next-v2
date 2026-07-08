@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import time
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -40,16 +43,37 @@ KNOWN_TARIFF_PATTERNS: list[TariffPattern] = [
 ]
 
 
+def _segments_contain(haystack: list[str], needle: list[str]) -> bool:
+    """Return True when *needle* appears as a run of consecutive segments."""
+    length = len(needle)
+    if length == 0:
+        return False
+    for i in range(len(haystack) - length + 1):
+        if haystack[i : i + length] == needle:
+            return True
+    return False
+
+
 def get_tariff_pattern(tariff_code: str | None) -> TariffPattern | None:
     """Match a tariff code to a known pattern, or None for unknown/flat-rate.
 
-    Performs a case-insensitive substring match of each pattern's
-    ``product_prefix`` against the supplied tariff code.
+    Tariff codes are hyphen-delimited (e.g. ``E-1R-NEXT-DRIVE-...``).  The
+    product prefix is matched against whole code segments rather than as a
+    free substring, so an unrelated code that merely contains the prefix text
+    (``NEXTDRIVER``) is not misclassified.  A future variant that shares the
+    exact product segments (``NEXT-DRIVE-V2``) still matches; the debug log
+    records which pattern was applied so unexpected inheritance is visible.
     """
     if not tariff_code:
         return None
-    code_upper = tariff_code.upper()
+    code_segments = tariff_code.upper().split("-")
     for pattern in KNOWN_TARIFF_PATTERNS:
-        if pattern.product_prefix.upper() in code_upper:
+        prefix_segments = pattern.product_prefix.upper().split("-")
+        if _segments_contain(code_segments, prefix_segments):
+            _LOGGER.debug(
+                "Tariff code %s matched known pattern %s",
+                tariff_code,
+                pattern.product_prefix,
+            )
             return pattern
     return None

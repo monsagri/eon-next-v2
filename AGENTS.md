@@ -17,7 +17,7 @@ If instructions conflict and precedence does not resolve it, ask the user before
 - Integration domain: `eon_next`.
 - Code location: `custom_components/eon_next/`.
 - Frontend location: `frontend/` (Lit + TypeScript, Rollup build).
-- Primary platform: `sensor`.
+- Platforms: `sensor`, `binary_sensor`, `event` (`PLATFORMS` in `const.py`).
 - Polling model: `DataUpdateCoordinator` (default 30 minutes).
 - Supported Home Assistant version floor: see `hacs.json`.
 
@@ -39,7 +39,8 @@ If instructions conflict and precedence does not resolve it, ask the user before
 - Do not log credentials, JWT tokens, or refresh tokens.
 - Keep authentication failures mapped to `ConfigEntryAuthFailed` so HA can trigger re-auth.
 - Preserve consumption fallback behavior unless intentionally changing it:
-  - REST half-hourly -> REST daily -> GraphQL `consumptionDataByMpxn`.
+  - REST half-hourly -> REST daily. (The historical GraphQL
+    `consumptionDataByMpxn` fallback was removed from the Kraken API.)
 - Preserve runtime data pattern (`entry.runtime_data`) for config entries.
 - Keep release metadata in lockstep:
   - `custom_components/eon_next/manifest.json` `version` must match the latest version header in `CHANGELOG.md`.

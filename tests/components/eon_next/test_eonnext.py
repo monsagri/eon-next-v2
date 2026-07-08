@@ -69,22 +69,6 @@ class _FakeSession:
 
 
 @pytest.mark.asyncio
-async def test_consumption_data_by_mpxn_returns_none() -> None:
-    """GraphQL consumptionDataByMpxn was removed; stub returns None."""
-    api = EonNext()
-    result = await api.async_get_consumption_data_by_mpxn("1234567890", days=7)
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_daily_costs_returns_none() -> None:
-    """GraphQL consumptionDataByMpxn was removed; daily costs stub returns None."""
-    api = EonNext()
-    result = await api.async_get_daily_costs("mpxn-1")
-    assert result is None
-
-
-@pytest.mark.asyncio
 async def test_refresh_token_login_propagates_api_error_and_preserves_auth() -> None:
     """EonNextApiError during refresh login should propagate without resetting auth."""
     api = EonNext()

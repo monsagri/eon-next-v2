@@ -60,18 +60,6 @@ def _find_current_window(
     return None
 
 
-def _min_rate_pence(schedule: list[dict[str, Any]]) -> float | None:
-    vals: list[float] = []
-    for e in schedule:
-        v = e.get("value")
-        if v is not None:
-            try:
-                vals.append(float(v))
-            except (TypeError, ValueError):
-                pass
-    return min(vals) if vals else None
-
-
 def _distinct_rates_pence(schedule: list[dict[str, Any]]) -> list[float]:
     vals: set[float] = set()
     for e in schedule:
@@ -82,6 +70,59 @@ def _distinct_rates_pence(schedule: list[dict[str, Any]]) -> list[float]:
             except (TypeError, ValueError):
                 pass
     return sorted(vals)
+
+
+def _all_rates_pence(schedule: list[dict[str, Any]]) -> list[float]:
+    """Return every parseable rate value (pence), keeping duplicates."""
+    vals: list[float] = []
+    for e in schedule:
+        v = e.get("value")
+        if v is not None:
+            try:
+                vals.append(float(v))
+            except (TypeError, ValueError):
+                pass
+    return vals
+
+
+# Rates carry sub-penny precision, so "cheapest tier" is matched with a small
+# tolerance rather than exact float equality (which one rounding difference or
+# an anomalous slot would break).
+_RATE_MATCH_TOLERANCE_PENCE = 0.05
+
+# On genuinely dynamic tariffs (many distinct half-hourly prices, agile-style)
+# there is no single off-peak tier, so the cheapest quantile of the day's
+# slots is treated as off-peak instead.
+_DYNAMIC_TARIFF_MIN_TIERS = 4
+_DYNAMIC_OFF_PEAK_QUANTILE = 0.25
+
+
+def _is_off_peak_rate(
+    current_pence: float | None,
+    schedule: list[dict[str, Any]],
+) -> bool | None:
+    """Return whether *current_pence* counts as off-peak within *schedule*.
+
+    For discrete time-of-use tariffs (a handful of price tiers) off-peak is
+    the cheapest tier, compared with a small tolerance rather than exact float
+    equality.  For genuinely dynamic tariffs (``_DYNAMIC_TARIFF_MIN_TIERS`` or
+    more distinct prices) there is no single off-peak tier, so the cheapest
+    quantile of the day's slots counts as off-peak.  Returns ``None`` when the
+    rate or schedule cannot be evaluated.
+    """
+    if current_pence is None:
+        return None
+    values = _all_rates_pence(schedule)
+    if not values:
+        return None
+    distinct = sorted({round(v, 4) for v in values})
+    if len(distinct) < _DYNAMIC_TARIFF_MIN_TIERS:
+        # Discrete TOU: the cheapest tier is off-peak.
+        return current_pence <= distinct[0] + _RATE_MATCH_TOLERANCE_PENCE
+    # Dynamic tariff: cheapest quantile of the day's slots.
+    ordered = sorted(values)
+    idx = min(len(ordered) - 1, int(len(ordered) * _DYNAMIC_OFF_PEAK_QUANTILE))
+    return current_pence <= ordered[idx] + _RATE_MATCH_TOLERANCE_PENCE
 
 
 def _time_in_off_peak_windows(
@@ -167,7 +208,6 @@ def get_previous_rate(meter_data: dict[str, Any]) -> RateInfo | None:
             except (TypeError, ValueError, KeyError):
                 current_pence = None
             if current_pence is not None:
-                min_r = _min_rate_pence(schedule)
                 candidates = []
                 for e in schedule:
                     vt = _parse_dt(e.get("validTo"))
@@ -191,7 +231,7 @@ def get_previous_rate(meter_data: dict[str, Any]) -> RateInfo | None:
                             rate=_pence_to_pounds(prev_val),
                             valid_from=prev.get("validFrom"),
                             valid_to=prev.get("validTo"),
-                            is_off_peak=(min_r is not None and prev_val == min_r),
+                            is_off_peak=bool(_is_off_peak_rate(prev_val, schedule)),
                         )
 
     # Strategy 2: Pattern fallback with schedule rate values
@@ -245,7 +285,6 @@ def get_next_rate(meter_data: dict[str, Any]) -> RateInfo | None:
             except (TypeError, ValueError, KeyError):
                 current_pence = None
             if current_pence is not None:
-                min_r = _min_rate_pence(schedule)
                 candidates = []
                 for e in schedule:
                     vf = _parse_dt(e.get("validFrom"))
@@ -269,7 +308,7 @@ def get_next_rate(meter_data: dict[str, Any]) -> RateInfo | None:
                             rate=_pence_to_pounds(nxt_val),
                             valid_from=nxt.get("validFrom"),
                             valid_to=nxt.get("validTo"),
-                            is_off_peak=(min_r is not None and nxt_val == min_r),
+                            is_off_peak=bool(_is_off_peak_rate(nxt_val, schedule)),
                         )
 
     # Strategy 2: Pattern fallback
@@ -325,12 +364,11 @@ def get_current_rate(meter_data: dict[str, Any]) -> RateInfo | None:
             except (TypeError, ValueError, KeyError):
                 cur_pence = None
             if cur_pence is not None:
-                min_r = _min_rate_pence(schedule)
                 return RateInfo(
                     rate=_pence_to_pounds(cur_pence),
                     valid_from=current.get("validFrom"),
                     valid_to=current.get("validTo"),
-                    is_off_peak=(min_r is not None and cur_pence == min_r),
+                    is_off_peak=bool(_is_off_peak_rate(cur_pence, schedule)),
                 )
 
     # Strategy 2: pattern fallback with schedule rate values.
@@ -450,14 +488,11 @@ def is_off_peak(meter_data: dict[str, Any]) -> bool | None:
         now_utc = dt_util.utcnow()
         current = _find_current_window(schedule, now_utc)
         if current is not None:
-            min_r = _min_rate_pence(schedule)
             try:
                 cur_val = float(current["value"])
             except (TypeError, ValueError, KeyError):
                 cur_val = None
-            if min_r is not None and cur_val is not None:
-                return cur_val == min_r
-            return None
+            return _is_off_peak_rate(cur_val, schedule)
 
     # Pattern registry fallback
     pattern = get_tariff_pattern(tariff_code)
@@ -486,12 +521,11 @@ def get_off_peak_metadata(
         now_utc = dt_util.utcnow()
         current = _find_current_window(schedule, now_utc)
         if current is not None:
-            min_r = _min_rate_pence(schedule)
             try:
                 cur_val = float(current["value"])
             except (TypeError, ValueError, KeyError):
                 cur_val = None
-            is_off = min_r is not None and cur_val is not None and cur_val == min_r
+            is_off = bool(_is_off_peak_rate(cur_val, schedule))
             result["current_rate_name"] = "off_peak" if is_off else "peak"
             result["next_transition"] = current.get("validTo")
         return result
@@ -545,7 +579,6 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
         day_start_utc = dt_util.as_utc(day_start)
         day_end_utc = dt_util.as_utc(day_end)
 
-        min_r = _min_rate_pence(schedule)
         rates: list[dict[str, Any]] = []
         for entry in schedule:
             vf = _parse_dt(entry.get("validFrom"))
@@ -565,7 +598,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
                     "start": start_local.isoformat(),
                     "end": end_local.isoformat(),
                     "rate": _pence_to_pounds(val),
-                    "is_off_peak": min_r is not None and val == min_r,
+                    "is_off_peak": bool(_is_off_peak_rate(val, schedule)),
                 }
             )
         rates.sort(key=lambda r: r["start"])

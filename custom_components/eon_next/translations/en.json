@@ -1,7 +1,8 @@
 {
     "config": {
         "abort": {
-            "reauth_successful": "Re-authentication was successful"
+            "reauth_successful": "Re-authentication was successful",
+            "reauth_account_mismatch": "The credentials belong to a different E.ON Next account. Re-authenticate with the original account."
         },
         "error": {
             "cannot_connect": "Unable to connect to E.ON Next API",

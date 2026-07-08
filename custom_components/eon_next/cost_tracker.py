@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 import logging
 from typing import Any, Callable
 
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, HomeAssistant, State, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_change,
+)
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
@@ -80,6 +84,10 @@ class EonNextCostTrackerManager:
         self._trackers: dict[str, CostTrackerRuntime] = {}
         self._list_listeners: list[Callable[[str], None]] = []
         self._state_listeners: dict[str, list[Callable[[], None]]] = {}
+        self._remove_listeners: list[Callable[[str], None]] = []
+        self._unsub_midnight: Callable[[], None] | None = None
+        self._pending_tasks: set[asyncio.Task[Any]] = set()
+        self._shutdown = False
 
     async def async_initialize(self) -> None:
         """Load trackers from storage and set up listeners."""
@@ -120,13 +128,37 @@ class EonNextCostTrackerManager:
         for tracker_id in list(self._trackers):
             self._attach_state_listener(tracker_id)
 
+        # Deterministic midnight rollover so trackers whose source entity stops
+        # updating don't keep yesterday's cost (and a stale last_reset) forever.
+        self._unsub_midnight = async_track_time_change(
+            self.hass, self._async_handle_midnight, hour=0, minute=0, second=0
+        )
+
     async def async_shutdown(self) -> None:
         """Clean up listeners and persist current state."""
+        self._shutdown = True
+        if self._unsub_midnight is not None:
+            self._unsub_midnight()
+            self._unsub_midnight = None
         for runtime in self._trackers.values():
             if runtime.unsubscribe_state:
                 runtime.unsubscribe_state()
                 runtime.unsubscribe_state = None
+        for task in list(self._pending_tasks):
+            task.cancel()
+        self._pending_tasks.clear()
         await self._save()
+
+    @callback
+    def _async_handle_midnight(self, _now: Any) -> None:
+        """Roll trackers into the new day, even without a source-state event."""
+        rolled = False
+        for tracker_id, runtime in self._trackers.items():
+            if self._rollover_if_new_day(runtime):
+                rolled = True
+                self._notify_state_listeners(tracker_id)
+        if rolled:
+            self._delay_save()
 
     def list_tracker_ids(self) -> list[str]:
         """Return all configured tracker ids."""
@@ -154,6 +186,19 @@ class EonNextCostTrackerManager:
         def _remove() -> None:
             if listener in self._list_listeners:
                 self._list_listeners.remove(listener)
+
+        return _remove
+
+    @callback
+    def async_add_remove_listener(
+        self, listener: Callable[[str], None]
+    ) -> Callable[[], None]:
+        """Listen for trackers being removed."""
+        self._remove_listeners.append(listener)
+
+        def _remove() -> None:
+            if listener in self._remove_listeners:
+                self._remove_listeners.remove(listener)
 
         return _remove
 
@@ -224,6 +269,31 @@ class EonNextCostTrackerManager:
         await self._save()
         self._notify_state_listeners(tracker_id)
 
+    async def async_remove_tracker(self, tracker_id: str) -> bool:
+        """Remove a tracker, its storage record, and its registry entity."""
+        runtime = self._trackers.pop(tracker_id, None)
+        if runtime is None:
+            return False
+        if runtime.unsubscribe_state:
+            runtime.unsubscribe_state()
+            runtime.unsubscribe_state = None
+        self._state_listeners.pop(tracker_id, None)
+        await self._save()
+
+        # Remove the sensor entity and its registry entry so trackers don't
+        # accumulate as orphans in the entity registry forever.
+        from homeassistant.helpers import entity_registry as er
+
+        registry = er.async_get(self.hass)
+        unique_id = f"cost_tracker__{self.entry_id}__{tracker_id}"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if entity_id:
+            registry.async_remove(entity_id)
+
+        for listener in list(self._remove_listeners):
+            listener(tracker_id)
+        return True
+
     def _attach_state_listener(self, tracker_id: str) -> None:
         runtime = self._trackers.get(tracker_id)
         if runtime is None:
@@ -233,10 +303,19 @@ class EonNextCostTrackerManager:
         runtime.unsubscribe_state = async_track_state_change_event(
             self.hass,
             [runtime.config.tracked_entity_id],
-            lambda event: self.hass.async_create_task(
-                self._async_handle_state_change(tracker_id, event)
-            ),
+            lambda event: self._schedule_state_change(tracker_id, event),
         )
+
+    @callback
+    def _schedule_state_change(self, tracker_id: str, event: Event[Any]) -> None:
+        """Run the async handler as a tracked task (cancelled on shutdown)."""
+        if self._shutdown:
+            return
+        task = self.hass.async_create_task(
+            self._async_handle_state_change(tracker_id, event)
+        )
+        self._pending_tasks.add(task)
+        task.add_done_callback(self._pending_tasks.discard)
 
     async def _async_handle_state_change(
         self,
@@ -244,7 +323,7 @@ class EonNextCostTrackerManager:
         event: Event[Any],
     ) -> None:
         runtime = self._trackers.get(tracker_id)
-        if runtime is None or not runtime.config.enabled:
+        if runtime is None or self._shutdown:
             return
 
         self._ensure_last_reset(runtime)
@@ -256,8 +335,11 @@ class EonNextCostTrackerManager:
             return
 
         unit = str(new_state.attributes.get("unit_of_measurement") or "")
+        # Compute the delta even while disabled so the energy baseline keeps
+        # advancing; otherwise a re-enable bills the entire paused span in one
+        # lump.  Cost is only accrued while enabled.
         delta_kwh = self._delta_kwh(runtime, old_state, new_state, unit)
-        if delta_kwh <= 0:
+        if not runtime.config.enabled or delta_kwh <= 0:
             return
 
         rate = self._current_rate(runtime.config.meter_serial)
@@ -307,14 +389,20 @@ class EonNextCostTrackerManager:
                 delta /= 1000.0
             return delta
 
+        # Power branch: integrate the *previous* reading over the elapsed
+        # interval, using the previous state's own unit — a W↔kW change between
+        # updates must not scale one interval's energy by 1000x.
         if unit in VALID_POWER_UNITS and old_state is not None:
+            old_unit = str(old_state.attributes.get("unit_of_measurement") or "")
+            if old_unit not in VALID_POWER_UNITS:
+                return 0.0
             old_value = self._parse_float(old_state.state)
             if old_value is None:
                 return 0.0
             elapsed = (new_state.last_updated - old_state.last_updated).total_seconds()
             if elapsed <= 0:
                 return 0.0
-            power_kw = old_value / 1000.0 if unit == "W" else old_value
+            power_kw = old_value / 1000.0 if old_unit == "W" else old_value
             return power_kw * (elapsed / 3600.0)
 
         return 0.0
@@ -336,18 +424,24 @@ class EonNextCostTrackerManager:
         for listener in list(self._state_listeners.get(tracker_id, [])):
             listener()
 
-    def _rollover_if_new_day(self, runtime: CostTrackerRuntime) -> None:
+    def _rollover_if_new_day(self, runtime: CostTrackerRuntime) -> bool:
+        """Reset daily totals when the day has changed. Returns True if rolled.
+
+        The energy baseline (``last_energy_value``) is deliberately preserved:
+        clearing it would discard the delta spanning midnight (up to an hour of
+        consumption for slow-updating energy sensors).  Keeping it attributes
+        that spanning delta to the new day instead of dropping it.
+        """
         last_reset = dt_util.parse_datetime(runtime.state.last_reset or "")
         if last_reset is None:
             runtime.state.last_reset = self._today_midnight_iso()
-            return
+            return False
         if dt_util.as_local(last_reset).date() == dt_util.now().date():
-            return
+            return False
         runtime.state.today_consumption_kwh = 0.0
         runtime.state.today_cost = 0.0
-        runtime.state.last_energy_value = None
-        runtime.state.last_energy_unit = None
         runtime.state.last_reset = self._today_midnight_iso()
+        return True
 
     def _ensure_last_reset(self, runtime: CostTrackerRuntime) -> None:
         if runtime.state.last_reset:
