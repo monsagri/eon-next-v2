@@ -1,0 +1,69 @@
+# Dependabot configuration for automated dependency updates.
+#
+# Strategy (applies to every ecosystem below):
+#   * Non-major updates (minor + patch) are consolidated into a single
+#     grouped PR per ecosystem to reduce review noise.
+#   * Major updates are deliberately excluded from the group so each one
+#     lands in its own PR for isolated review of breaking changes.
+#   * A 7-day cooldown is applied to every update as a safety buffer
+#     against supply-chain attacks (newly published, potentially malicious
+#     versions are not proposed until they have been public for a week).
+#
+# See: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # GitHub Actions used in .github/workflows/
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      github-actions-non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Root npm dev tooling (commitlint, husky, lint-staged)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      root-npm-non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Frontend panel + Lovelace cards (Lit, Rollup, ESLint, TypeScript, …)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      frontend-npm-non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Python test/tooling dependencies (requirements_test.txt)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      pip-non-major:
+        update-types:
+          - "minor"
+          - "patch"
