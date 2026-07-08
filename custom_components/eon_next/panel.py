@@ -13,6 +13,7 @@ from .const import DOMAIN, PANEL_ICON, PANEL_TITLE, PANEL_URL
 _LOGGER = logging.getLogger(__name__)
 
 _STATIC_PATH_REGISTERED_KEY = f"{DOMAIN}_panel_static_registered"
+_PANEL_REGISTERED_KEY = f"{DOMAIN}_panel_registered"
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -21,8 +22,15 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     Guarded so that only the first config entry triggers registration.
     Requires the ``panel_custom`` component; silently skips if unavailable.
     """
-    if DOMAIN in hass.data.get("frontend_panels", {}):
+    if hass.data.get(_PANEL_REGISTERED_KEY) or DOMAIN in hass.data.get(
+        "frontend_panels", {}
+    ):
         return
+
+    # Claim registration synchronously *before* the first await so two config
+    # entries setting up concurrently don't both pass the check and then race
+    # into ``async_register_panel`` (the second raising "Overwriting panel").
+    hass.data[_PANEL_REGISTERED_KEY] = True
 
     # Ensure panel_custom is loaded — in a standard HA install it is
     # always available via after_dependencies ordering, but calling
@@ -32,6 +40,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     if "panel_custom" not in hass.config.components:
         if not await async_setup_component(hass, "panel_custom", {}):
             _LOGGER.debug("panel_custom not available; skipping panel registration")
+            hass.data[_PANEL_REGISTERED_KEY] = False
             return
 
     from homeassistant.components import panel_custom  # noqa: E402
@@ -76,4 +85,5 @@ async def async_unregister_panel(hass: HomeAssistant) -> None:
     from homeassistant.components import frontend  # noqa: E402
 
     frontend.async_remove_panel(hass, DOMAIN)
+    hass.data[_PANEL_REGISTERED_KEY] = False
     _LOGGER.debug("EON Next sidebar panel removed")

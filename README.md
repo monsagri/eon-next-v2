@@ -17,13 +17,15 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Current tariff name sensor with agreement metadata (code, type, validity period) and published unit rate.
 - Account balance sensor per account (£), refreshed on coordinator updates.
 - Previous and next unit rate sensors — show the last/upcoming rate that differs from the current rate, enabling tariff-aware automations (e.g., "run the dishwasher when the cheap rate starts").
-- Off-peak binary sensor — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs. Supports automations with a simple `state: 'on'` trigger.
+- Off-peak binary sensor — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs. Supports automations with a simple `state: 'on'` trigger. The off-peak sensor and the Current/Previous/Next unit-rate sensors now update exactly at each rate-window boundary (not only on the 30-minute poll), so "switch loads at the boundary" automations fire on time.
 - Current day rates event entity — fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window). Also exposes `rates` as a persistent state attribute for template sensors.
 - Export unit rate and export daily consumption sensors — created automatically for detected export meters (solar/battery export).
 - Cost tracker sensors with persistent storage and services:
   - `eon_next.add_cost_tracker` to create a tracker for a selected power/energy entity and meter tariff.
   - `eon_next.reset_cost_tracker` to zero one or more trackers.
   - `eon_next.update_cost_tracker` to enable/disable one or more trackers.
+  - `eon_next.remove_cost_tracker` to delete one or more trackers and their sensor entities.
+  - Reset/update/remove accept device/area/label targets (not only entities), and reject entities that aren't E.ON Next cost trackers instead of silently doing nothing.
   - Cost breakdown UI now includes a default tracker-powered "tracked vs untracked usage (today)" visualization and per-tracker cost list when trackers exist for the selected meter.
 - EV smart charging sensors (when SmartFlex devices are available):
   - Smart charging schedule status.
@@ -73,6 +75,8 @@ Several sensors had invalid device-class/state-class combinations corrected to s
 - `Standing Charge`, `Previous Day Cost`, and `Previous Day Consumption` no longer carry a `state_class`, as they are fixed fees or per-day snapshots rather than cumulative totals. They stop generating long-term statistics; if your instance has old statistics for these entities you may recreate or delete them.
 
 On time-of-use tariffs (e.g. Next Drive), the `Current Unit Rate` sensor now reports the rate for the current half-hour window instead of the schedule average, `Previous Day Cost` prices each half-hour against its own rate window, and cost trackers accrue at the live time-of-use rate. Expect these values to differ from earlier releases where a flat/average rate was used.
+
+The meter register-reading sensors (`Electricity`, `Gas kWh`, `Gas`) now use the `total_increasing` state class (a monotonic meter counter) and keep the reading's decimal precision instead of rounding to whole units. If your instance has older `total` long-term statistics for these entities you may need to recreate them.
 
 ## Historical Backfill (Configurable)
 

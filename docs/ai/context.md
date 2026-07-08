@@ -30,7 +30,7 @@ Core outcomes:
 - Runtime state is stored on config entries via `entry.runtime_data` (`models.py`).
 - Periodic updates are orchestrated by `EonNextCoordinator` (`coordinator.py`).
 - API interaction and auth/token lifecycle are in `eonnext.py`.
-- Entities are exposed via `sensor.py`.
+- Entities are exposed via `sensor.py`, `binary_sensor.py`, and `event.py`.
 - External statistics import for Energy Dashboard is in `statistics.py`.
 - Frontend panel and cards are built from `frontend/src/` and output to `custom_components/eon_next/frontend/`.
 
@@ -42,7 +42,8 @@ Core outcomes:
 - Consumption fetching order:
   - REST half-hourly first.
   - REST daily second.
-  - GraphQL `consumptionDataByMpxn` fallback.
+  - (The GraphQL `consumptionDataByMpxn` fallback was removed from the Kraken
+    API and is no longer part of the chain.)
 - EV:
   - Device discovery from account data.
   - Schedule retrieval via smart charging GraphQL query.
@@ -50,7 +51,7 @@ Core outcomes:
 ## Home Assistant Expectations
 
 - Re-auth should be triggered through `ConfigEntryAuthFailed` for auth failures.
-- Platform setup should use config-entry forwarding (`PLATFORMS = ["sensor"]` currently).
+- Platform setup should use config-entry forwarding (`PLATFORMS = ["sensor", "binary_sensor", "event"]`).
 - Sensor semantics (device class, state class, units) must remain coherent for Energy Dashboard behavior.
 - Recorder/statistics usage must avoid duplicate or regressive external statistics imports.
 

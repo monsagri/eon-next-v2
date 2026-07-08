@@ -32,7 +32,7 @@ class EonNextSummaryCard extends LitElement {
     getDashboardSummary(h)
   )
 
-  private _sparklineFetched = false
+  private _sparklineDataRef: unknown = undefined
 
   setConfig(config: SummaryCardConfig): void {
     this._config = { show_gas: true, show_ev: true, show_costs: true, ...config }
@@ -43,13 +43,15 @@ class EonNextSummaryCard extends LitElement {
   }
 
   updated() {
-    if (this.hass && this._data.data && !this._sparklineFetched) {
+    // Re-fetch sparklines whenever the summary data is (re)loaded, not just
+    // once per element lifetime — the controller now refreshes periodically.
+    if (this.hass && this._data.data && this._data.data !== this._sparklineDataRef) {
+      this._sparklineDataRef = this._data.data
       this._fetchSparklines()
     }
   }
 
   private async _fetchSparklines() {
-    this._sparklineFetched = true
     const meters = this._data.data?.meters ?? []
     const meterPromises = meters
       .filter((meter) => meter.serial)

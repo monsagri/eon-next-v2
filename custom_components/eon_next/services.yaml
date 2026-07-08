@@ -56,3 +56,11 @@ update_cost_tracker:
       required: true
       selector:
         boolean:
+
+remove_cost_tracker:
+  name: Remove Cost Tracker
+  description: Delete one or more cost trackers and their sensor entities.
+  target:
+    entity:
+      integration: eon_next
+      domain: sensor

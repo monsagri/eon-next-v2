@@ -223,3 +223,46 @@ async def test_reauth_updates_entry(
     assert result["reason"] == "reauth_successful"
     assert entry.data[CONF_PASSWORD] == "newpass"
     assert entry.data[CONF_REFRESH_TOKEN] == "fresh-rt"
+
+
+async def test_reauth_rejects_different_account(
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Re-auth with a different account's email aborts on unique_id mismatch."""
+    del enable_custom_integrations
+    await _ensure_recorder(hass)
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="user@example.com",
+        data={
+            CONF_EMAIL: "user@example.com",
+            CONF_PASSWORD: "old",
+            CONF_REFRESH_TOKEN: "old-rt",
+        },
+    )
+    entry.add_to_hass(hass)
+
+    monkeypatch.setattr(
+        hass.config_entries, "async_schedule_reload", lambda *a, **k: None, raising=False
+    )
+
+    with _patch_api(_FakeFlowApi(token="fresh-rt")):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id},
+            data=entry.data,
+        )
+        assert result["step_id"] == "reauth_confirm"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_EMAIL: "other@example.com", CONF_PASSWORD: "newpass"},
+        )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "reauth_account_mismatch"
+    # Original entry is untouched.
+    assert entry.data[CONF_EMAIL] == "user@example.com"
+    assert entry.data[CONF_PASSWORD] == "old"

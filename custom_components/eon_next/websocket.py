@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -35,6 +35,19 @@ from .statistics import statistic_id_for_meter
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _utc_boundary_iso(day: date) -> str:
+    """Local midnight of *day* as a UTC ISO 8601 timestamp.
+
+    Formatting a local date with a literal ``Z`` labels a local midnight as
+    UTC, shifting the requested window by the local offset (an hour off during
+    BST — daily buckets then straddle days / include partial days).
+    """
+    return (
+        dt_util.as_utc(dt_util.start_of_local_day(day)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+
+
 WS_CONSUMPTION_HISTORY_SCHEMA = {
     vol.Required("type"): "eon_next/consumption_history",
     vol.Required("meter_serial"): str,
@@ -43,7 +56,12 @@ WS_CONSUMPTION_HISTORY_SCHEMA = {
 
 
 def async_setup_websocket(hass: HomeAssistant) -> None:
-    """Register all EON Next WebSocket commands."""
+    """Register all EON Next WebSocket commands.
+
+    These commands are intentionally not admin-gated (matching the panel's
+    ``require_admin=False``): any authenticated HA user can read their own
+    account's meters, tariffs and consumption via the dashboard/cards.
+    """
     websocket_api.async_register_command(hass, ws_version)
     websocket_api.async_register_command(hass, ws_dashboard_summary)
     websocket_api.async_register_command(hass, ws_consumption_history)
@@ -70,13 +88,17 @@ def ws_version(
 @websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
     {vol.Required("type"): "eon_next/dashboard_summary"}
 )
-@websocket_api.async_response  # pyright: ignore[reportPrivateImportUsage]
-async def ws_dashboard_summary(
+@callback
+def ws_dashboard_summary(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
     msg: dict[str, Any],
 ) -> None:
-    """Return an aggregated summary of all meters and EV chargers."""
+    """Return an aggregated summary of all meters and EV chargers.
+
+    Reads only in-memory coordinator data, so it's a synchronous ``@callback``
+    (no task spawn per call).
+    """
     meters: list[MeterSummary] = []
     ev_chargers: list[EvChargerSummary] = []
 
@@ -299,8 +321,8 @@ async def _entries_from_rest(
         return []
 
     today = dt_util.now().date()
-    period_to = f"{(today + timedelta(days=1)).isoformat()}T00:00:00Z"
-    period_from = f"{(today - timedelta(days=days)).isoformat()}T00:00:00Z"
+    period_to = _utc_boundary_iso(today + timedelta(days=1))
+    period_from = _utc_boundary_iso(today - timedelta(days=days))
 
     entries: list[ConsumptionHistoryEntry] = []
     try:

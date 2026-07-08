@@ -70,7 +70,7 @@ class ConsumptionHistoryEntry:
 class ConsumptionHistoryResponse:
     """Response from ``eon_next/consumption_history``.
 
-    This command accepts ``meter_serial`` (str) and ``days`` (int, 1–30)
+    This command accepts ``meter_serial`` (str) and ``days`` (int, 1–365)
     as request parameters.  The typed API wrapper lives in
     ``frontend/src/api.ts``; the interface is auto-generated via
     ``WS_EXTRA_RESPONSE_TYPES``.

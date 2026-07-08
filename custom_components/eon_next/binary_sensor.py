@@ -5,11 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .models import EonNextConfigEntry
+from .tariff_entity import TariffBoundaryRefreshMixin
 from .tariff_helpers import get_off_peak_metadata, is_off_peak
 
 
@@ -44,7 +45,7 @@ class EonNextBinarySensorBase(CoordinatorEntity, BinarySensorEntity):
         return None
 
 
-class OffPeakBinarySensor(EonNextBinarySensorBase):
+class OffPeakBinarySensor(TariffBoundaryRefreshMixin, EonNextBinarySensorBase):
     """Binary sensor indicating whether the current rate period is off-peak.
 
     On for off-peak windows, off for peak/standard periods, and
@@ -55,28 +56,30 @@ class OffPeakBinarySensor(EonNextBinarySensorBase):
         super().__init__(coordinator, meter.serial)
         self._attr_name = f"{meter.serial} Off Peak"
         self._attr_unique_id = f"{meter.serial}__off_peak"
+        self._is_tou = False
+        self._off_peak: bool | None = None
+
+    @callback
+    def _recompute_tariff_state(self) -> None:
+        # Compute once per write instead of scanning the schedule three times
+        # (available/is_on/icon) — which could also disagree across a boundary.
+        data = self._meter_data
+        self._is_tou = bool(data.get("tariff_is_tou", False)) if data else False
+        self._off_peak = is_off_peak(data) if data else None
 
     @property
     def available(self) -> bool:
         if not super().available or self._meter_data is None:
             return False
-        data = self._meter_data
-        if not data.get("tariff_is_tou", False):
-            return False
-        return is_off_peak(data) is not None
+        return self._is_tou and self._off_peak is not None
 
     @property
     def is_on(self) -> bool | None:
-        data = self._meter_data
-        if not data:
-            return None
-        return is_off_peak(data)
+        return self._off_peak
 
     @property
     def icon(self) -> str:
-        if self.is_on:
-            return "mdi:clock-fast"
-        return "mdi:clock-outline"
+        return "mdi:clock-fast" if self._off_peak else "mdi:clock-outline"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

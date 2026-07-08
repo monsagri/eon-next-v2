@@ -257,6 +257,7 @@ class TestOffPeakBinarySensor:
         data = _tou_meter_data()
         coord = _make_coordinator({meter.serial: data})
         sensor = OffPeakBinarySensor(coord, meter)
+        sensor._recompute_tariff_state()
         assert sensor.available is True
 
     def test_is_on_returns_true_during_off_peak(self) -> None:
@@ -265,6 +266,7 @@ class TestOffPeakBinarySensor:
         coord = _make_coordinator({meter.serial: data})
         sensor = OffPeakBinarySensor(coord, meter)
         with _patch_utcnow():
+            sensor._recompute_tariff_state()
             assert sensor.is_on is True
 
     def test_is_on_returns_false_during_peak(self) -> None:
@@ -273,6 +275,7 @@ class TestOffPeakBinarySensor:
         coord = _make_coordinator({meter.serial: data})
         sensor = OffPeakBinarySensor(coord, meter)
         with patch("homeassistant.util.dt.utcnow", return_value=_REF_UTC.replace(hour=6)):
+            sensor._recompute_tariff_state()
             assert sensor.is_on is False
 
     def test_extra_state_attributes_include_tariff_code(self) -> None:

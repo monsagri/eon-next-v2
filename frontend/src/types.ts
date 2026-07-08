@@ -12,6 +12,8 @@ export interface HomeAssistant {
   themes: { darkMode: boolean }
   language: string
   locale: HassLocale
+  /** The active WebSocket connection; its identity changes on reconnect. */
+  connection?: unknown
 }
 
 export interface HassEntity {

@@ -46,17 +46,23 @@ class EonNextCoordinator(DataUpdateCoordinator):
         data: dict[str, dict[str, Any]] = {}
         errors: list[str] = []
         balances = await self._fetch_account_balances()
-        balance_updated_at = dt_util.utcnow().isoformat()
+        # Only stamp a fresh timestamp when balances were actually fetched;
+        # re-publishing a stale balance with "now" misrepresents its freshness.
+        balance_updated_at = (
+            dt_util.utcnow().isoformat() if balances is not None else None
+        )
 
         for account in self.api.accounts:
             account_key = f"account::{account.account_number}"
             if balances and account.account_number in balances:
                 account.balance = balances[account.account_number]
+            prev_account = self.data.get(account_key, {}) if self.data else {}
             data[account_key] = {
                 "type": "account",
                 "account_number": account.account_number,
                 "balance": self._pence_to_pounds(account.balance),
-                "last_updated": balance_updated_at,
+                "last_updated": balance_updated_at
+                or prev_account.get("last_updated"),
             }
 
             account_tariffs = await self._fetch_tariff_data(account)
@@ -150,13 +156,6 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                     meter.serial,
                                     err,
                                 )
-
-                    cost_data = await self._fetch_daily_costs(meter)
-                    if cost_data:
-                        meter_data["standing_charge"] = cost_data["standing_charge"]
-                        meter_data["previous_day_cost"] = cost_data["total_cost"]
-                        meter_data["cost_period"] = cost_data["period"]
-                        meter_data["unit_rate"] = cost_data.get("unit_rate")
 
                     tariff = (
                         account_tariffs.get(meter.supply_point_id)
@@ -253,49 +252,45 @@ class EonNextCoordinator(DataUpdateCoordinator):
                                     4,
                                 )
                                 yesterday = (
-                                    dt_util.now() - timedelta(days=1)
-                                ).date()
+                                    dt_util.now().date() - timedelta(days=1)
+                                )
                                 meter_data["cost_period"] = yesterday.isoformat()
 
                     # Final fallback: retain previous cost values for any
                     # fields still None to avoid flipping sensors to
-                    # "unknown" on transient failures.
-                    if not cost_data:
-                        prev = self.data.get(meter_key, {}) if self.data else {}
-                        _cost_keys = (
-                            "standing_charge",
-                            "previous_day_cost",
-                            "cost_period",
-                            "unit_rate",
+                    # "unknown" on transient failures.  Cost fields are all
+                    # derived from tariff + consumption above (there is no
+                    # dedicated cost endpoint), so this always runs.
+                    prev = self.data.get(meter_key, {}) if self.data else {}
+                    _cost_keys = (
+                        "standing_charge",
+                        "previous_day_cost",
+                        "cost_period",
+                        "unit_rate",
+                    )
+                    retained = False
+                    for k in _cost_keys:
+                        if meter_data.get(k) is None and prev.get(k) is not None:
+                            meter_data[k] = prev[k]
+                            retained = True
+                    if retained:
+                        _LOGGER.debug(
+                            "No new cost data for meter %s; "
+                            "retaining previous values for unfilled fields",
+                            meter.serial,
                         )
-                        retained = False
-                        for k in _cost_keys:
-                            if (
-                                meter_data.get(k) is None
-                                and prev.get(k) is not None
-                            ):
-                                meter_data[k] = prev[k]
-                                retained = True
-                        if retained:
+                    elif not any(
+                        meter_data.get(k) is not None for k in _cost_keys
+                    ):
+                        if meter.serial not in self._cost_warning_logged:
                             _LOGGER.debug(
-                                "No new cost data for meter %s; "
-                                "retaining previous values for "
-                                "unfilled fields",
+                                "No cost data available for meter %s — "
+                                "standing charge, previous day cost, and "
+                                "unit rate sensors will show as unknown "
+                                "until a cost data source becomes available",
                                 meter.serial,
                             )
-                        elif not any(
-                            meter_data.get(k) is not None for k in _cost_keys
-                        ):
-                            if meter.serial not in self._cost_warning_logged:
-                                _LOGGER.debug(
-                                    "No cost data available for meter %s — "
-                                    "standing charge, previous day cost, and "
-                                    "unit rate sensors will show as unknown "
-                                    "until a cost data source becomes "
-                                    "available",
-                                    meter.serial,
-                                )
-                                self._cost_warning_logged.add(meter.serial)
+                            self._cost_warning_logged.add(meter.serial)
 
                     if consumption is None:
                         prev = self.data.get(meter_key, {}) if self.data else {}
@@ -396,20 +391,6 @@ class EonNextCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Account balance refresh failed: %s", err)
             return None
 
-    async def _fetch_daily_costs(self, meter) -> dict[str, Any] | None:
-        """Fetch daily cost data for the most recent complete day."""
-        try:
-            return await self.api.async_get_daily_costs(meter.supply_point_id)
-        except EonNextAuthError:
-            raise
-        except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.warning(
-                "Daily cost data unavailable for meter %s: %s",
-                meter.serial,
-                err,
-            )
-            return None
-
     async def _fetch_consumption(
         self, meter
     ) -> tuple[list[dict[str, Any]] | None, str | None]:
@@ -423,9 +404,10 @@ class EonNextCoordinator(DataUpdateCoordinator):
         data into external statistics: today's partial daily bucket would be
         double-counted once the half-hourly hours become available.
         """
-        # Try half-hourly data first.  Fetch two full days (96 slots) so
-        # that yesterday's data is always complete even when today's entries
-        # have started arriving, which is needed for the previous-day cost
+        # Try half-hourly data first.  Fetch a little over two full days (100
+        # slots) so that yesterday's data is always complete even when today's
+        # entries have started arriving and even on the autumn clocks-back day
+        # (50 half-hour slots), which is needed for the previous-day cost
         # calculation.
         try:
             result = await self.api.async_get_consumption(
@@ -433,7 +415,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                 meter.supply_point_id,
                 meter.serial,
                 group_by="half_hour",
-                page_size=96,
+                page_size=100,
             )
             if result and "results" in result and len(result["results"]) > 0:
                 return result["results"], "half_hour"
@@ -566,7 +548,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         higher threshold (e.g. 44) when the result feeds a cost
         calculation to avoid under-reporting from incomplete data.
         """
-        yesterday = (dt_util.now() - timedelta(days=1)).date()
+        yesterday = dt_util.now().date() - timedelta(days=1)
 
         total = 0.0
         count = 0
@@ -604,7 +586,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         consumption_results: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Return yesterday kWh total and contributing entry count."""
-        yesterday = (dt_util.now() - timedelta(days=1)).date()
+        yesterday = dt_util.now().date() - timedelta(days=1)
         total = 0.0
         count = 0
 
@@ -642,7 +624,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
         consumption_results: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         """Return the raw consumption entries that fall on yesterday (local)."""
-        yesterday = (dt_util.now() - timedelta(days=1)).date()
+        yesterday = dt_util.now().date() - timedelta(days=1)
         entries: list[dict[str, Any]] = []
         for entry in consumption_results:
             interval_start = entry.get("interval_start") or ""
@@ -657,14 +639,14 @@ class EonNextCoordinator(DataUpdateCoordinator):
 
     @staticmethod
     def _yesterday_midnight_iso() -> str:
-        """Return yesterday's local midnight in ISO 8601 format."""
-        yesterday_midnight = (dt_util.now() - timedelta(days=1)).replace(
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
-        )
-        return yesterday_midnight.isoformat()
+        """Return yesterday's local midnight in ISO 8601 format.
+
+        Uses ``start_of_local_day`` on yesterday's date so the correct UTC
+        offset for *that* day is applied (reusing today's offset via
+        ``replace()`` is wrong across a DST transition).
+        """
+        yesterday = dt_util.now().date() - timedelta(days=1)
+        return dt_util.start_of_local_day(yesterday).isoformat()
 
     @staticmethod
     def _schedule_slots(schedule: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
