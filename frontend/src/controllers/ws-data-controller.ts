@@ -29,6 +29,14 @@ export class WsDataController<T> implements ReactiveController {
   private _requestSeq = 0
   private _timer: ReturnType<typeof setInterval> | undefined
   private _lastConnection: unknown = undefined
+  /**
+   * Latch set synchronously once the first fetch is kicked off. Guards against
+   * `hostUpdated` re-entering `_fetch` while the initial request is still in
+   * flight — each `_fetch` calls `requestUpdate()`, which re-runs `hostUpdated`
+   * before `data` is populated, so a `data === null` guard would spawn an
+   * unbounded storm of WebSocket requests and overload the connection.
+   */
+  private _started = false
 
   constructor(
     private readonly _host: ReactiveControllerHost & { hass?: HomeAssistant },
@@ -44,7 +52,10 @@ export class WsDataController<T> implements ReactiveController {
   hostUpdated(): void {
     const hass = this._host.hass
     if (!hass) return
-    if (this.data === null && !this.refreshing) {
+    if (!this._started) {
+      // Kick off the one-and-only initial fetch. The latch flips synchronously
+      // so the re-render triggered by `_fetch` doesn't re-enter here.
+      this._started = true
       this._fetch(hass)
     } else if (this._lastConnection !== hass.connection) {
       // HA reconnected (new connection object) — refresh against it.
@@ -111,5 +122,6 @@ export class WsDataController<T> implements ReactiveController {
     this.loading = true
     this.refreshing = false
     this._lastConnection = undefined
+    this._started = false
   }
 }
