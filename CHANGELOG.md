@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.9.3](https://github.com/monsagri/eon-next-v2/compare/v1.9.2...v1.9.3) (2026-07-09)
+
+
+### Bug Fixes
+
+* **tariff:** fall back to pattern when no schedule window is current ([173b53a](https://github.com/monsagri/eon-next-v2/commit/173b53a16eca4481dc63da92cc24b022b3ae0ea0))
+
 ## [1.9.2](https://github.com/monsagri/eon-next-v2/compare/v1.9.1...v1.9.2) (2026-07-08)
 
 
