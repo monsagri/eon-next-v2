@@ -1,4 +1,4 @@
 basedpyright
 pytest
 pytest-asyncio
-pytest-homeassistant-custom-component>=0.13.313
+pytest-homeassistant-custom-component>=0.13.316

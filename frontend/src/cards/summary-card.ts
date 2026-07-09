@@ -118,34 +118,42 @@ class EonNextSummaryCard extends LitElement {
         ${electricity.map((m) =>
           this._renderMeterSection(m, 'Electricity', 'mdi:flash', showCosts)
         )}
-        ${showGas
-          ? gas.map((m) => this._renderMeterSection(m, 'Gas', 'mdi:fire', showCosts))
-          : nothing}
-        ${showEv && ev_chargers.length > 0
-          ? html`<div class="meter-section">
-              <div class="meter-label">
-                <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 16px;"></ha-icon>
-                EV Charging
-              </div>
-              ${ev_chargers.map(
-                (ev) => html`
-                  <div class="stat-row">
-                    <span class="stat-label">Status</span>
-                    <span>${ev.schedule_slots > 0 ? 'Scheduled' : 'Idle'}</span>
-                  </div>
-                  ${ev.next_charge_start
-                    ? html`<div class="stat-row">
-                        <span class="stat-label">Next charge</span>
-                        <span>${formatDateTime(ev.next_charge_start)}</span>
-                      </div>`
-                    : nothing}
-                `
-              )}
-            </div>`
-          : nothing}
-        ${!meters.length && !ev_chargers.length
-          ? html`<div class="empty-notice">No data available</div>`
-          : nothing}
+        ${
+          showGas
+            ? gas.map((m) => this._renderMeterSection(m, 'Gas', 'mdi:fire', showCosts))
+            : nothing
+        }
+        ${
+          showEv && ev_chargers.length > 0
+            ? html`<div class="meter-section">
+                <div class="meter-label">
+                  <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 16px;"></ha-icon>
+                  EV Charging
+                </div>
+                ${ev_chargers.map(
+                  (ev) => html`
+                    <div class="stat-row">
+                      <span class="stat-label">Status</span>
+                      <span>${ev.schedule_slots > 0 ? 'Scheduled' : 'Idle'}</span>
+                    </div>
+                    ${
+                      ev.next_charge_start
+                        ? html`<div class="stat-row">
+                            <span class="stat-label">Next charge</span>
+                            <span>${formatDateTime(ev.next_charge_start)}</span>
+                          </div>`
+                        : nothing
+                    }
+                  `
+                )}
+              </div>`
+            : nothing
+        }
+        ${
+          !meters.length && !ev_chargers.length
+            ? html`<div class="empty-notice">No data available</div>`
+            : nothing
+        }
       </ha-card>
     `
   }
@@ -172,36 +180,46 @@ class EonNextSummaryCard extends LitElement {
           ${label}
         </div>
 
-        ${meter.daily_consumption != null
-          ? html`<div class="stat-row">
-              <span class="stat-label">Today</span>
-              <span>${meter.daily_consumption} kWh</span>
-            </div>`
-          : nothing}
-        ${showCosts && todayCost != null
-          ? html`<div class="stat-row">
-              <span class="stat-label">Today's cost</span>
-              <span>£${todayCost.toFixed(2)}</span>
-            </div>`
-          : nothing}
-        ${showCosts && meter.previous_day_cost != null
-          ? html`<div class="stat-row">
-              <span class="stat-label">Yesterday cost</span>
-              <span>£${meter.previous_day_cost.toFixed(2)}</span>
-            </div>`
-          : nothing}
-        ${showCosts && meter.standing_charge != null
-          ? html`<div class="stat-row">
-              <span class="stat-label">Standing charge</span>
-              <span>£${meter.standing_charge.toFixed(2)}/day</span>
-            </div>`
-          : nothing}
-        ${sparklineData && sparklineData.length >= 2
-          ? html`<eon-sparkline-chart
-              .values=${sparklineData}
-              .color=${sparklineColor}
-            ></eon-sparkline-chart>`
-          : nothing}
+        ${
+          meter.daily_consumption != null
+            ? html`<div class="stat-row">
+                <span class="stat-label">Today</span>
+                <span>${meter.daily_consumption} kWh</span>
+              </div>`
+            : nothing
+        }
+        ${
+          showCosts && todayCost != null
+            ? html`<div class="stat-row">
+                <span class="stat-label">Today's cost</span>
+                <span>£${todayCost.toFixed(2)}</span>
+              </div>`
+            : nothing
+        }
+        ${
+          showCosts && meter.previous_day_cost != null
+            ? html`<div class="stat-row">
+                <span class="stat-label">Yesterday cost</span>
+                <span>£${meter.previous_day_cost.toFixed(2)}</span>
+              </div>`
+            : nothing
+        }
+        ${
+          showCosts && meter.standing_charge != null
+            ? html`<div class="stat-row">
+                <span class="stat-label">Standing charge</span>
+                <span>£${meter.standing_charge.toFixed(2)}/day</span>
+              </div>`
+            : nothing
+        }
+        ${
+          sparklineData && sparklineData.length >= 2
+            ? html`<eon-sparkline-chart
+                .values=${sparklineData}
+                .color=${sparklineColor}
+              ></eon-sparkline-chart>`
+            : nothing
+        }
       </div>
     `
   }

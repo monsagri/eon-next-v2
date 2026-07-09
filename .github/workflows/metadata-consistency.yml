@@ -13,7 +13,7 @@ jobs:
   release-metadata:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check release metadata version consistency
         run: python3 .github/scripts/check_release_metadata.py
       - name: Check hassfest compliance

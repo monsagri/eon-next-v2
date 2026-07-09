@@ -28,7 +28,7 @@ jobs:
       # zip root) so HACS extracts them straight into custom_components/eon_next/.
       - name: Check out release commit
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build and attach HACS zip asset
         if: ${{ steps.release.outputs.release_created }}
