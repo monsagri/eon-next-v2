@@ -24,7 +24,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-lit": "^2.2.1",
     "eslint-plugin-wc": "^2.2.1",
-    "globals": "^15.15.0",
+    "globals": "^17.7.0",
     "prettier": "^3.8.1",
     "rollup": "^4.31.0",
     "rollup-plugin-lit-css": "^6.0.0",
