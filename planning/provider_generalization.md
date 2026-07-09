@@ -1,7 +1,8 @@
 # Generalising the app across energy providers
 
 Date: 2026-07-09
-Status: Evaluation / architecture proposal (no code changes)
+Status: Evaluation / architecture proposal (no code changes). Targets a 2.0
+milestone (redesigned dashboard + multi-provider framework).
 Scope: Assess whether the E.ON Next integration + redesigned dashboard (PR #80,
 branch `claude/eon-next-dashboard-redesign-h2fogg`) can be generalised into a
 reusable, multi-provider framework with one shared design, and describe the
@@ -33,7 +34,11 @@ same UI reskins per provider. The normalised contract (`DashboardSummary` /
 natural "port" every provider adapter targets.
 
 Two viable architectures are described below; the recommended one is a **single
-multi-provider integration** with a provider-selection step in the config flow.
+multi-provider integration** with a provider-selection step in the config flow -
+crucially, **the HA `domain` stays `eon_next` and is never renamed** (§4), so
+existing users carry over with zero migration and zero lost history. This lands
+naturally as a **2.0 release** (§4a): a major *milestone*, but additive rather
+than breaking.
 
 ---
 
@@ -224,36 +229,114 @@ from any single provider and removes the fragile per-render entity scanning.
 
 ---
 
-## 4. The Home Assistant domain constraint
+## 4. The Home Assistant domain question - don't rename the domain
 
-HA ties entity `unique_id`s and long-term-statistic ids to a fixed integration
-`domain`. `eon_next` is baked into statistic ids (`eon_next:electricity_…`),
-storage keys, the WS command namespace (`eon_next/*`) and the panel URL. This is
-the one genuinely structural decision, and it forks into two architectures:
+This is the one genuinely structural decision, and the answer is
+counter-intuitive: **keep the existing `eon_next` domain frozen and never
+rename it.** The domain is an internal slug, not user-facing branding, and
+renaming it is a hard breaking migration with no first-class support in HA.
+
+### Why a domain rename is the thing to avoid
+
+HA ties three things to the integration `domain`, and none migrate cleanly
+across a rename:
+
+1. **Config entries.** HA's `async_migrate_entry` only migrates an entry's
+   *format/version within the same domain*. There is no supported path to move
+   config entries to a *different* domain - users would have to delete and
+   re-add the integration.
+2. **Entity registry.** Entities are keyed by `(platform=domain, unique_id)`. A
+   new domain means new registry rows and new `entity_id`s by default, so every
+   history/automation reference detaches unless each id is hand-preserved.
+   (CLAUDE.md / `docs/ai/conventions.md` already make `unique_id` stability
+   non-negotiable.)
+3. **Long-term statistics.** External statistic ids are literally
+   `eon_next:<name>` (`statistics.py:59`). Renaming an *entity_id* auto-updates
+   its statistic id (and even that has known bugs that orphan LTS); changing the
+   *domain* is not handled at all. Recovery is manual recorder-API / SQL surgery,
+   not a migration users should ever run.
+
+The WS command namespace (`eon_next/*`) and panel URL are also domain-derived,
+but those are cosmetic and internal.
+
+### The move: freeze the slug, rebrand around it
+
+Users never really see the domain - it only appears buried inside `entity_id`s.
+What they see is `manifest.json`'s `"name"`, the config-entry title, and the
+panel branding. So:
+
+- Keep the domain `eon_next` forever (or accept it as an opaque id).
+- Change the **display name / config-entry title / panel branding** per provider
+  and add the **provider-selection step** to the config flow (§3a).
+- **Existing E.ON users: zero disruption** - no migration, no lost statistics,
+  no re-onboarding.
+- **New Octopus (etc.) users:** pick their provider at setup; their
+  entities/stats sit under the `eon_next` slug internally but read as their
+  provider everywhere in the UI.
+
+The only cost is a cosmetically legacy domain string - extremely common in HA,
+where many integrations kept their original slug through rebrands. It is a wart,
+not a problem.
+
+### Two architectures (and the repo/HACS implication)
 
 **Option A - one multi-provider integration (recommended).**
-Keep a single, stable HA `domain` (e.g. `eon_next` retained for continuity, or a
-new neutral `kraken_energy`), add a **provider-selection step** to the config
-flow that picks the descriptor → base URL/branding. One codebase, one HACS
-entry, one panel that reskins per config entry.
-- Pros: least code, shared bug-fixes, users can run E.ON + Octopus side by side
-  as two config entries, the normalised contract does all the work.
-- Cons: the domain string no longer matches the brand; existing E.ON users must
-  not have their `unique_id`s/statistics change (see §6). Renaming the domain
-  away from `eon_next` would be a breaking migration - avoid unless necessary.
+Single frozen HA `domain`, provider-selection step in the config flow picks the
+descriptor → base URL/branding. One codebase, one repo, one HACS entry, one
+panel that reskins per config entry.
+- Pros: least code; shared bug-fixes; users can run E.ON + Octopus side by side
+  as two config entries; the normalised contract does all the work; **no new
+  repo and no migration** - existing users are untouched.
+- Cons: the domain slug no longer matches the brand (cosmetic only).
 
 **Option B - shared library + thin per-provider integrations.**
 Extract the Kraken client + contract + dashboard into an installable package;
-ship `eon_next`, `octopus_kraken`, … as slim integrations that each pin a
-descriptor and their own domain.
+ship `eon_next`, `octopus_kraken`, … as slim integrations, each pinning a
+descriptor and its own domain.
 - Pros: each brand keeps its own domain/HACS listing/identity; cleanest per-brand
   statistics namespacing.
-- Cons: much heavier (packaging, versioning, N HACS repos, N release trains);
-  the frontend bundle must be shared or duplicated.
+- Cons: much heavier. **HACS distributes one integration per repository**, so
+  this means either N separate repos or a monorepo publishing a shared library to
+  PyPI plus N thin integration repos - N HACS listings, N release trains, and the
+  frontend bundle shared or duplicated. And a brand-new domain still can't adopt
+  existing E.ON users without the breaking migration above.
+
+**"Fresh repo for a new integration?"** Only under Option B. Option A is *not* a
+new integration - it stays this repo, this domain. A fresh repo/domain is only
+worth it if a clean per-brand identity ever becomes a hard product requirement,
+and even then it should ship as an opt-in "start fresh" install *alongside* the
+legacy integration, never as a forced switch.
 
 Recommendation: **Option A.** It delivers "reusable for many providers" with the
-least surface area, and the existing normalised contract makes it natural. Revisit
-Option B only if per-brand HACS identity becomes a hard product requirement.
+least surface area and keeps every existing user with zero history loss.
+
+---
+
+## 4a. Release framing: this is the 2.0
+
+The redesigned dashboard (PR #80) plus the multi-provider framework is a natural
+**2.0 milestone** - a major visual + capability leap. One nuance to plan for:
+
+- **SemVer vs. milestone.** If we follow Option A and keep the domain frozen,
+  the changes are *additive and non-breaking* for existing users (new provider
+  support, a rebuilt UI). Under Conventional Commits / release-please that
+  computes to a **minor** bump, not a major. There is no actual breaking change
+  to justify `2.0.0` semantically.
+- **Publishing it as 2.0 anyway.** A "2.0" here is a product/marketing milestone,
+  which is legitimate for a redesign of this scale. To land it, use release-please's
+  `Release-As: 2.0.0` commit footer on the release-triggering commit rather than
+  fabricating a `BREAKING CHANGE:` - keep the changelog honest about what did and
+  didn't break.
+- **If any genuine break sneaks in** (e.g. a `unique_id` change, an entity rename,
+  a dropped service), that *does* warrant a real major and **must** carry a
+  migration plan + release note per the guardrails. The whole point of Option A is
+  to avoid needing one.
+- **Metadata lockstep still applies:** `manifest.json` version == top
+  `CHANGELOG.md` version == `.release-please-manifest.json`, enforced by CI.
+
+Practically: sequence the phased roadmap (§5) as the 2.0 line, ship phases 1-4
+behind the frozen domain, and cut `2.0.0` when the first second provider (phase 5)
+proves the framework end-to-end.
 
 ---
 
