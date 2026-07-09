@@ -2,7 +2,7 @@
 
 # E.ON Next for Home Assistant
 
-A custom integration that brings your E.ON Next electricity, gas and EV‑charging data into Home Assistant — with a purpose‑built **dashboard app** in the sidebar, Energy Dashboard integration, tariff‑aware sensors, and Lovelace cards.
+A custom integration that brings your E.ON Next electricity, gas and EV‑charging data into Home Assistant - with a purpose‑built **dashboard app** in the sidebar, Energy Dashboard integration, tariff‑aware sensors, and Lovelace cards.
 
 <br clear="left" />
 
@@ -13,22 +13,45 @@ A custom integration that brings your E.ON Next electricity, gas and EV‑chargi
 
 ## The EON Next dashboard
 
-After installation an **EON Next** entry appears in the Home Assistant sidebar (marked with the ⚡ lightning‑bolt brand). It opens a zero‑config dashboard app with a left‑nav page switcher. The design leads with **money and comparison** rather than a live "today" total, and keeps the **fixed daily standing charge visible everywhere** — consumption charts are stacked bars where energy used sits on top of the standing‑charge floor, so you can see what you pay before using anything.
+After installation an **EON Next** entry appears in the Home Assistant sidebar (marked with the ⚡ lightning‑bolt brand). It opens a zero‑config dashboard app with a left‑nav page switcher. The design leads with **money and comparison** rather than a live "today" total, and keeps the **fixed daily standing charge visible everywhere** - consumption charts are stacked bars where energy used sits on top of the standing‑charge floor, so you can see what you pay before using anything.
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-overview.png" width="880" alt="Overview page: month-to-date spend, per-fuel summary cards, tariff at a glance and meter health" />
+</p>
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/dashboard-electricity.png" alt="Electricity page" /><br />
+      <sub><b>Electricity / Gas</b> - stacked daily-cost chart with a 7d/30d/90d/1y range toggle and headline stats.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/dashboard-tariff.png" alt="Tariff and rates page" /><br />
+      <sub><b>Tariff &amp; rates</b> - current/previous/next rates and today's price shape.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/screenshots/dashboard-ev.png" alt="EV charging page" /><br />
+      <sub><b>EV charging</b> - smart-charge status and the half-hourly schedule strip.</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>Screenshots use sample data.</sub>
 
 | Page | What it shows |
 |---|---|
 | **Overview** | Month‑to‑date spend, a projected month‑end total vs last month, a usage‑vs‑standing‑charge split bar, per‑fuel summary cards with 7‑day mini charts, your tariff at a glance, and meter health. |
 | **Electricity** / **Gas** | A stacked daily‑cost chart (usage on top of the standing charge) with a 7d / 30d / 90d / 1y range toggle, headline stat cards (this month, yesterday, unit rate, standing charge), and the latest meter reading. |
-| **Tariff & rates** | Current / previous / next unit rates and standing charges, plus today's rate shape — flat, or shaded off‑peak windows for time‑of‑use tariffs. |
+| **Tariff & rates** | Current / previous / next unit rates and standing charges, plus today's rate shape - flat, or shaded off‑peak windows for time‑of‑use tariffs. |
 | **EV charging** | Smart‑charging status, the next scheduled charges, and a half‑hourly schedule strip. |
 | **Settings** | Where account, refresh‑interval and backfill controls live (managed from the integration options), plus historical‑backfill status. |
 
 Notes:
 
-- The panel uses data already fetched by the integration's coordinator — **no extra API calls**.
+- The panel uses data already fetched by the integration's coordinator - **no extra API calls**.
 - Consumption cost bars apply **today's** unit rate to historical usage (an approximation, surfaced as a footnote in the app), since the API exposes only current rates; standing‑charge segments use the fixed per‑day charge.
 - "Month to date" is a running total computed from daily consumption history; charts offer 7‑day, 30‑day, 90‑day and 1‑year ranges with adaptive labels.
-- Tapping the brand logo opens the Home Assistant sidebar, so you can always navigate away from the dashboard — including on phones and the iOS/Android Companion apps, where the panel fills the screen.
+- Tapping the brand logo opens the Home Assistant sidebar, so you can always navigate away from the dashboard - including on phones and the iOS/Android Companion apps, where the panel fills the screen.
 - The panel is enabled by default. To hide it, go to **Settings → Devices & Services → Eon Next → Configure** and disable "Show EON Next dashboard in sidebar".
 
 ## What this integration provides
@@ -44,28 +67,28 @@ Notes:
 
 - Daily standing charge sensor (inc VAT) for electricity and gas.
 - Previous‑day total cost sensor (inc VAT) for electricity and gas.
-- Current unit rate sensor (£/kWh, inc VAT) — compatible with the Energy Dashboard's "use an entity with current price" option.
+- Current unit rate sensor (£/kWh, inc VAT) - compatible with the Energy Dashboard's "use an entity with current price" option.
 - Current tariff name sensor with agreement metadata (code, type, validity period) and published unit rate.
 - Account balance sensor per account (£), refreshed on coordinator updates.
-- **Previous** and **next** unit‑rate sensors — the last/upcoming rate that differs from the current rate, enabling tariff‑aware automations (e.g. "run the dishwasher when the cheap rate starts").
-- **Off‑peak** binary sensor — `on` during off‑peak windows for time‑of‑use tariffs, `unavailable` for flat‑rate tariffs. The off‑peak sensor and the Current/Previous/Next unit‑rate sensors update exactly at each rate‑window boundary (not only on the 30‑minute poll), so boundary‑triggered automations fire on time.
-- **Current‑day rates** event entity — fires `rates_updated` when the day's schedule or tariff changes (and at midnight rollover), with today's full schedule (start, end, rate, `is_off_peak` per window) also exposed as a persistent `rates` attribute for template sensors.
-- **Export** unit‑rate and export daily‑consumption sensors — created automatically for detected export meters (solar/battery). Export meters get these dedicated Export sensors only, so they no longer show duplicate entity pairs.
+- **Previous** and **next** unit‑rate sensors - the last/upcoming rate that differs from the current rate, enabling tariff‑aware automations (e.g. "run the dishwasher when the cheap rate starts").
+- **Off‑peak** binary sensor - `on` during off‑peak windows for time‑of‑use tariffs, `unavailable` for flat‑rate tariffs. The off‑peak sensor and the Current/Previous/Next unit‑rate sensors update exactly at each rate‑window boundary (not only on the 30‑minute poll), so boundary‑triggered automations fire on time.
+- **Current‑day rates** event entity - fires `rates_updated` when the day's schedule or tariff changes (and at midnight rollover), with today's full schedule (start, end, rate, `is_off_peak` per window) also exposed as a persistent `rates` attribute for template sensors.
+- **Export** unit‑rate and export daily‑consumption sensors - created automatically for detected export meters (solar/battery). Export meters get these dedicated Export sensors only, so they no longer show duplicate entity pairs.
 
 ### Cost trackers
 
 Per‑device cost tracking with persistent storage, managed via services:
 
-- `eon_next.add_cost_tracker` — create a tracker for a selected power/energy entity and meter tariff.
-- `eon_next.reset_cost_tracker` — zero one or more trackers.
-- `eon_next.update_cost_tracker` — enable/disable one or more trackers.
-- `eon_next.remove_cost_tracker` — delete one or more trackers and their sensor entities.
+- `eon_next.add_cost_tracker` - create a tracker for a selected power/energy entity and meter tariff.
+- `eon_next.reset_cost_tracker` - zero one or more trackers.
+- `eon_next.update_cost_tracker` - enable/disable one or more trackers.
+- `eon_next.remove_cost_tracker` - delete one or more trackers and their sensor entities.
 
 Reset/update/remove accept device/area/label targets (not only entities) and reject entities that aren't E.ON Next cost trackers instead of silently doing nothing. The cost‑breakdown UI includes a tracker‑powered "tracked vs untracked usage (today)" view and a per‑tracker cost list when trackers exist for the selected meter.
 
 ### EV smart charging
 
-When SmartFlex devices are available: smart‑charging schedule status, next charge start/end, and second charge start/end — surfaced on the dashboard's **EV charging** page.
+When SmartFlex devices are available: smart‑charging schedule status, next charge start/end, and second charge start/end - surfaced on the dashboard's **EV charging** page.
 
 ### Energy Dashboard & statistics
 
@@ -83,14 +106,14 @@ When SmartFlex devices are available: smart‑charging schedule status, next cha
 
 Alongside the sidebar dashboard, the integration ships embeddable Lovelace cards for custom dashboards:
 
-- **EON Next Summary** (`custom:eon-next-summary-card`) — compact all‑in‑one overview.
-- **EON Next Consumption** (`custom:eon-next-consumption-card`) — daily consumption bar chart with a 7d/30d/90d/1y picker, missing days shown as zero, and an estimated daily‑cost overlay when tariff pricing is available.
-- **EON Next Cost Breakdown** (`custom:eon-next-consumption-breakdown-card`) — usage vs standing‑charge pie chart with day/week/month views.
-- **EON Next Costs** (`custom:eon-next-cost-card`) — today/yesterday costs, month‑to‑date running total, standing charge, and unit rate.
-- **EON Next Meter Reading** (`custom:eon-next-reading-card`) — latest reading, date, and tariff.
-- **EON Next EV Charger** (`custom:eon-next-ev-card`) — EV smart‑charging status and upcoming slots.
+- **EON Next Summary** (`custom:eon-next-summary-card`) - compact all‑in‑one overview.
+- **EON Next Consumption** (`custom:eon-next-consumption-card`) - daily consumption bar chart with a 7d/30d/90d/1y picker, missing days shown as zero, and an estimated daily‑cost overlay when tariff pricing is available.
+- **EON Next Cost Breakdown** (`custom:eon-next-consumption-breakdown-card`) - usage vs standing‑charge pie chart with day/week/month views.
+- **EON Next Costs** (`custom:eon-next-cost-card`) - today/yesterday costs, month‑to‑date running total, standing charge, and unit rate.
+- **EON Next Meter Reading** (`custom:eon-next-reading-card`) - latest reading, date, and tariff.
+- **EON Next EV Charger** (`custom:eon-next-ev-card`) - EV smart‑charging status and upcoming slots.
 
-All cards include visual config editors in the Lovelace card picker — no YAML required to set meter type, serial, or display options.
+All cards include visual config editors in the Lovelace card picker - no YAML required to set meter type, serial, or display options.
 
 The summary card is registered by default and appears in the card picker (storage mode). To disable it, go to **Settings → Devices & Services → Eon Next → Configure** and turn off "Register EON Next summary card for Lovelace dashboards". For YAML‑mode dashboards, add the resource manually:
 
@@ -153,14 +176,14 @@ In `1.2.0`, the `Daily Consumption` sensor state class changed to `total` and no
 
 Several sensors had invalid device‑class/state‑class combinations corrected to stop Home Assistant repair issues and spurious long‑term statistics:
 
-- The unit‑rate sensors (`Current`/`Previous`/`Next`/`Export Unit Rate`) no longer use the `monetary` device class — a `£/kWh` price is not an ISO‑4217 currency amount. They keep their value and unit; only the device class is removed.
+- The unit‑rate sensors (`Current`/`Previous`/`Next`/`Export Unit Rate`) no longer use the `monetary` device class - a `£/kWh` price is not an ISO‑4217 currency amount. They keep their value and unit; only the device class is removed.
 - `Standing Charge`, `Previous Day Cost`, and `Previous Day Consumption` no longer carry a `state_class`, as they are fixed fees or per‑day snapshots rather than cumulative totals. They stop generating long‑term statistics; old statistics can be recreated or deleted.
 
 On time‑of‑use tariffs (e.g. Next Drive), the `Current Unit Rate` sensor reports the rate for the current half‑hour window instead of the schedule average, `Previous Day Cost` prices each half‑hour against its own rate window, and cost trackers accrue at the live time‑of‑use rate. Expect these values to differ from earlier flat/average‑rate releases.
 
 The meter register‑reading sensors (`Electricity`, `Gas kWh`, `Gas`) use the `total_increasing` state class (a monotonic meter counter) and keep the reading's decimal precision instead of rounding to whole units. Older `total` long‑term statistics for these entities may need recreating.
 
-Export meters no longer create the generic `Daily Consumption` and `Current Unit Rate` sensors — they duplicated the dedicated `Export Daily Consumption` and `Export Unit Rate` sensors. On existing installs those two generic entities become unavailable for export meters and can be deleted from the entity registry.
+Export meters no longer create the generic `Daily Consumption` and `Current Unit Rate` sensors - they duplicated the dedicated `Export Daily Consumption` and `Export Unit Rate` sensors. On existing installs those two generic entities become unavailable for export meters and can be deleted from the entity registry.
 
 ## Development and releases
 
