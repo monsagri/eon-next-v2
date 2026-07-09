@@ -28,7 +28,7 @@ Notes:
 - The panel uses data already fetched by the integration's coordinator — **no extra API calls**.
 - Consumption cost bars apply **today's** unit rate to historical usage (an approximation, surfaced as a footnote in the app), since the API exposes only current rates; standing‑charge segments use the fixed per‑day charge.
 - "Month to date" is a running total computed from daily consumption history; charts offer 7‑day, 30‑day, 90‑day and 1‑year ranges with adaptive labels.
-- On phones (including the iOS/Android Companion apps) a menu button in the top bar opens the Home Assistant sidebar, so you can always navigate away from the dashboard.
+- Tapping the brand logo opens the Home Assistant sidebar, so you can always navigate away from the dashboard — including on phones and the iOS/Android Companion apps, where the panel fills the screen.
 - The panel is enabled by default. To hide it, go to **Settings → Devices & Services → Eon Next → Configure** and disable "Show EON Next dashboard in sidebar".
 
 ## What this integration provides
