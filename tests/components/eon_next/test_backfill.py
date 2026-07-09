@@ -99,6 +99,32 @@ def test_get_status_running_and_completed() -> None:
     assert status["pending_meters"] == 0
 
 
+def test_get_status_tolerates_incomplete_meter_state() -> None:
+    """A persisted meter entry missing done/next_start must not crash status.
+
+    _ensure_state_loaded copies the stored dict verbatim, so a partial write
+    or schema drift can leave an entry without these keys; get_status is read
+    by the diagnostic sensor and the dashboard status panel, so it must not
+    raise KeyError.
+    """
+    manager = _manager({CONF_BACKFILL_ENABLED: True}, [_meter("m1"), _meter("m2")])
+    manager._state = {
+        "initialized": True,
+        "rebuild_done": True,
+        "lookback_days": 3650,
+        "meters": {
+            # Entry present but missing both "done" and "next_start".
+            "m1": {},
+            "m2": {"next_start": _REF_DATE_ISO, "done": False},
+        },
+    }
+
+    status = manager.get_status()
+    # m1 (no next_start) is skipped for the earliest-pending calculation
+    # rather than raising, so m2's date wins.
+    assert status["next_start_date"] == _REF_DATE_ISO
+
+
 @pytest.mark.asyncio
 async def test_initialize_or_reset_progress_uses_lookback(monkeypatch) -> None:
     """Initialization should seed one cursor per meter using lookback setting."""

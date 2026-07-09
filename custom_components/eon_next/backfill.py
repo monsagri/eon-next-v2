@@ -277,7 +277,9 @@ class EonNextBackfillManager:
             pending_dates = [
                 str(meter_state[meter.serial]["next_start"])
                 for meter in meters
-                if meter.serial in meter_state and not meter_state[meter.serial]["done"]
+                if meter.serial in meter_state
+                and not meter_state[meter.serial].get("done", False)
+                and meter_state[meter.serial].get("next_start")
             ]
             if pending_dates:
                 next_start_date = min(pending_dates)
