@@ -6,3 +6,4 @@
 - [EON Next API Probe Log](./eon_next_api_probe_log.md)
 - [Feature Ideas](./feature_ideas.md)
 - [HACS Dashboard Plan](./hacs_dashboard_plan.md)
+- [Provider Generalisation (multi-provider architecture)](./provider_generalization.md)
