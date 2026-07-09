@@ -33,6 +33,7 @@
   padding: 4px 8px 26px;
 }
 
+/* Doubles as the sidebar toggle (see EonNextPanel._toggleSidebar). */
 .brand-logo {
   width: 38px;
   height: 38px;
@@ -42,6 +43,18 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.brand-logo:hover {
+  filter: brightness(1.08);
+}
+
+.brand-logo:focus-visible {
+  outline: 2px solid var(--eon-accent-on-dark);
+  outline-offset: 2px;
 }
 
 .brand-bolt {
@@ -169,15 +182,6 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-}
-
-/* Sidebar toggle — the only way back to the HA menu inside the iOS Companion
-   app, where the panel fills the webview. ha-menu-button hides itself when the
-   sidebar is already docked. */
-.menu-button {
-  --mdc-icon-button-size: 40px;
-  color: var(--eon-text);
-  margin-left: -8px;
 }
 
 .topbar-title {

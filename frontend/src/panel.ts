@@ -1,6 +1,5 @@
 import { LitElement, html, nothing } from 'lit'
 import { property, state } from 'lit/decorators.js'
-import type { PropertyValues } from 'lit'
 import { getDashboardSummary, getVersion } from './api'
 import { WsDataController } from './controllers/ws-data-controller'
 import {
@@ -64,7 +63,7 @@ class EonNextPanel extends LitElement {
     this._ensureFonts()
   }
 
-  updated(_changed: PropertyValues) {
+  updated() {
     // Track when fresh summary data arrives, for the "Updated …" label.
     if (this._summary.data && !this._summary.loading && !this._summary.refreshing) {
       if (!this._hadData) {
@@ -87,6 +86,18 @@ class EonNextPanel extends LitElement {
 
   private _navigate = (page: DashboardPage) => {
     this._page = page
+  }
+
+  /**
+   * Toggle the Home Assistant sidebar. `hass-toggle-menu` bubbles (composed)
+   * up to `home-assistant-main`, which owns the drawer — this is the same
+   * event `ha-menu-button` fires, so the brand logo is the panel's way back to
+   * the HA menu (notably inside the iOS/Android Companion apps).
+   */
+  private _toggleSidebar = () => {
+    this.dispatchEvent(
+      new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true })
+    )
   }
 
   private _onNavigateEvent = (e: CustomEvent<{ page: DashboardPage }>) => {
@@ -117,11 +128,22 @@ class EonNextPanel extends LitElement {
     return html`
       <nav class="rail" aria-label="Dashboard sections">
         <div class="brand">
-          <div class="brand-logo" aria-hidden="true">
-            <svg viewBox="0 0 48 48" class="brand-bolt" focusable="false">
+          <button
+            class="brand-logo"
+            type="button"
+            title="Toggle Home Assistant menu"
+            aria-label="Toggle Home Assistant menu"
+            @click=${this._toggleSidebar}
+          >
+            <svg
+              viewBox="0 0 48 48"
+              class="brand-bolt"
+              focusable="false"
+              aria-hidden="true"
+            >
               <path d="M27 4 11 27h11l-2 17 18-24H26z" fill="#fff" />
             </svg>
-          </div>
+          </button>
           <div>
             <div class="brand-name">EON Next</div>
             <div class="brand-sub mono">home energy</div>
@@ -173,11 +195,6 @@ class EonNextPanel extends LitElement {
     return html`
       <header class="topbar">
         <div class="topbar-left">
-          <ha-menu-button
-            class="menu-button"
-            .hass=${this.hass}
-            .narrow=${this.narrow}
-          ></ha-menu-button>
           <h1 class="serif topbar-title">${PAGE_TITLES[this._page]}</h1>
         </div>
         <div class="topbar-right">
