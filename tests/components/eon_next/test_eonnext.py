@@ -23,7 +23,7 @@ _FUTURE_ISO = (datetime.now(tz=timezone.utc) + timedelta(days=1)).isoformat()
 
 def _seed_valid_auth(api: EonNext) -> int:
     """Give the client a token that reads as valid locally. Returns 'now'."""
-    now = api._EonNext__current_timestamp()  # type: ignore[attr-defined]
+    now = api._KrakenClient__current_timestamp()  # type: ignore[attr-defined]
     api.auth = {
         "issued": now,
         "token": {"token": "jwt", "expires": now + 3600},
@@ -118,17 +118,17 @@ async def test_password_login_propagates_api_error_and_preserves_auth() -> None:
 def test_auth_token_margin_treats_soon_expiring_token_as_invalid() -> None:
     """A token expiring inside the safety margin is proactively refreshed."""
     api = EonNext()
-    now = api._EonNext__current_timestamp()  # type: ignore[attr-defined]
+    now = api._KrakenClient__current_timestamp()  # type: ignore[attr-defined]
 
     api.auth = {
         "issued": now,
         "token": {"token": "jwt", "expires": now + 30},  # < 60s margin
         "refresh": {"token": "r", "expires": now + 7200},
     }
-    assert api._EonNext__auth_token_is_valid() is False  # type: ignore[attr-defined]
+    assert api._KrakenClient__auth_token_is_valid() is False  # type: ignore[attr-defined]
 
     api.auth["token"]["expires"] = now + 120  # > 60s margin
-    assert api._EonNext__auth_token_is_valid() is True  # type: ignore[attr-defined]
+    assert api._KrakenClient__auth_token_is_valid() is True  # type: ignore[attr-defined]
 
 
 @pytest.mark.asyncio

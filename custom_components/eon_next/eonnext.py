@@ -11,7 +11,7 @@ from typing import Any
 
 import aiohttp
 
-from .const import API_BASE_URL
+from .providers import DEFAULT_PROVIDER_ID, ProviderDescriptor, get_provider
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,10 +145,16 @@ class SmartChargingDevice:
     serial: str
 
 
-class EonNext:
-    """API client for E.ON Next."""
+class KrakenClient:
+    """API client for a Kraken-platform energy provider.
 
-    def __init__(self):
+    The GraphQL queries, auth flow and REST endpoints are the standard Kraken
+    contract; the per-provider values (base URL, branding, market/currency
+    knobs) come from the :class:`ProviderDescriptor` passed at construction.
+    """
+
+    def __init__(self, provider: ProviderDescriptor | None = None):
+        self._provider = provider or get_provider(DEFAULT_PROVIDER_ID)
         self.username = ""
         self.password = ""
         self._session: aiohttp.ClientSession | None = None
@@ -156,6 +162,11 @@ class EonNext:
         self._on_token_update: Callable[[str], None] | None = None
         self.__reset_authentication()
         self.__reset_accounts()
+
+    @property
+    def provider(self) -> ProviderDescriptor:
+        """The provider descriptor this client is configured for."""
+        return self._provider
 
     def set_token_update_callback(
         self, callback: Callable[[str], None] | None
@@ -328,7 +339,7 @@ class EonNext:
             session = await self._get_session()
             try:
                 async with session.post(
-                    f"{API_BASE_URL}/graphql/",
+                    f"{self._provider.base_url}/graphql/",
                     json={"operationName": operation, "variables": variables, "query": query},
                     headers=headers,
                 ) as response:
@@ -534,10 +545,11 @@ class EonNext:
         if not supply_point_id:
             return None
 
+        base_url = self._provider.base_url
         if meter_type == METER_TYPE_ELECTRIC:
-            url = f"{API_BASE_URL}/electricity-meter-points/{supply_point_id}/meters/{serial}/consumption/"
+            url = f"{base_url}/electricity-meter-points/{supply_point_id}/meters/{serial}/consumption/"
         elif meter_type == METER_TYPE_GAS:
-            url = f"{API_BASE_URL}/gas-meter-points/{supply_point_id}/meters/{serial}/consumption/"
+            url = f"{base_url}/gas-meter-points/{supply_point_id}/meters/{serial}/consumption/"
         else:
             return None
 
@@ -753,12 +765,23 @@ class EonNext:
         return None
 
 
+class EonNext(KrakenClient):
+    """E.ON Next client - a :class:`KrakenClient` pinned to the E.ON provider.
+
+    Backwards-compatible shim so existing call sites (``EonNext()``) keep
+    working; new code can construct ``KrakenClient(provider)`` for any provider.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(get_provider(DEFAULT_PROVIDER_ID))
+
+
 class EnergyAccount:
     """Represents an energy account."""
 
     def __init__(
         self,
-        api: EonNext,
+        api: KrakenClient,
         account_number: str,
         balance: int | None = None,
     ):
@@ -1064,10 +1087,9 @@ class GasMeter(EnergyMeter):
 
     def get_latest_reading_kwh(self, m3_value: float) -> float:
         """Convert gas m3 reading to kWh."""
-        from .const import GAS_CALORIC_VALUE, GAS_VOLUME_CORRECTION
-
-        kwh = m3_value * GAS_VOLUME_CORRECTION
-        kwh = kwh * GAS_CALORIC_VALUE
+        provider = self.api.provider
+        kwh = m3_value * provider.gas_volume_correction
+        kwh = kwh * provider.gas_calorific_value
         kwh = kwh / 3.6
         # Keep sub-kWh precision (whole-kWh rounding loses real consumption on
         # small deltas).  Calorific value is a fixed approximation (38) - real

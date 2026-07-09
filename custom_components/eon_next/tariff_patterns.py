@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import time
 
@@ -54,8 +55,14 @@ def _segments_contain(haystack: list[str], needle: list[str]) -> bool:
     return False
 
 
-def get_tariff_pattern(tariff_code: str | None) -> TariffPattern | None:
+def get_tariff_pattern(
+    tariff_code: str | None,
+    patterns: Sequence[TariffPattern] | None = None,
+) -> TariffPattern | None:
     """Match a tariff code to a known pattern, or None for unknown/flat-rate.
+
+    *patterns* lets a caller supply a provider's own pattern set; when omitted
+    it falls back to the E.ON Next defaults (``KNOWN_TARIFF_PATTERNS``).
 
     Tariff codes are hyphen-delimited (e.g. ``E-1R-NEXT-DRIVE-...``).  The
     product prefix is matched against whole code segments rather than as a
@@ -66,8 +73,9 @@ def get_tariff_pattern(tariff_code: str | None) -> TariffPattern | None:
     """
     if not tariff_code:
         return None
+    known = KNOWN_TARIFF_PATTERNS if patterns is None else patterns
     code_segments = tariff_code.upper().split("-")
-    for pattern in KNOWN_TARIFF_PATTERNS:
+    for pattern in known:
         prefix_segments = pattern.product_prefix.upper().split("-")
         if _segments_contain(code_segments, prefix_segments):
             _LOGGER.debug(
