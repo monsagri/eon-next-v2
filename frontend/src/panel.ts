@@ -117,7 +117,11 @@ class EonNextPanel extends LitElement {
     return html`
       <nav class="rail" aria-label="Dashboard sections">
         <div class="brand">
-          <div class="brand-logo serif">e</div>
+          <div class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" class="brand-bolt" focusable="false">
+              <path d="M27 4 11 27h11l-2 17 18-24H26z" fill="#fff" />
+            </svg>
+          </div>
           <div>
             <div class="brand-name">EON Next</div>
             <div class="brand-sub mono">home energy</div>

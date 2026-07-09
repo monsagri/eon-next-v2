@@ -38,12 +38,16 @@
   height: 38px;
   border-radius: 11px;
   background: var(--eon-elec);
-  color: #fff;
-  font-size: 23px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+}
+
+.brand-bolt {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .brand-name {
