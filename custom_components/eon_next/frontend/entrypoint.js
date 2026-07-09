@@ -148,11 +148,11 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       <div class="consumption-header">
         <div class="stats">
           ${null!=this.meter?.daily_consumption?j`<div class="stat">
-                <span class="stat-value"
-                  >${this.meter.daily_consumption}<span class="unit">kWh</span></span
-                >
-                <span class="stat-label">Today</span>
-              </div>`:U}
+                  <span class="stat-value"
+                    >${this.meter.daily_consumption}<span class="unit">kWh</span></span
+                  >
+                  <span class="stat-label">Today</span>
+                </div>`:U}
         </div>
 
         <eon-range-picker
@@ -162,12 +162,12 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       </div>
 
       ${this._history.length>0?j`<eon-bar-chart
-            .labels=${this._chartLabels}
-            .datasets=${this._chartDatasets}
-            yLabel="kWh"
-            y2Label=${null!=this.meter?.unit_rate?"£":""}
-            ?darkMode=${this.hass?.themes?.darkMode??!1}
-          ></eon-bar-chart>`:this._loading?j`<div class="chart-placeholder">Loading chart…</div>`:U}
+              .labels=${this._chartLabels}
+              .datasets=${this._chartDatasets}
+              yLabel="kWh"
+              y2Label=${null!=this.meter?.unit_rate?"£":""}
+              ?darkMode=${this.hass?.themes?.darkMode??!1}
+            ></eon-bar-chart>`:this._loading?j`<div class="chart-placeholder">Loading chart…</div>`:U}
     `}}Jo.styles=[Zo,Go],t([dt({attribute:!1})],Jo.prototype,"hass",void 0),t([dt({attribute:!1})],Jo.prototype,"meter",void 0),t([dt({type:Number})],Jo.prototype,"days",void 0),t([ut()],Jo.prototype,"_history",void 0),t([ut()],Jo.prototype,"_loading",void 0),t([ut()],Jo.prototype,"_selectedDays",void 0),customElements.get("eon-consumption-view")||customElements.define("eon-consumption-view",Jo);const ta=a`.chart-container {
   position: relative;
   width: 100%;
@@ -295,9 +295,9 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       <div class="breakdown-header">
         <div class="totals">
           ${this._memoTotalCost>0?j`<div class="stat">
-                <span class="stat-value">£${this._memoTotalCost.toFixed(2)}</span>
-                <span class="stat-label">${this._memoPeriodLabel||"Total"}</span>
-              </div>`:U}
+                  <span class="stat-value">£${this._memoTotalCost.toFixed(2)}</span>
+                  <span class="stat-label">${this._memoPeriodLabel||"Total"}</span>
+                </div>`:U}
         </div>
 
         <eon-range-picker
@@ -308,67 +308,70 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       </div>
 
       ${this._memoSegments.length>0?j`
-            <eon-pie-chart
-              .segments=${this._memoSegments}
-              ?darkMode=${t}
-            ></eon-pie-chart>
+              <eon-pie-chart
+                .segments=${this._memoSegments}
+                ?darkMode=${t}
+              ></eon-pie-chart>
 
-            <div class="legend">
-              <div class="legend-item">
-                <span
-                  class="legend-swatch"
-                  style="background: ${e?oa:na}"
-                ></span>
-                Usage £${this._memoConsumptionCost.toFixed(2)}
+              <div class="legend">
+                <div class="legend-item">
+                  <span
+                    class="legend-swatch"
+                    style="background: ${e?oa:na}"
+                  ></span>
+                  Usage £${this._memoConsumptionCost.toFixed(2)}
+                </div>
+                <div class="legend-item">
+                  <span
+                    class="legend-swatch"
+                    style="background: ${aa}"
+                  ></span>
+                  Standing £${this._memoStandingCost.toFixed(2)}
+                </div>
               </div>
-              <div class="legend-item">
-                <span class="legend-swatch" style="background: ${aa}"></span>
-                Standing £${this._memoStandingCost.toFixed(2)}
-              </div>
-            </div>
 
-            ${this._memoTrackerSegments.length>0?j`
-                  <div class="tracker-section">
-                    <div class="tracker-title">
-                      Today usage split (from cost trackers)
-                    </div>
-                    <eon-pie-chart
-                      .segments=${this._memoTrackerSegments}
-                      ?darkMode=${t}
-                    ></eon-pie-chart>
-                    <div class="legend">
-                      <div class="legend-item">
-                        <span
-                          class="legend-swatch"
-                          style="background: ${ra}"
-                        ></span>
-                        Tracked £${this._memoTrackedTodayCost.toFixed(2)}
-                      </div>
-                      <div class="legend-item">
-                        <span
-                          class="legend-swatch"
-                          style="background: ${ha}"
-                        ></span>
-                        Untracked £${this._memoUntrackedTodayCost.toFixed(2)}
-                      </div>
-                    </div>
-                    <div class="tracker-subtitle">
-                      Based on today’s usage estimate
-                      (£${this._memoTodayUsageCost.toFixed(2)}).
-                    </div>
-                    <div class="tracker-list">
-                      ${this._memoTrackerItems.map(t=>j`
-                          <div class="tracker-row">
-                            <span class="tracker-name">${t.name}</span>
-                            <span class="tracker-cost">£${t.cost.toFixed(2)}</span>
+              ${this._memoTrackerSegments.length>0?j`
+                      <div class="tracker-section">
+                        <div class="tracker-title">
+                          Today usage split (from cost trackers)
+                        </div>
+                        <eon-pie-chart
+                          .segments=${this._memoTrackerSegments}
+                          ?darkMode=${t}
+                        ></eon-pie-chart>
+                        <div class="legend">
+                          <div class="legend-item">
+                            <span
+                              class="legend-swatch"
+                              style="background: ${ra}"
+                            ></span>
+                            Tracked £${this._memoTrackedTodayCost.toFixed(2)}
                           </div>
-                        `)}
-                    </div>
-                  </div>
-                `:U}
-          `:this._loading?j`<div class="chart-placeholder">Loading…</div>`:j`<div class="no-data">
-              No consumption data available for this period
-            </div>`}
+                          <div class="legend-item">
+                            <span
+                              class="legend-swatch"
+                              style="background: ${ha}"
+                            ></span>
+                            Untracked £${this._memoUntrackedTodayCost.toFixed(2)}
+                          </div>
+                        </div>
+                        <div class="tracker-subtitle">
+                          Based on today’s usage estimate
+                          (£${this._memoTodayUsageCost.toFixed(2)}).
+                        </div>
+                        <div class="tracker-list">
+                          ${this._memoTrackerItems.map(t=>j`
+                              <div class="tracker-row">
+                                <span class="tracker-name">${t.name}</span>
+                                <span class="tracker-cost">£${t.cost.toFixed(2)}</span>
+                              </div>
+                            `)}
+                        </div>
+                      </div>
+                    `:U}
+            `:this._loading?j`<div class="chart-placeholder">Loading…</div>`:j`<div class="no-data">
+                No consumption data available for this period
+              </div>`}
     `}}la.styles=[Zo,ia],t([dt({attribute:!1})],la.prototype,"hass",void 0),t([dt({attribute:!1})],la.prototype,"meter",void 0),t([ut()],la.prototype,"_history",void 0),t([ut()],la.prototype,"_loading",void 0),t([ut()],la.prototype,"_periodMode",void 0),customElements.get("eon-consumption-breakdown-view")||customElements.define("eon-consumption-breakdown-view",la);const ca=a`.section-header {
   display: flex;
   align-items: center;
@@ -402,25 +405,27 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
 `;class da extends rt{constructor(){super(...arguments),this._mtdCost=null,this._fetchedKey=null}updated(){if(!this.hass||!this.meter?.serial)return;if(null==this.meter.unit_rate)return this._mtdCost=null,void(this._fetchedKey=null);const t=this._buildFetchKey();t!==this._fetchedKey&&this._fetchMtdCost(t)}_buildFetchKey(){const t=new Date;return`${this.meter.serial}:${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`}async _fetchMtdCost(t){this._fetchedKey=t;const e=(new Date).getDate();if(e<2||null==this.meter.unit_rate)this._mtdCost=null;else try{const t=await ft(this.hass,this.meter.serial,e);this._mtdCost=this._computeMtdFromHistory(t.entries)}catch{this._mtdCost=null}}_computeMtdFromHistory(t){if(!t.length||null==this.meter.unit_rate)return null;const e=new Date,i=e.getFullYear(),s=e.getMonth(),n=this.meter.unit_rate,o=this.meter.standing_charge??0;let a=0,r=0;for(const e of t){const t=new Date(e.date+"T00:00:00");t.getFullYear()===i&&t.getMonth()===s&&(a+=e.consumption*n+o,r++)}return r>0?Math.round(100*a)/100:null}render(){const t=this._computeTodayCost();return j`
       <div class="cost-grid">
         ${null!=t?j`<div class="stat">
-              <span class="stat-value">£${t.toFixed(2)}</span>
-              <span class="stat-label">Today (est)</span>
-            </div>`:U}
+                <span class="stat-value">£${t.toFixed(2)}</span>
+                <span class="stat-label">Today (est)</span>
+              </div>`:U}
         ${null!=this.meter?.previous_day_cost?j`<div class="stat">
-              <span class="stat-value">£${this.meter.previous_day_cost.toFixed(2)}</span>
-              <span class="stat-label">Yesterday</span>
-            </div>`:U}
+                <span class="stat-value"
+                  >£${this.meter.previous_day_cost.toFixed(2)}</span
+                >
+                <span class="stat-label">Yesterday</span>
+              </div>`:U}
         ${null!=this._mtdCost?j`<div class="stat">
-              <span class="stat-value">£${this._mtdCost.toFixed(2)}</span>
-              <span class="stat-label">Month to date</span>
-            </div>`:U}
+                <span class="stat-value">£${this._mtdCost.toFixed(2)}</span>
+                <span class="stat-label">Month to date</span>
+              </div>`:U}
         ${null!=this.meter?.standing_charge?j`<div class="stat">
-              <span class="stat-value">£${this.meter.standing_charge.toFixed(2)}</span>
-              <span class="stat-label">Standing/day</span>
-            </div>`:U}
+                <span class="stat-value">£${this.meter.standing_charge.toFixed(2)}</span>
+                <span class="stat-label">Standing/day</span>
+              </div>`:U}
         ${null!=this.meter?.unit_rate?j`<div class="stat">
-              <span class="stat-value">£${this.meter.unit_rate.toFixed(4)}</span>
-              <span class="stat-label">Unit rate/kWh</span>
-            </div>`:U}
+                <span class="stat-value">£${this.meter.unit_rate.toFixed(4)}</span>
+                <span class="stat-label">Unit rate/kWh</span>
+              </div>`:U}
       </div>
     `}_computeTodayCost(){return null==this.meter?.daily_consumption||null==this.meter?.unit_rate?null:this.meter.daily_consumption*this.meter.unit_rate+(this.meter.standing_charge??0)}}da.styles=[Zo,ca],t([dt({attribute:!1})],da.prototype,"hass",void 0),t([dt({attribute:!1})],da.prototype,"meter",void 0),t([ut()],da.prototype,"_mtdCost",void 0),customElements.get("eon-cost-view")||customElements.define("eon-cost-view",da);const ua=a`.section-header {
   display: flex;
@@ -466,17 +471,17 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
 `;class fa extends rt{render(){return j`
       <div class="reading-grid">
         ${null!=this.meter?.latest_reading?j`<div class="reading">
-              <span class="reading-value">${this.meter.latest_reading}</span>
-              <span class="reading-label">Latest reading</span>
-            </div>`:U}
+                <span class="reading-value">${this.meter.latest_reading}</span>
+                <span class="reading-label">Latest reading</span>
+              </div>`:U}
         ${this.meter?.latest_reading_date?j`<div class="detail">
-              <span class="detail-label">Date</span>
-              <span>${this.meter.latest_reading_date}</span>
-            </div>`:U}
+                <span class="detail-label">Date</span>
+                <span>${this.meter.latest_reading_date}</span>
+              </div>`:U}
         ${this.meter?.tariff_name?j`<div class="detail">
-              <span class="detail-label">Tariff</span>
-              <span>${this.meter.tariff_name}</span>
-            </div>`:U}
+                <span class="detail-label">Tariff</span>
+                <span>${this.meter.tariff_name}</span>
+              </div>`:U}
       </div>
     `}}fa.styles=[Zo,ua],t([dt({attribute:!1})],fa.prototype,"meter",void 0),customElements.get("eon-meter-view")||customElements.define("eon-meter-view",fa);const ga=6048e5,pa=6e4,ma=36e5,ba=Symbol.for("constructDateFrom");function xa(t,e){return"function"==typeof t?t(e):t&&"object"==typeof t&&ba in t?t[ba](e):t instanceof Date?new t.constructor(e):new Date(e)}function ya(t,e){return xa(e||t,t)}let _a={};function va(){return _a}function wa(t,e){const i=va(),s=e?.weekStartsOn??e?.locale?.options?.weekStartsOn??i.weekStartsOn??i.locale?.options?.weekStartsOn??0,n=ya(t,e?.in),o=n.getDay(),a=(o<s?7:0)+o-s;return n.setDate(n.getDate()-a),n.setHours(0,0,0,0),n}function ka(t,e){return wa(t,{...e,weekStartsOn:1})}function Ma(t,e){const i=ya(t,e?.in),s=i.getFullYear(),n=xa(i,0);n.setFullYear(s+1,0,4),n.setHours(0,0,0,0);const o=ka(n),a=xa(i,0);a.setFullYear(s,0,4),a.setHours(0,0,0,0);const r=ka(a);return i.getTime()>=o.getTime()?s+1:i.getTime()>=r.getTime()?s:s-1}function Sa(t){const e=ya(t),i=new Date(Date.UTC(e.getFullYear(),e.getMonth(),e.getDate(),e.getHours(),e.getMinutes(),e.getSeconds(),e.getMilliseconds()));return i.setUTCFullYear(e.getFullYear()),+t-+i}function Ca(t,e){const i=ya(t,e?.in);return i.setHours(0,0,0,0),i}function Aa(t,e,i){const[s,n]=function(t,...e){const i=xa.bind(null,e.find(t=>"object"==typeof t));return e.map(i)}(0,t,e),o=Ca(s),a=Ca(n),r=+o-Sa(o),h=+a-Sa(a);return Math.round((r-h)/864e5)}function Da(t){return!(!((e=t)instanceof Date||"object"==typeof e&&"[object Date]"===Object.prototype.toString.call(e))&&"number"!=typeof t||isNaN(+ya(t)));var e}const Pa={lessThanXSeconds:{one:"less than a second",other:"less than {{count}} seconds"},xSeconds:{one:"1 second",other:"{{count}} seconds"},halfAMinute:"half a minute",lessThanXMinutes:{one:"less than a minute",other:"less than {{count}} minutes"},xMinutes:{one:"1 minute",other:"{{count}} minutes"},aboutXHours:{one:"about 1 hour",other:"about {{count}} hours"},xHours:{one:"1 hour",other:"{{count}} hours"},xDays:{one:"1 day",other:"{{count}} days"},aboutXWeeks:{one:"about 1 week",other:"about {{count}} weeks"},xWeeks:{one:"1 week",other:"{{count}} weeks"},aboutXMonths:{one:"about 1 month",other:"about {{count}} months"},xMonths:{one:"1 month",other:"{{count}} months"},aboutXYears:{one:"about 1 year",other:"about {{count}} years"},xYears:{one:"1 year",other:"{{count}} years"},overXYears:{one:"over 1 year",other:"over {{count}} years"},almostXYears:{one:"almost 1 year",other:"almost {{count}} years"}};function $a(t){return(e={})=>{const i=e.width?String(e.width):t.defaultWidth;return t.formats[i]||t.formats[t.defaultWidth]}}const Ta={date:$a({formats:{full:"EEEE, MMMM do, y",long:"MMMM do, y",medium:"MMM d, y",short:"MM/dd/yyyy"},defaultWidth:"full"}),time:$a({formats:{full:"h:mm:ss a zzzz",long:"h:mm:ss a z",medium:"h:mm:ss a",short:"h:mm a"},defaultWidth:"full"}),dateTime:$a({formats:{full:"{{date}} 'at' {{time}}",long:"{{date}} 'at' {{time}}",medium:"{{date}}, {{time}}",short:"{{date}}, {{time}}"},defaultWidth:"full"})},Ea={lastWeek:"'last' eeee 'at' p",yesterday:"'yesterday at' p",today:"'today at' p",tomorrow:"'tomorrow at' p",nextWeek:"eeee 'at' p",other:"P"};function Oa(t){return(e,i)=>{let s;if("formatting"===(i?.context?String(i.context):"standalone")&&t.formattingValues){const e=t.defaultFormattingWidth||t.defaultWidth,n=i?.width?String(i.width):e;s=t.formattingValues[n]||t.formattingValues[e]}else{const e=t.defaultWidth,n=i?.width?String(i.width):t.defaultWidth;s=t.values[n]||t.values[e]}return s[t.argumentCallback?t.argumentCallback(e):e]}}function Ra(t){return(e,i={})=>{const s=i.width,n=s&&t.matchPatterns[s]||t.matchPatterns[t.defaultMatchWidth],o=e.match(n);if(!o)return null;const a=o[0],r=s&&t.parsePatterns[s]||t.parsePatterns[t.defaultParseWidth],h=Array.isArray(r)?function(t,e){for(let i=0;i<t.length;i++)if(e(t[i]))return i;return}(r,t=>t.test(a)):function(t,e){for(const i in t)if(Object.prototype.hasOwnProperty.call(t,i)&&e(t[i]))return i;return}(r,t=>t.test(a));let l;l=t.valueCallback?t.valueCallback(h):h,l=i.valueCallback?i.valueCallback(l):l;return{value:l,rest:e.slice(a.length)}}}var La;const za={code:"en-US",formatDistance:(t,e,i)=>{let s;const n=Pa[t];return s="string"==typeof n?n:1===e?n.one:n.other.replace("{{count}}",e.toString()),i?.addSuffix?i.comparison&&i.comparison>0?"in "+s:s+" ago":s},formatLong:Ta,formatRelative:(t,e,i,s)=>Ea[t],localize:{ordinalNumber:(t,e)=>{const i=Number(t),s=i%100;if(s>20||s<10)switch(s%10){case 1:return i+"st";case 2:return i+"nd";case 3:return i+"rd"}return i+"th"},era:Oa({values:{narrow:["B","A"],abbreviated:["BC","AD"],wide:["Before Christ","Anno Domini"]},defaultWidth:"wide"}),quarter:Oa({values:{narrow:["1","2","3","4"],abbreviated:["Q1","Q2","Q3","Q4"],wide:["1st quarter","2nd quarter","3rd quarter","4th quarter"]},defaultWidth:"wide",argumentCallback:t=>t-1}),month:Oa({values:{narrow:["J","F","M","A","M","J","J","A","S","O","N","D"],abbreviated:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],wide:["January","February","March","April","May","June","July","August","September","October","November","December"]},defaultWidth:"wide"}),day:Oa({values:{narrow:["S","M","T","W","T","F","S"],short:["Su","Mo","Tu","We","Th","Fr","Sa"],abbreviated:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],wide:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]},defaultWidth:"wide"}),dayPeriod:Oa({values:{narrow:{am:"a",pm:"p",midnight:"mi",noon:"n",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"},abbreviated:{am:"AM",pm:"PM",midnight:"midnight",noon:"noon",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"},wide:{am:"a.m.",pm:"p.m.",midnight:"midnight",noon:"noon",morning:"morning",afternoon:"afternoon",evening:"evening",night:"night"}},defaultWidth:"wide",formattingValues:{narrow:{am:"a",pm:"p",midnight:"mi",noon:"n",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"},abbreviated:{am:"AM",pm:"PM",midnight:"midnight",noon:"noon",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"},wide:{am:"a.m.",pm:"p.m.",midnight:"midnight",noon:"noon",morning:"in the morning",afternoon:"in the afternoon",evening:"in the evening",night:"at night"}},defaultFormattingWidth:"wide"})},match:{ordinalNumber:(La={matchPattern:/^(\d+)(th|st|nd|rd)?/i,parsePattern:/\d+/i,valueCallback:t=>parseInt(t,10)},(t,e={})=>{const i=t.match(La.matchPattern);if(!i)return null;const s=i[0],n=t.match(La.parsePattern);if(!n)return null;let o=La.valueCallback?La.valueCallback(n[0]):n[0];return o=e.valueCallback?e.valueCallback(o):o,{value:o,rest:t.slice(s.length)}}),era:Ra({matchPatterns:{narrow:/^(b|a)/i,abbreviated:/^(b\.?\s?c\.?|b\.?\s?c\.?\s?e\.?|a\.?\s?d\.?|c\.?\s?e\.?)/i,wide:/^(before christ|before common era|anno domini|common era)/i},defaultMatchWidth:"wide",parsePatterns:{any:[/^b/i,/^(a|c)/i]},defaultParseWidth:"any"}),quarter:Ra({matchPatterns:{narrow:/^[1234]/i,abbreviated:/^q[1234]/i,wide:/^[1234](th|st|nd|rd)? quarter/i},defaultMatchWidth:"wide",parsePatterns:{any:[/1/i,/2/i,/3/i,/4/i]},defaultParseWidth:"any",valueCallback:t=>t+1}),month:Ra({matchPatterns:{narrow:/^[jfmasond]/i,abbreviated:/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,wide:/^(january|february|march|april|may|june|july|august|september|october|november|december)/i},defaultMatchWidth:"wide",parsePatterns:{narrow:[/^j/i,/^f/i,/^m/i,/^a/i,/^m/i,/^j/i,/^j/i,/^a/i,/^s/i,/^o/i,/^n/i,/^d/i],any:[/^ja/i,/^f/i,/^mar/i,/^ap/i,/^may/i,/^jun/i,/^jul/i,/^au/i,/^s/i,/^o/i,/^n/i,/^d/i]},defaultParseWidth:"any"}),day:Ra({matchPatterns:{narrow:/^[smtwf]/i,short:/^(su|mo|tu|we|th|fr|sa)/i,abbreviated:/^(sun|mon|tue|wed|thu|fri|sat)/i,wide:/^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i},defaultMatchWidth:"wide",parsePatterns:{narrow:[/^s/i,/^m/i,/^t/i,/^w/i,/^t/i,/^f/i,/^s/i],any:[/^su/i,/^m/i,/^tu/i,/^w/i,/^th/i,/^f/i,/^sa/i]},defaultParseWidth:"any"}),dayPeriod:Ra({matchPatterns:{narrow:/^(a|p|mi|n|(in the|at) (morning|afternoon|evening|night))/i,any:/^([ap]\.?\s?m\.?|midnight|noon|(in the|at) (morning|afternoon|evening|night))/i},defaultMatchWidth:"any",parsePatterns:{any:{am:/^a/i,pm:/^p/i,midnight:/^mi/i,noon:/^no/i,morning:/morning/i,afternoon:/afternoon/i,evening:/evening/i,night:/night/i}},defaultParseWidth:"any"})},options:{weekStartsOn:0,firstWeekContainsDate:1}};function Ia(t,e){const i=ya(t,e?.in),s=Aa(i,function(t,e){const i=ya(t,e?.in);return i.setFullYear(i.getFullYear(),0,1),i.setHours(0,0,0,0),i}(i));return s+1}function Ha(t,e){const i=ya(t,e?.in),s=+ka(i)-+function(t,e){const i=Ma(t,e),s=xa(t,0);return s.setFullYear(i,0,4),s.setHours(0,0,0,0),ka(s)}(i);return Math.round(s/ga)+1}function Fa(t,e){const i=ya(t,e?.in),s=i.getFullYear(),n=va(),o=e?.firstWeekContainsDate??e?.locale?.options?.firstWeekContainsDate??n.firstWeekContainsDate??n.locale?.options?.firstWeekContainsDate??1,a=xa(e?.in||t,0);a.setFullYear(s+1,0,o),a.setHours(0,0,0,0);const r=wa(a,e),h=xa(e?.in||t,0);h.setFullYear(s,0,o),h.setHours(0,0,0,0);const l=wa(h,e);return+i>=+r?s+1:+i>=+l?s:s-1}function Wa(t,e){const i=ya(t,e?.in),s=+wa(i,e)-+function(t,e){const i=va(),s=e?.firstWeekContainsDate??e?.locale?.options?.firstWeekContainsDate??i.firstWeekContainsDate??i.locale?.options?.firstWeekContainsDate??1,n=Fa(t,e),o=xa(e?.in||t,0);return o.setFullYear(n,0,s),o.setHours(0,0,0,0),wa(o,e)}(i,e);return Math.round(s/ga)+1}function Ba(t,e){return(t<0?"-":"")+Math.abs(t).toString().padStart(e,"0")}const Na={y(t,e){const i=t.getFullYear(),s=i>0?i:1-i;return Ba("yy"===e?s%100:s,e.length)},M(t,e){const i=t.getMonth();return"M"===e?String(i+1):Ba(i+1,2)},d:(t,e)=>Ba(t.getDate(),e.length),a(t,e){const i=t.getHours()/12>=1?"pm":"am";switch(e){case"a":case"aa":return i.toUpperCase();case"aaa":return i;case"aaaaa":return i[0];default:return"am"===i?"a.m.":"p.m."}},h:(t,e)=>Ba(t.getHours()%12||12,e.length),H:(t,e)=>Ba(t.getHours(),e.length),m:(t,e)=>Ba(t.getMinutes(),e.length),s:(t,e)=>Ba(t.getSeconds(),e.length),S(t,e){const i=e.length,s=t.getMilliseconds();return Ba(Math.trunc(s*Math.pow(10,i-3)),e.length)}},ja="midnight",Va="noon",Ua="morning",Ya="afternoon",qa="evening",Xa="night",Ka={G:function(t,e,i){const s=t.getFullYear()>0?1:0;switch(e){case"G":case"GG":case"GGG":return i.era(s,{width:"abbreviated"});case"GGGGG":return i.era(s,{width:"narrow"});default:return i.era(s,{width:"wide"})}},y:function(t,e,i){if("yo"===e){const e=t.getFullYear(),s=e>0?e:1-e;return i.ordinalNumber(s,{unit:"year"})}return Na.y(t,e)},Y:function(t,e,i,s){const n=Fa(t,s),o=n>0?n:1-n;if("YY"===e){return Ba(o%100,2)}return"Yo"===e?i.ordinalNumber(o,{unit:"year"}):Ba(o,e.length)},R:function(t,e){return Ba(Ma(t),e.length)},u:function(t,e){return Ba(t.getFullYear(),e.length)},Q:function(t,e,i){const s=Math.ceil((t.getMonth()+1)/3);switch(e){case"Q":return String(s);case"QQ":return Ba(s,2);case"Qo":return i.ordinalNumber(s,{unit:"quarter"});case"QQQ":return i.quarter(s,{width:"abbreviated",context:"formatting"});case"QQQQQ":return i.quarter(s,{width:"narrow",context:"formatting"});default:return i.quarter(s,{width:"wide",context:"formatting"})}},q:function(t,e,i){const s=Math.ceil((t.getMonth()+1)/3);switch(e){case"q":return String(s);case"qq":return Ba(s,2);case"qo":return i.ordinalNumber(s,{unit:"quarter"});case"qqq":return i.quarter(s,{width:"abbreviated",context:"standalone"});case"qqqqq":return i.quarter(s,{width:"narrow",context:"standalone"});default:return i.quarter(s,{width:"wide",context:"standalone"})}},M:function(t,e,i){const s=t.getMonth();switch(e){case"M":case"MM":return Na.M(t,e);case"Mo":return i.ordinalNumber(s+1,{unit:"month"});case"MMM":return i.month(s,{width:"abbreviated",context:"formatting"});case"MMMMM":return i.month(s,{width:"narrow",context:"formatting"});default:return i.month(s,{width:"wide",context:"formatting"})}},L:function(t,e,i){const s=t.getMonth();switch(e){case"L":return String(s+1);case"LL":return Ba(s+1,2);case"Lo":return i.ordinalNumber(s+1,{unit:"month"});case"LLL":return i.month(s,{width:"abbreviated",context:"standalone"});case"LLLLL":return i.month(s,{width:"narrow",context:"standalone"});default:return i.month(s,{width:"wide",context:"standalone"})}},w:function(t,e,i,s){const n=Wa(t,s);return"wo"===e?i.ordinalNumber(n,{unit:"week"}):Ba(n,e.length)},I:function(t,e,i){const s=Ha(t);return"Io"===e?i.ordinalNumber(s,{unit:"week"}):Ba(s,e.length)},d:function(t,e,i){return"do"===e?i.ordinalNumber(t.getDate(),{unit:"date"}):Na.d(t,e)},D:function(t,e,i){const s=Ia(t);return"Do"===e?i.ordinalNumber(s,{unit:"dayOfYear"}):Ba(s,e.length)},E:function(t,e,i){const s=t.getDay();switch(e){case"E":case"EE":case"EEE":return i.day(s,{width:"abbreviated",context:"formatting"});case"EEEEE":return i.day(s,{width:"narrow",context:"formatting"});case"EEEEEE":return i.day(s,{width:"short",context:"formatting"});default:return i.day(s,{width:"wide",context:"formatting"})}},e:function(t,e,i,s){const n=t.getDay(),o=(n-s.weekStartsOn+8)%7||7;switch(e){case"e":return String(o);case"ee":return Ba(o,2);case"eo":return i.ordinalNumber(o,{unit:"day"});case"eee":return i.day(n,{width:"abbreviated",context:"formatting"});case"eeeee":return i.day(n,{width:"narrow",context:"formatting"});case"eeeeee":return i.day(n,{width:"short",context:"formatting"});default:return i.day(n,{width:"wide",context:"formatting"})}},c:function(t,e,i,s){const n=t.getDay(),o=(n-s.weekStartsOn+8)%7||7;switch(e){case"c":return String(o);case"cc":return Ba(o,e.length);case"co":return i.ordinalNumber(o,{unit:"day"});case"ccc":return i.day(n,{width:"abbreviated",context:"standalone"});case"ccccc":return i.day(n,{width:"narrow",context:"standalone"});case"cccccc":return i.day(n,{width:"short",context:"standalone"});default:return i.day(n,{width:"wide",context:"standalone"})}},i:function(t,e,i){const s=t.getDay(),n=0===s?7:s;switch(e){case"i":return String(n);case"ii":return Ba(n,e.length);case"io":return i.ordinalNumber(n,{unit:"day"});case"iii":return i.day(s,{width:"abbreviated",context:"formatting"});case"iiiii":return i.day(s,{width:"narrow",context:"formatting"});case"iiiiii":return i.day(s,{width:"short",context:"formatting"});default:return i.day(s,{width:"wide",context:"formatting"})}},a:function(t,e,i){const s=t.getHours()/12>=1?"pm":"am";switch(e){case"a":case"aa":return i.dayPeriod(s,{width:"abbreviated",context:"formatting"});case"aaa":return i.dayPeriod(s,{width:"abbreviated",context:"formatting"}).toLowerCase();case"aaaaa":return i.dayPeriod(s,{width:"narrow",context:"formatting"});default:return i.dayPeriod(s,{width:"wide",context:"formatting"})}},b:function(t,e,i){const s=t.getHours();let n;switch(n=12===s?Va:0===s?ja:s/12>=1?"pm":"am",e){case"b":case"bb":return i.dayPeriod(n,{width:"abbreviated",context:"formatting"});case"bbb":return i.dayPeriod(n,{width:"abbreviated",context:"formatting"}).toLowerCase();case"bbbbb":return i.dayPeriod(n,{width:"narrow",context:"formatting"});default:return i.dayPeriod(n,{width:"wide",context:"formatting"})}},B:function(t,e,i){const s=t.getHours();let n;switch(n=s>=17?qa:s>=12?Ya:s>=4?Ua:Xa,e){case"B":case"BB":case"BBB":return i.dayPeriod(n,{width:"abbreviated",context:"formatting"});case"BBBBB":return i.dayPeriod(n,{width:"narrow",context:"formatting"});default:return i.dayPeriod(n,{width:"wide",context:"formatting"})}},h:function(t,e,i){if("ho"===e){let e=t.getHours()%12;return 0===e&&(e=12),i.ordinalNumber(e,{unit:"hour"})}return Na.h(t,e)},H:function(t,e,i){return"Ho"===e?i.ordinalNumber(t.getHours(),{unit:"hour"}):Na.H(t,e)},K:function(t,e,i){const s=t.getHours()%12;return"Ko"===e?i.ordinalNumber(s,{unit:"hour"}):Ba(s,e.length)},k:function(t,e,i){let s=t.getHours();return 0===s&&(s=24),"ko"===e?i.ordinalNumber(s,{unit:"hour"}):Ba(s,e.length)},m:function(t,e,i){return"mo"===e?i.ordinalNumber(t.getMinutes(),{unit:"minute"}):Na.m(t,e)},s:function(t,e,i){return"so"===e?i.ordinalNumber(t.getSeconds(),{unit:"second"}):Na.s(t,e)},S:function(t,e){return Na.S(t,e)},X:function(t,e,i){const s=t.getTimezoneOffset();if(0===s)return"Z";switch(e){case"X":return Za(s);case"XXXX":case"XX":return Ga(s);default:return Ga(s,":")}},x:function(t,e,i){const s=t.getTimezoneOffset();switch(e){case"x":return Za(s);case"xxxx":case"xx":return Ga(s);default:return Ga(s,":")}},O:function(t,e,i){const s=t.getTimezoneOffset();switch(e){case"O":case"OO":case"OOO":return"GMT"+Qa(s,":");default:return"GMT"+Ga(s,":")}},z:function(t,e,i){const s=t.getTimezoneOffset();switch(e){case"z":case"zz":case"zzz":return"GMT"+Qa(s,":");default:return"GMT"+Ga(s,":")}},t:function(t,e,i){return Ba(Math.trunc(+t/1e3),e.length)},T:function(t,e,i){return Ba(+t,e.length)}};function Qa(t,e=""){const i=t>0?"-":"+",s=Math.abs(t),n=Math.trunc(s/60),o=s%60;return 0===o?i+String(n):i+String(n)+e+Ba(o,2)}function Za(t,e){if(t%60==0){return(t>0?"-":"+")+Ba(Math.abs(t)/60,2)}return Ga(t,e)}function Ga(t,e=""){const i=t>0?"-":"+",s=Math.abs(t);return i+Ba(Math.trunc(s/60),2)+e+Ba(s%60,2)}const Ja=(t,e)=>{switch(t){case"P":return e.date({width:"short"});case"PP":return e.date({width:"medium"});case"PPP":return e.date({width:"long"});default:return e.date({width:"full"})}},tr=(t,e)=>{switch(t){case"p":return e.time({width:"short"});case"pp":return e.time({width:"medium"});case"ppp":return e.time({width:"long"});default:return e.time({width:"full"})}},er={p:tr,P:(t,e)=>{const i=t.match(/(P+)(p+)?/)||[],s=i[1],n=i[2];if(!n)return Ja(t,e);let o;switch(s){case"P":o=e.dateTime({width:"short"});break;case"PP":o=e.dateTime({width:"medium"});break;case"PPP":o=e.dateTime({width:"long"});break;default:o=e.dateTime({width:"full"})}return o.replace("{{date}}",Ja(s,e)).replace("{{time}}",tr(n,e))}},ir=/^D+$/,sr=/^Y+$/,nr=["D","DD","YY","YYYY"];const or=/[yYQqMLwIdDecihHKkms]o|(\w)\1*|''|'(''|[^'])+('|$)|./g,ar=/P+p+|P+|p+|''|'(''|[^'])+('|$)|./g,rr=/^'([^]*?)'?$/,hr=/''/g,lr=/[a-zA-Z]/;function cr(t,e,i){const s=va(),n=s.locale??za,o=s.firstWeekContainsDate??s.locale?.options?.firstWeekContainsDate??1,a=s.weekStartsOn??s.locale?.options?.weekStartsOn??0,r=ya(t,i?.in);if(!Da(r))throw new RangeError("Invalid time value");let h=e.match(ar).map(t=>{const e=t[0];if("p"===e||"P"===e){return(0,er[e])(t,n.formatLong)}return t}).join("").match(or).map(t=>{if("''"===t)return{isToken:!1,value:"'"};const e=t[0];if("'"===e)return{isToken:!1,value:dr(t)};if(Ka[e])return{isToken:!0,value:t};if(e.match(lr))throw new RangeError("Format string contains an unescaped latin alphabet character `"+e+"`");return{isToken:!1,value:t}});n.localize.preprocessor&&(h=n.localize.preprocessor(r,h));const l={firstWeekContainsDate:o,weekStartsOn:a,locale:n};return h.map(i=>{if(!i.isToken)return i.value;const s=i.value;(function(t){return sr.test(t)}(s)||function(t){return ir.test(t)}(s))&&function(t,e,i){const s=function(t,e,i){const s="Y"===t[0]?"years":"days of the month";return`Use \`${t.toLowerCase()}\` instead of \`${t}\` (in \`${e}\`) for formatting ${s} to the input \`${i}\`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md`}(t,e,i);if(console.warn(s),nr.includes(t))throw new RangeError(s)}(s,e,String(t));return(0,Ka[s[0]])(r,s,n.localize,l)}).join("")}function dr(t){const e=t.match(rr);return e?e[1].replace(hr,"'"):t}function ur(t,e){const i=()=>xa(e?.in,NaN),s=function(t){const e={},i=t.split(fr.dateTimeDelimiter);let s;if(i.length>2)return e;/:/.test(i[0])?s=i[0]:(e.date=i[0],s=i[1],fr.timeZoneDelimiter.test(e.date)&&(e.date=t.split(fr.timeZoneDelimiter)[0],s=t.substr(e.date.length,t.length)));if(s){const t=fr.timezone.exec(s);t?(e.time=s.replace(t[1],""),e.timezone=t[1]):e.time=s}return e}(t);let n;if(s.date){const t=function(t,e){const i=new RegExp("^(?:(\\d{4}|[+-]\\d{"+(4+e)+"})|(\\d{2}|[+-]\\d{"+(2+e)+"})$)"),s=t.match(i);if(!s)return{year:NaN,restDateString:""};const n=s[1]?parseInt(s[1]):null,o=s[2]?parseInt(s[2]):null;return{year:null===o?n:100*o,restDateString:t.slice((s[1]||s[2]).length)}}(s.date,2);n=function(t,e){if(null===e)return new Date(NaN);const i=t.match(gr);if(!i)return new Date(NaN);const s=!!i[4],n=br(i[1]),o=br(i[2])-1,a=br(i[3]),r=br(i[4]),h=br(i[5])-1;if(s)return function(t,e,i){return e>=1&&e<=53&&i>=0&&i<=6}(0,r,h)?function(t,e,i){const s=new Date(0);s.setUTCFullYear(t,0,4);const n=s.getUTCDay()||7,o=7*(e-1)+i+1-n;return s.setUTCDate(s.getUTCDate()+o),s}(e,r,h):new Date(NaN);{const t=new Date(0);return function(t,e,i){return e>=0&&e<=11&&i>=1&&i<=(yr[e]||(_r(t)?29:28))}(e,o,a)&&function(t,e){return e>=1&&e<=(_r(t)?366:365)}(e,n)?(t.setUTCFullYear(e,o,Math.max(n,a)),t):new Date(NaN)}}(t.restDateString,t.year)}if(!n||isNaN(+n))return i();const o=+n;let a,r=0;if(s.time&&(r=function(t){const e=t.match(pr);if(!e)return NaN;const i=xr(e[1]),s=xr(e[2]),n=xr(e[3]);if(!function(t,e,i){if(24===t)return 0===e&&0===i;return i>=0&&i<60&&e>=0&&e<60&&t>=0&&t<25}(i,s,n))return NaN;return i*ma+s*pa+1e3*n}(s.time),isNaN(r)))return i();if(!s.timezone){const t=new Date(o+r),i=ya(0,e?.in);return i.setFullYear(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()),i.setHours(t.getUTCHours(),t.getUTCMinutes(),t.getUTCSeconds(),t.getUTCMilliseconds()),i}return a=function(t){if("Z"===t)return 0;const e=t.match(mr);if(!e)return 0;const i="+"===e[1]?-1:1,s=parseInt(e[2]),n=e[3]&&parseInt(e[3])||0;if(!function(t,e){return e>=0&&e<=59}(0,n))return NaN;return i*(s*ma+n*pa)}(s.timezone),isNaN(a)?i():ya(o+r+a,e?.in)}const fr={dateTimeDelimiter:/[T ]/,timeZoneDelimiter:/[Z ]/i,timezone:/([Z+-].*)$/},gr=/^-?(?:(\d{3})|(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?(\d{1}))?|)$/,pr=/^(\d{2}(?:[.,]\d*)?)(?::?(\d{2}(?:[.,]\d*)?))?(?::?(\d{2}(?:[.,]\d*)?))?$/,mr=/^([+-])(\d{2})(?::?(\d{2}))?$/;function br(t){return t?parseInt(t):1}function xr(t){return t&&parseFloat(t.replace(",","."))||0}const yr=[31,null,31,30,31,30,31,31,30,31,30,31];function _r(t){return t%400==0||t%4==0&&t%100!=0}const vr=t=>{if(!t)return"—";const e=ur(t);return Da(e)?cr(e,"EEE d MMM, HH:mm"):t},wr=a`.schedule-header {
   display: flex;
@@ -560,8 +565,8 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       </div>
 
       ${e.length>0?j`<div class="timeline">
-            ${e.map((t,e)=>this._renderSlot(t,e))}
-          </div>`:j`<div class="empty-schedule">No upcoming charge slots</div>`}
+              ${e.map((t,e)=>this._renderSlot(t,e))}
+            </div>`:j`<div class="empty-schedule">No upcoming charge slots</div>`}
     `}_renderSlot(t,e){const i=this._computeDuration(t.start,t.end);return j`
       <div class="slot">
         <span class="slot-index">#${e+1}</span>
@@ -719,24 +724,24 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
       </div>
 
       ${t.lookback_days>0?j`<div class="status-row">
-            <span class="label">Lookback</span>
-            <span class="value">${t.lookback_days} days</span>
-          </div>`:U}
+              <span class="label">Lookback</span>
+              <span class="value">${t.lookback_days} days</span>
+            </div>`:U}
       ${t.next_start_date?j`<div class="status-row">
-            <span class="label">Next backfill from</span>
-            <span class="value">${t.next_start_date}</span>
-          </div>`:U}
+              <span class="label">Next backfill from</span>
+              <span class="value">${t.next_start_date}</span>
+            </div>`:U}
       ${t.meters.length>0?j`<div class="meter-list">
-            ${t.meters.map(t=>j`
-                <div class="meter-item">
-                  <span class="meter-serial">${t.serial}</span>
-                  ${t.done?j`<span class="meter-done">Complete</span>`:j`<span class="meter-pending"
-                        >${t.days_completed}/${t.days_completed+t.days_remaining}
-                        days</span
-                      >`}
-                </div>
-              `)}
-          </div>`:U}
+              ${t.meters.map(t=>j`
+                  <div class="meter-item">
+                    <span class="meter-serial">${t.serial}</span>
+                    ${t.done?j`<span class="meter-done">Complete</span>`:j`<span class="meter-pending"
+                            >${t.days_completed}/${t.days_completed+t.days_remaining}
+                            days</span
+                          >`}
+                  </div>
+                `)}
+            </div>`:U}
     `}}Sr.styles=[Zo,Mr],t([dt({attribute:!1})],Sr.prototype,"hass",void 0),customElements.get("eon-backfill-status")||customElements.define("eon-backfill-status",Sr);const Cr=a`:host {
   display: block;
   padding: 16px;
@@ -938,24 +943,24 @@ function t(t,e,i,s){var n,o=arguments.length,a=o<3?e:null===s?s=Object.getOwnPro
         </div>
       `;const{data:t}=this._summary;return j`
       ${t?.meters.length||t?.ev_chargers.length?j`
-            <div class="grid">
-              ${t?.meters.map(t=>this._renderMeterCard(t))??U}
-              ${t?.ev_chargers.map(t=>this._renderEvCard(t))??U}
-            </div>
+              <div class="grid">
+                ${t?.meters.map(t=>this._renderMeterCard(t))??U}
+                ${t?.ev_chargers.map(t=>this._renderEvCard(t))??U}
+              </div>
 
-            <div class="section-divider"></div>
+              <div class="section-divider"></div>
 
-            <div class="diagnostics">
-              <eon-backfill-status .hass=${this.hass}></eon-backfill-status>
-            </div>
-          `:j`<div class="empty-state">
-            <ha-icon
-              icon="mdi:lightning-bolt-circle"
-              style="--mdc-icon-size: 48px;"
-            ></ha-icon>
-            <h2>No data available</h2>
-            <p>No meter or EV data found. Check your integration configuration.</p>
-          </div>`}
+              <div class="diagnostics">
+                <eon-backfill-status .hass=${this.hass}></eon-backfill-status>
+              </div>
+            `:j`<div class="empty-state">
+              <ha-icon
+                icon="mdi:lightning-bolt-circle"
+                style="--mdc-icon-size: 48px;"
+              ></ha-icon>
+              <h2>No data available</h2>
+              <p>No meter or EV data found. Check your integration configuration.</p>
+            </div>`}
     `}_renderMeterCard(t){const e="gas"===t.type?"mdi:fire":"mdi:flash",i="gas"===t.type?"Gas":"Electricity";return j`
       <article class="card" aria-label="${i} meter ${t.serial}">
         <h2>

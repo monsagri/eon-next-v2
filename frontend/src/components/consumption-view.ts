@@ -41,7 +41,6 @@ class EonConsumptionView extends LitElement {
   private _fetchedDays = 0
 
   connectedCallback() {
-    // eslint-disable-next-line wc/guard-super-call
     super.connectedCallback()
     if (this._selectedDays === 0) {
       this._selectedDays = this.days
@@ -151,14 +150,16 @@ class EonConsumptionView extends LitElement {
     return html`
       <div class="consumption-header">
         <div class="stats">
-          ${this.meter?.daily_consumption != null
-            ? html`<div class="stat">
-                <span class="stat-value"
-                  >${this.meter.daily_consumption}<span class="unit">kWh</span></span
-                >
-                <span class="stat-label">Today</span>
-              </div>`
-            : nothing}
+          ${
+            this.meter?.daily_consumption != null
+              ? html`<div class="stat">
+                  <span class="stat-value"
+                    >${this.meter.daily_consumption}<span class="unit">kWh</span></span
+                  >
+                  <span class="stat-label">Today</span>
+                </div>`
+              : nothing
+          }
         </div>
 
         <eon-range-picker
@@ -167,17 +168,19 @@ class EonConsumptionView extends LitElement {
         ></eon-range-picker>
       </div>
 
-      ${this._history.length > 0
-        ? html`<eon-bar-chart
-            .labels=${this._chartLabels}
-            .datasets=${this._chartDatasets}
-            yLabel="kWh"
-            y2Label=${this.meter?.unit_rate != null ? '£' : ''}
-            ?darkMode=${this.hass?.themes?.darkMode ?? false}
-          ></eon-bar-chart>`
-        : this._loading
-          ? html`<div class="chart-placeholder">Loading chart…</div>`
-          : nothing}
+      ${
+        this._history.length > 0
+          ? html`<eon-bar-chart
+              .labels=${this._chartLabels}
+              .datasets=${this._chartDatasets}
+              yLabel="kWh"
+              y2Label=${this.meter?.unit_rate != null ? '£' : ''}
+              ?darkMode=${this.hass?.themes?.darkMode ?? false}
+            ></eon-bar-chart>`
+          : this._loading
+            ? html`<div class="chart-placeholder">Loading chart…</div>`
+            : nothing
+      }
     `
   }
 }

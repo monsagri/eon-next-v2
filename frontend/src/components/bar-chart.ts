@@ -89,7 +89,6 @@ class EonBarChart extends LitElement {
   }
 
   disconnectedCallback() {
-    // eslint-disable-next-line wc/guard-super-call
     super.disconnectedCallback()
     this._chart?.destroy()
     this._chart = null

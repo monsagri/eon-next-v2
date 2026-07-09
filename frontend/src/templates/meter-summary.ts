@@ -20,30 +20,38 @@ export const renderMeterSummary = (
         ${label}
       </div>
 
-      ${meter.daily_consumption != null
-        ? html`<div class="stat-row">
-            <span class="stat-label">Today</span>
-            <span>${meter.daily_consumption} kWh</span>
-          </div>`
-        : nothing}
-      ${showCosts && todayCost != null
-        ? html`<div class="stat-row">
-            <span class="stat-label">Today's cost</span>
-            <span>£${todayCost.toFixed(2)}</span>
-          </div>`
-        : nothing}
-      ${showCosts && meter.previous_day_cost != null
-        ? html`<div class="stat-row">
-            <span class="stat-label">Yesterday cost</span>
-            <span>£${meter.previous_day_cost.toFixed(2)}</span>
-          </div>`
-        : nothing}
-      ${showCosts && meter.standing_charge != null
-        ? html`<div class="stat-row">
-            <span class="stat-label">Standing charge</span>
-            <span>£${meter.standing_charge.toFixed(2)}/day</span>
-          </div>`
-        : nothing}
+      ${
+        meter.daily_consumption != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Today</span>
+              <span>${meter.daily_consumption} kWh</span>
+            </div>`
+          : nothing
+      }
+      ${
+        showCosts && todayCost != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Today's cost</span>
+              <span>£${todayCost.toFixed(2)}</span>
+            </div>`
+          : nothing
+      }
+      ${
+        showCosts && meter.previous_day_cost != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Yesterday cost</span>
+              <span>£${meter.previous_day_cost.toFixed(2)}</span>
+            </div>`
+          : nothing
+      }
+      ${
+        showCosts && meter.standing_charge != null
+          ? html`<div class="stat-row">
+              <span class="stat-label">Standing charge</span>
+              <span>£${meter.standing_charge.toFixed(2)}/day</span>
+            </div>`
+          : nothing
+      }
     </div>
   `
 }
