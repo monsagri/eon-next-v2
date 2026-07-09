@@ -339,7 +339,7 @@ def get_current_rate(meter_data: dict[str, Any]) -> RateInfo | None:
 
     For flat tariffs this is the single rate.  For time-of-use tariffs it
     resolves the current half-hour window (via the API schedule, falling back
-    to the tariff pattern) rather than the schedule mean — the mean is only
+    to the tariff pattern) rather than the schedule mean - the mean is only
     used as a last resort when no window can be resolved.  Returns ``None``
     when no rate data is available.
     """
@@ -398,7 +398,7 @@ def rate_for_timestamp(
     """Return the unit rate (GBP/kWh) applicable at *when_utc*.
 
     Same resolution order as :func:`get_current_rate` but for an arbitrary
-    (historical) instant — used to price past consumption per half-hour
+    (historical) instant - used to price past consumption per half-hour
     window.  Returns ``None`` only when no rate data exists at all.
     """
     unit_rate = meter_data.get("tariff_unit_rate")
@@ -443,7 +443,7 @@ def cost_consumption_entries(
     """Cost half-hourly consumption entries per applicable rate window.
 
     Each entry (``interval_start`` + ``consumption`` kWh) is priced against
-    the rate in effect at its own interval — correct for time-of-use tariffs
+    the rate in effect at its own interval - correct for time-of-use tariffs
     where a flat/average rate materially misprices overnight-heavy usage.
     Returns the total energy cost in GBP (excluding standing charge), or
     ``None`` when nothing could be priced.
@@ -529,7 +529,7 @@ def get_off_peak_metadata(
             result["current_rate_name"] = "off_peak" if is_off else "peak"
             result["next_transition"] = current.get("validTo")
             return result
-        # No window covers "now" (stale/gapped schedule) — fall through to the
+        # No window covers "now" (stale/gapped schedule) - fall through to the
         # pattern registry, matching is_off_peak/get_current_rate so the
         # boundary-refresh mixin still gets a next_transition to schedule on.
 
@@ -576,7 +576,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
             }
         ]
 
-    # API schedule with time windows — filter to today
+    # API schedule with time windows - filter to today
     if schedule and _schedule_has_time_windows(schedule):
         day_start, day_end = _local_day_bounds(today, now.tzinfo)
         day_start_utc = dt_util.as_utc(day_start)
@@ -608,7 +608,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
         if rates:
             return rates
 
-    # Pattern fallback — construct windows from known tariff structure
+    # Pattern fallback - construct windows from known tariff structure
     pattern = get_tariff_pattern(tariff_code)
     if pattern and pattern.windows and schedule:
         distinct = _distinct_rates_pence(schedule)

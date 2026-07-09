@@ -50,11 +50,11 @@ Gas meters add:
 
 ### Binary sensors (per meter)
 
-- Off-peak indicator — `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs
+- Off-peak indicator - `on` during off-peak rate windows for time-of-use tariffs, `unavailable` for flat-rate tariffs
 
 ### Event entities (per meter)
 
-- Current day rates — fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window)
+- Current day rates - fires `rates_updated` each coordinator refresh with today's full rate schedule (start, end, rate, is_off_peak per window)
 
 ### EV smart charging sensors (per supported charger)
 

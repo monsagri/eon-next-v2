@@ -186,8 +186,8 @@ class EonOverviewPage extends LitElement {
             this.showStandingCallout && standShare >= 0.4 && standing > 0
               ? html`<div class="callout hero-callout">
                   ${standShare >= 0.5 ? 'Over half' : 'A large part'} of this month's bill
-                  —
-                  <b>${formatPounds(standing)}</b> — is the fixed daily standing charge
+                  -
+                  <b>${formatPounds(standing)}</b> - is the fixed daily standing charge
                   you pay before using anything.
                 </div>`
               : nothing
@@ -276,7 +276,7 @@ class EonOverviewPage extends LitElement {
             </span>
             <div>
               <div class="fuel-label">${fuel.label}</div>
-              <div class="mono fuel-serial">${meter.serial ?? '—'}</div>
+              <div class="mono fuel-serial">${meter.serial ?? '-'}</div>
             </div>
           </div>
           <div class="serif fuel-cost">${formatPounds(split.total)}</div>
@@ -367,7 +367,7 @@ class EonOverviewPage extends LitElement {
             meter.latest_reading_date,
             locale
           )}`
-        : '—'
+        : '-'
 
     return html`
       <div class="card health-card">

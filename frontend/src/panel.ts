@@ -31,7 +31,7 @@ const FONTS_URL =
   '&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Mono&display=swap'
 
 /**
- * The EON Next sidebar panel — a self-contained dashboard app.
+ * The EON Next sidebar panel - a self-contained dashboard app.
  *
  * A left nav rail switches between Overview, Electricity, Gas, Tariff and EV
  * pages; the main column carries a top bar (title, freshness, refresh) and the
@@ -90,7 +90,7 @@ class EonNextPanel extends LitElement {
 
   /**
    * Toggle the Home Assistant sidebar. `hass-toggle-menu` bubbles (composed)
-   * up to `home-assistant-main`, which owns the drawer — this is the same
+   * up to `home-assistant-main`, which owns the drawer - this is the same
    * event `ha-menu-button` fires, so the brand logo is the panel's way back to
    * the HA menu (notably inside the iOS/Android Companion apps).
    */

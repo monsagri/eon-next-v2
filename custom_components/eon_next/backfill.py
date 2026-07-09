@@ -361,7 +361,7 @@ class EonNextBackfillManager:
             # Window extended further back: move each meter's cursor to the new
             # (earlier) start so the newly-included older days are fetched, and
             # re-run the rebuild step.  A *shrink* deliberately does NOT wipe
-            # progress or clear statistics outside the new window — that would
+            # progress or clear statistics outside the new window - that would
             # destroy already-imported history the user asked to keep.
             self._state["lookback_days"] = lookback_days
             self._state["rebuild_done"] = False
@@ -463,8 +463,8 @@ class EonNextBackfillManager:
         made_progress = False
 
         # Spend the per-run request budget across meters, allowing multiple
-        # chunks per meter per cycle.  Live imports are never suspended now —
-        # each chunk is spliced in and later sums recomputed — so there is no
+        # chunks per meter per cycle.  Live imports are never suspended now -
+        # each chunk is spliced in and later sums recomputed - so there is no
         # reason to limit a cycle to one chunk per meter.
         while requests_remaining > 0 and not self._all_done_for_meters(meters):
             progressed_this_pass = False
@@ -564,7 +564,7 @@ class EonNextBackfillManager:
                     await self._run_backfill_cycle()
             except EonNextAuthError as err:
                 # A bad/expired token during backfill must start HA re-auth,
-                # not be swallowed as a warning — otherwise the loop hammers
+                # not be swallowed as a warning - otherwise the loop hammers
                 # the API with a dead token every cycle forever.
                 _LOGGER.warning(
                     "Historical backfill stopping to trigger re-auth: %s", err

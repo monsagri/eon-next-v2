@@ -8,8 +8,8 @@
  *    API does not carry (previous/next rates, off-peak windows, today's rate
  *    shape, account balance).
  *
- * The WS API exposes *current* rates only — there is no historical rate series
- * — so multi-day cost bars are `historical kWh × today's rates` (an
+ * The WS API exposes *current* rates only - there is no historical rate series
+ * - so multi-day cost bars are `historical kWh × today's rates` (an
  * approximation). Callers surface a footnote where that matters.
  */
 
@@ -115,7 +115,7 @@ function cachedLookup(
  * Find an entity for a meter by its `<serial> <name>`-derived object-id.
  *
  * Entity ids are `sensor.<slug(serial)>_<suffix>` (single underscores), while
- * the integration's *unique_ids* use a `<serial>__<suffix>` form — so we match
+ * the integration's *unique_ids* use a `<serial>__<suffix>` form - so we match
  * against the state map rather than assuming an exact id.
  */
 export function findMeterEntity(
@@ -226,27 +226,27 @@ export function isTimeOfUse(
 
 // --- Formatting -------------------------------------------------------------
 
-/** `£11.52` — money is already in pounds. */
+/** `£11.52` - money is already in pounds. */
 export function formatPounds(value: number | null | undefined, dp = 2): string {
-  if (value == null || !Number.isFinite(value)) return '—'
+  if (value == null || !Number.isFinite(value)) return '-'
   return `£${value.toFixed(dp)}`
 }
 
-/** `21.17p` — a GBP/kWh rate shown in pence. */
+/** `21.17p` - a GBP/kWh rate shown in pence. */
 export function formatPence(rate: number | null | undefined, dp = 2): string {
-  if (rate == null || !Number.isFinite(rate)) return '—'
+  if (rate == null || !Number.isFinite(rate)) return '-'
   return `${(rate * 100).toFixed(dp)}p`
 }
 
-/** `£0.2117` — a GBP/kWh rate shown to full precision. */
+/** `£0.2117` - a GBP/kWh rate shown to full precision. */
 export function formatRatePounds(rate: number | null | undefined): string {
-  if (rate == null || !Number.isFinite(rate)) return '—'
+  if (rate == null || !Number.isFinite(rate)) return '-'
   return `£${rate.toFixed(4)}`
 }
 
 /** Human date like `6 Jul`. */
 export function formatShortDate(value: string | null | undefined, locale = 'en'): string {
-  if (!value) return '—'
+  if (!value) return '-'
   const d = new Date(value.length <= 10 ? `${value}T00:00:00` : value)
   if (isNaN(d.getTime())) return value
   return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
@@ -254,7 +254,7 @@ export function formatShortDate(value: string | null | undefined, locale = 'en')
 
 /** Relative "updated" label, e.g. `just now`, `2 hrs ago`. */
 export function formatRelative(from: Date | null): string {
-  if (!from) return '—'
+  if (!from) return '-'
   const secs = Math.max(0, Math.round((Date.now() - from.getTime()) / 1000))
   if (secs < 45) return 'just now'
   const mins = Math.round(secs / 60)

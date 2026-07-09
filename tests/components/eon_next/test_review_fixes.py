@@ -86,7 +86,7 @@ def test_dynamic_tariff_off_peak_uses_cheap_quantile() -> None:
 
     # 12 distinct rising rates 1..12 pence.
     schedule = [{"value": float(v)} for v in range(1, 13)]
-    # A cheap slot (2p) is off-peak; a mid/high slot (9p) is not — even though
+    # A cheap slot (2p) is off-peak; a mid/high slot (9p) is not - even though
     # 9p is not the schedule maximum.
     assert _is_off_peak_rate(2.0, schedule) is True
     assert _is_off_peak_rate(9.0, schedule) is False

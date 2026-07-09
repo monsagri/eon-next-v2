@@ -44,7 +44,7 @@ class EonNextSummaryCard extends LitElement {
 
   updated() {
     // Re-fetch sparklines whenever the summary data is (re)loaded, not just
-    // once per element lifetime — the controller now refreshes periodically.
+    // once per element lifetime - the controller now refreshes periodically.
     if (this.hass && this._data.data && this._data.data !== this._sparklineDataRef) {
       this._sparklineDataRef = this._data.data
       this._fetchSparklines()

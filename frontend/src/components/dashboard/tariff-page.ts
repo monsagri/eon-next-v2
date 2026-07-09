@@ -125,7 +125,7 @@ class EonTariffPage extends LitElement {
           tou
             ? nothing
             : html`<div class="callout rate-callout">
-                You're on a fixed tariff, so there's no cheaper window — the price is
+                You're on a fixed tariff, so there's no cheaper window - the price is
                 identical every half-hour. On a time-of-use tariff this strip would shade
                 the off-peak hours automatically.
               </div>`

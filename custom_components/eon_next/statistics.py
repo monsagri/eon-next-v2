@@ -2,7 +2,7 @@
 
 Imports half-hourly (or daily) consumption data as external statistics
 with correct timestamps so the Energy Dashboard attributes consumption
-to the right period — even when data arrives late.
+to the right period - even when data arrives late.
 """
 
 from __future__ import annotations
@@ -160,7 +160,7 @@ async def _get_last_stat(
             f"last-statistic lookup failed for {statistic_id}: {err}"
         ) from err
 
-    # No prior statistic exists — a legitimate fresh start at zero.
+    # No prior statistic exists - a legitimate fresh start at zero.
     return None, 0.0
 
 
@@ -293,7 +293,7 @@ def _merge_and_recompute_series(
     When ``daily_granularity`` is set, each entry in ``new_hourly`` represents a
     whole local day collapsed into one hour bucket.  A daily bucket that landed
     on a day the coordinator already populated with finer half-hourly rows would
-    only overwrite one of that day's ~24 hours and leave the rest — inflating
+    only overwrite one of that day's ~24 hours and leave the rest - inflating
     the day by ~2x.  So a daily bucket is skipped for any day already covered by
     more than one existing row; the finer rows are more accurate and preserved.
     """
@@ -308,7 +308,7 @@ def _merge_and_recompute_series(
     effective_new = dict(new_hourly)
     if daily_granularity:
         # A daily bucket's own hour is the day's local midnight in UTC, so the
-        # local day spans exactly [day_hour, day_hour + 24h) — tz-robust without
+        # local day spans exactly [day_hour, day_hour + 24h) - tz-robust without
         # any local-time conversion here.
         for day_hour in list(effective_new):
             day_end = day_hour + timedelta(hours=24)
@@ -399,7 +399,7 @@ async def async_import_historical_statistics(
 
     Unlike the append-only live path, this splices earlier hours into the
     existing series and rewrites every subsequent cumulative sum so the series
-    stays monotonic — letting the historical backfill run concurrently with
+    stays monotonic - letting the historical backfill run concurrently with
     live 30-minute imports.  Adding a constant to all later sums does not
     change the per-period deltas the Energy Dashboard displays.
 
@@ -462,7 +462,7 @@ async def async_import_historical_statistics(
     # chunk (requests_per_run > 1 with delay_seconds = 0) must not read a stale
     # baseline and emit a regressive, non-monotonic sum.  ``async_add_external_
     # statistics`` only queues the write; block until the recorder has applied
-    # it so the next read — and any reader — sees a committed series.
+    # it so the next read - and any reader - sees a committed series.
     await get_instance(hass).async_block_till_done()
     _LOGGER.debug(
         "Backfilled %d hourly statistics for %s (rewrote from %s)",

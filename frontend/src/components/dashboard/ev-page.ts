@@ -1,6 +1,5 @@
 import { LitElement, html } from 'lit'
 import { property, state } from 'lit/decorators.js'
-import type { PropertyValues } from 'lit'
 import { getEvSchedule } from '../../api'
 import type { EvScheduleResponse, EvScheduleSlot } from '../../api'
 import type { HomeAssistant } from '../../types'
@@ -26,7 +25,7 @@ class EonEvPage extends LitElement {
   private _fetchedDeviceId: string | null = null
   private _fetchedToken = -1
 
-  updated(_changed: PropertyValues) {
+  updated() {
     if (!this.hass || !this.deviceId) return
     if (
       this.deviceId !== this._fetchedDeviceId ||
@@ -86,7 +85,7 @@ class EonEvPage extends LitElement {
             ${
               active
                 ? 'Schedule optimised for the cheapest overnight slots'
-                : 'No charge scheduled — plug in to schedule a cheap overnight charge'
+                : 'No charge scheduled - plug in to schedule a cheap overnight charge'
             }
           </div>
         </div>
@@ -179,7 +178,7 @@ function buildScheduleBars(slots: EvScheduleSlot[]): HalfHourBar[] {
 }
 
 function timeOfDay(d: Date): string {
-  if (isNaN(d.getTime())) return '—'
+  if (isNaN(d.getTime())) return '-'
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 

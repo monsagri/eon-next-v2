@@ -239,7 +239,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
 
     # All login, account/meter loading, and manager initialisation is wrapped
     # so that a failure is mapped to the correct HA outcome (re-auth vs retry)
-    # and the owned aiohttp session is always closed — otherwise an auth blip
+    # and the owned aiohttp session is always closed - otherwise an auth blip
     # or malformed payload escapes as a bare "Error" and leaks a session per
     # setup retry ("Unclosed client session").
     try:
@@ -282,7 +282,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> b
         ) from err
     except Exception as err:  # pylint: disable=broad-except
         # Any other failure (API/transport blip, malformed payload, storage
-        # error) is transient — let HA retry setup rather than showing an
+        # error) is transient - let HA retry setup rather than showing an
         # unhandled error, and never leak the session.
         await api.async_close()
         raise ConfigEntryNotReady(

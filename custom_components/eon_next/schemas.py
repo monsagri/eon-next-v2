@@ -126,7 +126,7 @@ class BackfillStatusResponse:
 
 
 # ---------------------------------------------------------------------------
-# Command registry — maps WS command type strings to response dataclasses
+# Command registry - maps WS command type strings to response dataclasses
 # ---------------------------------------------------------------------------
 
 WS_COMMANDS: dict[str, type] = {
@@ -137,7 +137,7 @@ WS_COMMANDS: dict[str, type] = {
 
 # Response types for *parameterized* commands (those that accept request
 # arguments beyond ``type``).  The code-generator emits interfaces for these
-# but does **not** generate zero-argument API wrapper functions — the typed
+# but does **not** generate zero-argument API wrapper functions - the typed
 # callers live in ``frontend/src/api.ts``.
 WS_EXTRA_RESPONSE_TYPES: list[type] = [
     ConsumptionHistoryResponse,

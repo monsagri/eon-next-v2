@@ -1008,7 +1008,7 @@ class TestReconcileFrontend:
             mock_register,
         )
 
-        # Unload entry A — entry B still wants the panel
+        # Unload entry A - entry B still wants the panel
         assert await hass.config_entries.async_unload(entry_a.entry_id)
         await hass.async_block_till_done()
 

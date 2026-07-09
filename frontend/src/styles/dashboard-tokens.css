@@ -9,8 +9,8 @@
  * Custom properties inherit through shadow-DOM boundaries, so defining them on
  * every dashboard component's :host keeps each component self-sufficient.
  *
- * box-sizing does NOT cross shadow boundaries, so it is reset here — in the one
- * file every dashboard component imports — rather than relying on the host page.
+ * box-sizing does NOT cross shadow boundaries, so it is reset here - in the one
+ * file every dashboard component imports - rather than relying on the host page.
  * The layout is authored for border-box (e.g. a 238px rail with 16px padding, a
  * width:100% content column with 40px padding); without this reset those paddings
  * add to the widths and the panel overflows its host by ~80px, which only shows

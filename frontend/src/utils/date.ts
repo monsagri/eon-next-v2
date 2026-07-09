@@ -5,7 +5,7 @@ const DATE_TIME_FORMAT = 'EEE d MMM, HH:mm'
 /** Format an ISO date-time for display in the user's local time zone. */
 export const formatDateTime = (value: string | null | undefined): string => {
   if (!value) {
-    return '—'
+    return '-'
   }
 
   const parsed = parseISO(value)

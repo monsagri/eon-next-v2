@@ -30,7 +30,7 @@ class EonStackedBarChart extends LitElement {
         class="bars"
         style="height:${this.height}px"
         role="img"
-        aria-label="Daily cost — energy used stacked on the standing charge"
+        aria-label="Daily cost - energy used stacked on the standing charge"
       >
         ${this.bars.map((b) => this._renderBar(b))}
       </div>

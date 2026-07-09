@@ -42,7 +42,7 @@ class EonMeterDetailPage extends LitElement {
   private _fetchedToken = -1
   private _requestId = 0
 
-  // Memoised chart/month math — recomputed only when its inputs change, so it
+  // Memoised chart/month math - recomputed only when its inputs change, so it
   // doesn't re-run on every unrelated `hass` state tick.
   private _memoHistory: ConsumptionHistoryEntry[] | null = null
   private _memoDays = -1
@@ -161,7 +161,7 @@ class EonMeterDetailPage extends LitElement {
             <ha-icon .icon=${fuel.icon} style="--mdc-icon-size:18px"></ha-icon>
           </span>
           <div>
-            <div class="mono meter-serial">Meter ${this.meter?.serial ?? '—'}</div>
+            <div class="mono meter-serial">Meter ${this.meter?.serial ?? '-'}</div>
             <div class="muted meter-descriptor">${descriptor}</div>
           </div>
         </div>
@@ -182,7 +182,7 @@ class EonMeterDetailPage extends LitElement {
     return html`
       <div class="card chart-card">
         <div class="chart-title-row">
-          <div class="chart-title">Daily cost — usage &amp; standing charge</div>
+          <div class="chart-title">Daily cost - usage &amp; standing charge</div>
           <div class="faint chart-range">${this._rangeLabel()}</div>
         </div>
         ${
@@ -210,14 +210,14 @@ class EonMeterDetailPage extends LitElement {
         ${
           kind === 'gas'
             ? html`<div class="callout">
-                In summer barely any gas is used — nearly every bar is
+                In summer barely any gas is used - nearly every bar is
                 <b>pure standing charge</b>. Heating usage grows the caps again from
                 autumn.
               </div>`
             : nothing
         }
         <div class="footnote faint">
-          Costs use today's unit rate applied to historical usage — an approximation, as
+          Costs use today's unit rate applied to historical usage - an approximation, as
           no historical rate series is available.
         </div>
       </div>

@@ -19,7 +19,7 @@ from custom_components.eon_next.const import (
     CONF_BACKFILL_REQUESTS_PER_RUN,
 )
 
-# Dynamic reference dates — keep tests valid regardless of when they run.
+# Dynamic reference dates - keep tests valid regardless of when they run.
 _REF_DT = datetime.now(tz=timezone.utc).replace(
     hour=0, minute=0, second=0, microsecond=0,
 )

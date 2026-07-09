@@ -76,7 +76,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * **coordinator:** derive unit rate, standing charge, and previous-day cost from tariff agreement data when the defunct daily-costs endpoint returns nothing
-* **frontend:** remove build-time version stamp that drifted from release-please managed version — the backend version badge is now the single source of truth
+* **frontend:** remove build-time version stamp that drifted from release-please managed version - the backend version badge is now the single source of truth
 
 ## [1.8.2](https://github.com/monsagri/eon-next-v2/compare/v1.8.1...v1.8.2) (2026-02-28)
 
@@ -149,7 +149,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 ### Bug Fixes
 
 * drop invalid state_class from CurrentUnitRateSensor ([249e3c3](https://github.com/monsagri/eon-next-v2/commit/249e3c32e38ab26daf4f96ff931565a3c5ecf6ad))
-* revert manual CHANGELOG entry — release-please generates it ([dd1ed3c](https://github.com/monsagri/eon-next-v2/commit/dd1ed3c4285c67c08309045bbaf0a0961492b163))
+* revert manual CHANGELOG entry - release-please generates it ([dd1ed3c](https://github.com/monsagri/eon-next-v2/commit/dd1ed3c4285c67c08309045bbaf0a0961492b163))
 
 ## [1.5.2](https://github.com/monsagri/eon-next-v2/compare/v1.5.1...v1.5.2) (2026-02-26)
 
@@ -211,7 +211,7 @@ This project is a fork of [madmachinations/eon-next-v2](https://github.com/madma
 
 ### Added
 
-- External statistics import via `async_add_external_statistics` for the Energy Dashboard — consumption is now attributed to the correct time period even when data arrives late
+- External statistics import via `async_add_external_statistics` for the Energy Dashboard - consumption is now attributed to the correct time period even when data arrives late
 - Half-hourly consumption data support from the REST API (falls back to daily, then GraphQL)
 
 ### Fixed
