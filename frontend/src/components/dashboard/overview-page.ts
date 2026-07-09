@@ -1,6 +1,5 @@
 import { LitElement, html, nothing } from 'lit'
 import { property, state } from 'lit/decorators.js'
-import type { PropertyValues } from 'lit'
 import { getBackfillStatus, getConsumptionHistory } from '../../api'
 import type { BackfillStatusResponse, ConsumptionHistoryEntry } from '../../api'
 import { WsDataController } from '../../controllers/ws-data-controller'
@@ -51,7 +50,7 @@ class EonOverviewPage extends LitElement {
   private _fetchedToken = -1
   private _fetching = new Set<string>()
 
-  updated(_changed: PropertyValues) {
+  updated() {
     if (!this.hass || !this.summary) return
     if (this.refreshToken !== this._fetchedToken) {
       this._fetchedToken = this.refreshToken
@@ -291,7 +290,7 @@ class EonOverviewPage extends LitElement {
                 standColor=${fuel.standColor}
                 .height=${88}
                 .maxBarWidth=${13}
-                ?showLabels=${false}
+                .showLabels=${false}
               ></eon-stacked-bar-chart>`
             : html`<div class="fuel-chart-empty"></div>`
         }

@@ -31,14 +31,6 @@ Notes:
 - On phones (including the iOS/Android Companion apps) a menu button in the top bar opens the Home Assistant sidebar, so you can always navigate away from the dashboard.
 - The panel is enabled by default. To hide it, go to **Settings → Devices & Services → Eon Next → Configure** and disable "Show EON Next dashboard in sidebar".
 
-## Branding
-
-The integration's brand is a **lightning bolt** on a rounded tile:
-
-- **Terracotta** tile / white bolt for light contexts, and a **dark** tile / terracotta bolt with a tan outline for dark contexts.
-- The bolt is the panel's brand mark and the Home Assistant **sidebar icon** (`mdi:lightning-bolt`), so the integration reads consistently across the app and HA config surfaces.
-- Source assets live in [`frontend/brand/`](frontend/brand/) (SVG + PNG, plus a favicon and a wordmark lockup).
-
 ## What this integration provides
 
 ### Meters, readings and consumption

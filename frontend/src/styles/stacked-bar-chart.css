@@ -48,6 +48,9 @@
   font-size: 10px;
   color: var(--eon-faint);
   font-family: var(--eon-font-mono);
-  overflow: hidden;
+  /* Labels are sparse for dense ranges (every 5th/15th bar), so let a label
+     spill into its empty neighbours rather than clip to one thin bar slot —
+     otherwise 30d/90d date labels get chopped to a single character. */
+  overflow: visible;
   white-space: nowrap;
 }

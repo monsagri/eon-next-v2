@@ -364,9 +364,9 @@ function barLabel(
   // Sparse labels for dense ranges: roughly every 5th (30d) / every 15th (90d).
   const stride = totalDays <= 31 ? 5 : 15
   if (index % stride !== 0 && index !== count - 1) return ''
-  return totalDays <= 31
-    ? d.toLocaleDateString(locale, { day: 'numeric' })
-    : d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+  // Always include the month: bare day numbers read as a broken axis when the
+  // range crosses a month boundary (…"28", "3", "7"…).
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
 }
 
 // --- Month-to-date / projection ---------------------------------------------
