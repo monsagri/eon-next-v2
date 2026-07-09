@@ -1,0 +1,229 @@
+/* Shared building blocks for the redesigned dashboard pages. */
+
+:host {
+  display: block;
+  color: var(--eon-text);
+  font-family: var(--eon-font-ui);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Cards --- */
+
+.card {
+  background: var(--eon-card);
+  border: 1px solid var(--eon-card-border);
+  border-radius: var(--eon-radius-card);
+  padding: 22px 24px;
+}
+
+.card--dark {
+  background: var(--eon-dark);
+  border: none;
+  color: var(--eon-on-dark);
+}
+
+.card--stat {
+  border-radius: var(--eon-radius-stat);
+  padding: 18px 20px;
+}
+
+.card--clickable {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+/* A clickable dark card keeps its light text: the generic `color: inherit`
+   above would otherwise pull in the page's dark text. */
+.card--dark.card--clickable {
+  color: var(--eon-on-dark);
+}
+
+.card--clickable:focus-visible {
+  outline: 2px solid var(--eon-elec);
+  outline-offset: 2px;
+}
+
+/* --- Typographic helpers --- */
+
+.serif {
+  font-family: var(--eon-font-serif);
+  font-weight: 400;
+}
+
+.mono {
+  font-family: var(--eon-font-mono);
+}
+
+.eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--eon-on-dark-muted);
+}
+
+.muted {
+  color: var(--eon-muted);
+}
+
+.faint {
+  color: var(--eon-faint);
+}
+
+/* --- Pills / badges --- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--eon-radius-pill);
+  padding: 5px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill--dark {
+  background: var(--eon-dark-pill);
+  color: var(--eon-accent-on-dark);
+  font-weight: 500;
+}
+
+.pill--green {
+  background: var(--eon-green-bg);
+  color: var(--eon-green-text);
+}
+
+.pill--ready {
+  background: var(--eon-green-ready-bg);
+  color: var(--eon-green-light);
+  font-weight: 700;
+  padding: 7px 15px;
+}
+
+/* --- Status dot --- */
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--eon-green);
+  flex: 0 0 auto;
+}
+
+/* --- Legend --- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 12px;
+  color: var(--eon-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+/* --- Amber callout --- */
+
+.callout {
+  font-size: 14px;
+  color: var(--eon-amber-text);
+  background: var(--eon-amber-bg);
+  border-radius: var(--eon-radius-tile);
+  padding: 11px 14px;
+}
+
+/* --- Icon tiles --- */
+
+.tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  flex: 0 0 auto;
+}
+
+.tile--elec {
+  background: var(--eon-elec-tile);
+  color: var(--eon-elec);
+}
+
+.tile--gas {
+  background: var(--eon-gas-tile);
+  color: var(--eon-gas);
+}
+
+/* --- Stat number --- */
+
+.stat-label {
+  font-size: 12px;
+  color: var(--eon-muted);
+}
+
+.stat-value {
+  font-family: var(--eon-font-serif);
+  font-weight: 400;
+  font-size: 26px;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--eon-faint);
+}
+
+/* --- Grids --- */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .grid-2,
+  .grid-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .grid-2,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Loading / empty --- */
+
+.placeholder {
+  color: var(--eon-faint);
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}

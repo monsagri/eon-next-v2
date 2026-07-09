@@ -35,7 +35,7 @@ Custom integration for E.ON Next accounts in Home Assistant.
 - Automatic retry on API outages — transient connectivity failures during login defer setup instead of invalidating stored credentials.
 - Network hardening for auth/login calls: GraphQL requests now retry once over IPv4 after connector-level network-unreachable failures.
 - Diagnostic status sensor for historical backfill progress.
-- **EON Next Dashboard**: A sidebar panel providing a single-pane energy overview (consumption, costs, meter readings, EV schedule).
+- **EON Next Dashboard**: A sidebar panel with a left-nav page switcher — Overview, Electricity, Gas, Tariff & rates and EV charging — that leads with monthly spend and makes the fixed daily standing charge visible everywhere.
 - **Lovelace cards**: Embeddable cards (starting with `eon-next-summary-card`) for power users to add to their own dashboards.
 
 ## Requirements
@@ -100,12 +100,16 @@ Conservative defaults:
 
 ## Energy Dashboard Panel
 
-After installation, an **EON Next** entry appears in the Home Assistant sidebar. It provides a zero-config overview of your meters, consumption, costs, and EV charging status.
+After installation, an **EON Next** entry appears in the Home Assistant sidebar. It opens a zero-config dashboard app with a left-nav page switcher.
 
+- **Overview** leads with month-to-date spend, a projected month-end total versus last month, a usage-vs-standing-charge split bar, per-fuel summary cards, your tariff at a glance and meter health.
+- **Electricity** and **Gas** each show a stacked daily-cost chart — energy used sits on top of the fixed daily standing charge — with a 7d/30d/90d/1y range toggle, headline stat cards and the latest meter reading.
+- **Tariff & rates** shows current/previous/next unit rates, standing charges and today's rate shape (flat, or shaded off-peak windows for time-of-use tariffs).
+- **EV charging** shows smart-charging status, the next scheduled charges and a half-hourly schedule strip.
 - The sidebar panel is enabled by default. To hide it, go to **Settings -> Devices & Services -> Eon Next -> Configure** and disable "Show EON Next dashboard in sidebar".
 - On phones (including the iOS/Android Companion apps) a menu button in the panel header opens the Home Assistant sidebar, so you can always navigate away from the dashboard.
 - The panel uses data already fetched by the integration's coordinator — no extra API calls.
-- "Today's cost" is shown as a derived value from today's consumption: `(kWh * current unit rate) + daily standing charge`.
+- Consumption cost bars use today's unit rate applied to historical usage (an approximation), since no historical rate series is available; standing-charge segments use the fixed per-day charge.
 - "Month to date" cost is shown as a running total computed from daily consumption history.
 - Consumption charts support selectable time ranges (7 days, 30 days, 90 days, or 1 year) with adaptive date labels.
 - EV charging schedule timestamps are displayed in a readable local date/time format.

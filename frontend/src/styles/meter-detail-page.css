@@ -1,0 +1,90 @@
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meter-id {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.meter-id .tile {
+  width: 34px;
+  height: 34px;
+}
+
+.meter-serial {
+  font-size: 11px;
+  color: var(--eon-faint);
+}
+
+.meter-descriptor {
+  font-size: 13px;
+}
+
+.chart-card {
+  padding: 26px 28px;
+}
+
+.chart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.chart-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.chart-range {
+  font-size: 12px;
+}
+
+.chart-legend {
+  margin-top: 16px;
+}
+
+.callout {
+  margin-top: 16px;
+}
+
+.footnote {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.reading-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-radius: var(--eon-radius-stat);
+  padding: 20px 24px;
+}
+
+.reading-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reading-descriptor {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.reading-value {
+  font-size: 22px;
+}
+
+.reading-unit {
+  font-size: 13px;
+}

@@ -1,0 +1,53 @@
+:host {
+  display: block;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.col {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  margin-inline: auto;
+}
+
+.stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.seg {
+  min-height: 1px;
+}
+
+.seg--usage {
+  border-radius: 3px 3px 0 0;
+}
+
+.seg--stand {
+  min-height: 2px;
+}
+
+.labels {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.label {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  color: var(--eon-faint);
+  font-family: var(--eon-font-mono);
+  overflow: hidden;
+  white-space: nowrap;
+}

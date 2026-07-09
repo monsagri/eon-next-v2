@@ -113,6 +113,11 @@
         gap: 16px;
         max-width: 900px;
       }
+      /* Full-bleed host for the redesigned panel app shell. */
+      .panel-host {
+        margin: 0 0 24px;
+        border-bottom: 4px solid #ddd;
+      }
     </style>
   </head>
   <body>
@@ -126,8 +131,7 @@
       </div>
     </div>
 
-    <div class="section">
-      <h2>Sidebar Panel</h2>
+    <div class="panel-host">
       <eon-next-panel id="panel"></eon-next-panel>
     </div>
 
