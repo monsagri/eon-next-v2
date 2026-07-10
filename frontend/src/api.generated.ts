@@ -23,6 +23,7 @@ export interface DayRate {
 export interface MeterSummary {
   serial: string | null
   type: string | null
+  provider: string | null
   latest_reading: number | null
   latest_reading_date: string | null
   daily_consumption: number | null
@@ -78,6 +79,19 @@ export interface BackfillStatusResponse {
   meters: BackfillMeterProgress[]
 }
 
+export interface AccountInfo {
+  entry_id: string
+  provider: string
+  provider_name: string
+  account_number: string | null
+  balance: number | null
+  status: string
+}
+
+export interface AccountsResponse {
+  accounts: AccountInfo[]
+}
+
 export interface ConsumptionHistoryEntry {
   date: string
   consumption: number
@@ -104,6 +118,7 @@ export interface EvScheduleResponse {
 export const WS_VERSION = 'eon_next/version' as const
 export const WS_DASHBOARD_SUMMARY = 'eon_next/dashboard_summary' as const
 export const WS_BACKFILL_STATUS = 'eon_next/backfill_status' as const
+export const WS_ACCOUNTS = 'eon_next/accounts' as const
 
 // --- Typed API functions ---
 
@@ -121,4 +136,8 @@ export async function getBackfillStatus(
   hass: HomeAssistant
 ): Promise<BackfillStatusResponse> {
   return hass.callWS<BackfillStatusResponse>({ type: WS_BACKFILL_STATUS })
+}
+
+export async function getAccounts(hass: HomeAssistant): Promise<AccountsResponse> {
+  return hass.callWS<AccountsResponse>({ type: WS_ACCOUNTS })
 }

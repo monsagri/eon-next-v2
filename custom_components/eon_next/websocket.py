@@ -13,13 +13,17 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
+from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, INTEGRATION_VERSION
+from .const import CONF_PROVIDER, DOMAIN, INTEGRATION_VERSION
 from .eonnext import EonNextAuthError
 from .models import EonNextConfigEntry
+from .providers import get_provider
 from .schemas import (
+    AccountInfo,
+    AccountsResponse,
     BackfillMeterProgress,
     BackfillStatusResponse,
     ConsumptionHistoryEntry,
@@ -74,6 +78,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_consumption_history)
     websocket_api.async_register_command(hass, ws_ev_schedule)
     websocket_api.async_register_command(hass, ws_backfill_status)
+    websocket_api.async_register_command(hass, ws_accounts)
 
 
 @websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
@@ -123,11 +128,13 @@ def ws_dashboard_summary(
         if coordinator.data is None:
             continue
 
+        provider_id = get_provider(entry.data.get(CONF_PROVIDER)).id
+
         for key, data in coordinator.data.items():
             data_type = data.get("type")
 
             if data_type in ("electricity", "gas"):
-                meters.append(_meter_summary(data))
+                meters.append(_meter_summary(data, provider_id))
 
             elif data_type == "ev_charger":
                 schedule = data.get("schedule", [])
@@ -158,7 +165,7 @@ def ws_dashboard_summary(
     )
 
 
-def _meter_summary(data: dict[str, Any]) -> MeterSummary:
+def _meter_summary(data: dict[str, Any], provider_id: str) -> MeterSummary:
     """Build a :class:`MeterSummary` from a meter's coordinator data.
 
     The tariff/rate detail is derived here (via ``tariff_helpers``) so the
@@ -182,6 +189,7 @@ def _meter_summary(data: dict[str, Any]) -> MeterSummary:
     return MeterSummary(
         serial=data.get("serial"),
         type=data.get("type"),
+        provider=provider_id,
         latest_reading=data.get("latest_reading"),
         latest_reading_date=data.get("latest_reading_date"),
         daily_consumption=data.get("daily_consumption"),
@@ -202,6 +210,80 @@ def _meter_summary(data: dict[str, Any]) -> MeterSummary:
         next_unit_rate_valid_to=following.valid_to if following else None,
         is_time_of_use=bool(data.get("tariff_is_tou", False)),
         day_rates=day_rates,
+    )
+
+
+def _entry_status(hass: HomeAssistant, entry: EonNextConfigEntry) -> str:
+    """A coarse health label for a config entry, for the accounts surface."""
+    if entry.state is ConfigEntryState.LOADED:
+        return "connected"
+    if any(entry.async_get_active_flows(hass, {SOURCE_REAUTH})):
+        return "reauth_required"
+    return "error"
+
+
+@websocket_api.websocket_command(  # pyright: ignore[reportPrivateImportUsage]
+    {vol.Required("type"): "eon_next/accounts"}
+)
+@callback
+def ws_accounts(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,  # pyright: ignore[reportPrivateImportUsage]
+    msg: dict[str, Any],
+) -> None:
+    """List the configured provider accounts (one per config entry/account).
+
+    Read-only and secret-free: it powers the Settings "connected accounts"
+    surface; account management itself stays in Home Assistant's config flow.
+    Reads only in-memory data, so it's a synchronous ``@callback``.
+    """
+    accounts: list[AccountInfo] = []
+
+    entries: list[EonNextConfigEntry] = (
+        hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
+    )
+
+    for entry in entries:
+        provider = get_provider(entry.data.get(CONF_PROVIDER))
+        status = _entry_status(hass, entry)
+
+        runtime_data = getattr(entry, "runtime_data", None)
+        coordinator = runtime_data.coordinator if runtime_data else None
+        data_map = coordinator.data if coordinator and coordinator.data else {}
+
+        account_rows = [
+            data for data in data_map.values() if data.get("type") == "account"
+        ]
+
+        if account_rows:
+            for data in account_rows:
+                accounts.append(
+                    AccountInfo(
+                        entry_id=entry.entry_id,
+                        provider=provider.id,
+                        provider_name=provider.display_name,
+                        account_number=data.get("account_number"),
+                        balance=data.get("balance"),
+                        status=status,
+                    )
+                )
+        else:
+            # No runtime data yet (setup failed / pending) - still list the
+            # account so the user can see it needs attention.
+            accounts.append(
+                AccountInfo(
+                    entry_id=entry.entry_id,
+                    provider=provider.id,
+                    provider_name=provider.display_name,
+                    account_number=None,
+                    balance=None,
+                    status=status,
+                )
+            )
+
+    connection.send_result(
+        msg["id"],
+        dataclasses.asdict(AccountsResponse(accounts=accounts)),
     )
 
 

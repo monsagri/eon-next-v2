@@ -48,6 +48,8 @@ class MeterSummary:
 
     serial: str | None
     type: str | None
+    # Provider id this meter belongs to (attribution for multi-provider setups).
+    provider: str | None
     latest_reading: float | None
     latest_reading_date: str | None
     daily_consumption: float | None
@@ -92,8 +94,33 @@ class DashboardSummary:
     meters: list[MeterSummary]
     ev_chargers: list[EvChargerSummary]
     # Total account balance in pounds (positive = in credit), summed across
-    # configured accounts; ``None`` when no balance is known.
+    # configured accounts; ``None`` when no balance is known. Per-account
+    # balances are available via ``eon_next/accounts`` (AccountInfo).
     account_balance: float | None
+
+
+@dataclass
+class AccountInfo:
+    """A single configured provider account (one Home Assistant config entry).
+
+    Powers the Settings "connected accounts" surface. Read-only and free of
+    secrets - account management stays in Home Assistant's own config flow.
+    """
+
+    entry_id: str
+    provider: str
+    provider_name: str
+    account_number: str | None
+    balance: float | None
+    # "connected" | "reauth_required" | "error"
+    status: str
+
+
+@dataclass
+class AccountsResponse:
+    """Response from ``eon_next/accounts``."""
+
+    accounts: list[AccountInfo]
 
 
 @dataclass
@@ -171,6 +198,7 @@ WS_COMMANDS: dict[str, type] = {
     "eon_next/version": VersionResponse,
     "eon_next/dashboard_summary": DashboardSummary,
     "eon_next/backfill_status": BackfillStatusResponse,
+    "eon_next/accounts": AccountsResponse,
 }
 
 # Response types for *parameterized* commands (those that accept request

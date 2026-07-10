@@ -273,6 +273,8 @@ class TestWsDashboardSummary:
         assert len(result["meters"]) == 1
         assert result["meters"][0]["serial"] == "E123"
         assert result["meters"][0]["type"] == "electricity"
+        # Meters are attributed to their provider (default = E.ON Next).
+        assert result["meters"][0]["provider"] == "eon_next"
         assert result["ev_chargers"] == []
 
     @pytest.mark.asyncio
@@ -378,6 +380,51 @@ class TestWsDashboardSummary:
 
         result = mock_connection.send_result.call_args[0][1]
         assert result["account_balance"] == 15.5
+
+
+class TestWsAccounts:
+    """Tests for the eon_next/accounts WebSocket handler."""
+
+    @pytest.mark.asyncio
+    async def test_ws_accounts_lists_configured_account(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "account::A-1": {
+                    "type": "account",
+                    "account_number": "A-1",
+                    "balance": 12.5,
+                },
+            }
+        )
+
+        from custom_components.eon_next.websocket import ws_accounts
+
+        mock_connection = MagicMock()
+        ws_accounts(hass, mock_connection, {"id": 9, "type": "eon_next/accounts"})
+        await hass.async_block_till_done()
+
+        result = mock_connection.send_result.call_args[0][1]
+        assert len(result["accounts"]) == 1
+        account = result["accounts"][0]
+        assert account["provider"] == "eon_next"
+        assert account["provider_name"] == "E.ON Next"
+        assert account["account_number"] == "A-1"
+        assert account["balance"] == 12.5
+        assert account["status"] in ("connected", "reauth_required", "error")
+        assert account["entry_id"] == entry.entry_id
 
 
 class TestWsConsumptionHistory:
