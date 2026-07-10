@@ -12,9 +12,11 @@ export {
   getVersion,
   getDashboardSummary,
   getBackfillStatus,
+  getAccounts,
   WS_VERSION,
   WS_DASHBOARD_SUMMARY,
-  WS_BACKFILL_STATUS
+  WS_BACKFILL_STATUS,
+  WS_ACCOUNTS
 } from './api.generated'
 
 export type {
@@ -23,7 +25,9 @@ export type {
   EvScheduleSlot,
   EvScheduleResponse,
   BackfillMeterProgress,
-  BackfillStatusResponse
+  BackfillStatusResponse,
+  AccountInfo,
+  AccountsResponse
 } from './api.generated'
 
 import type { HomeAssistant } from './types'

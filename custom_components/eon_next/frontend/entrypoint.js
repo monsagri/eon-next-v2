@@ -1,4 +1,4 @@
-function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPropertyDescriptor(t,s):a;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)n=Reflect.decorate(e,t,s,a);else for(var o=e.length-1;o>=0;o--)(i=e[o])&&(n=(r<3?i(n):r>3?i(t,s,n):i(t,s))||n);return r>3&&n&&Object.defineProperty(t,s,n),n}"function"==typeof SuppressedError&&SuppressedError;const t=globalThis,s=t.ShadowRoot&&(void 0===t.ShadyCSS||t.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,a=Symbol(),i=new WeakMap;let r=class{constructor(e,t,s){if(this._$cssResult$=!0,s!==a)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o;const t=this.t;if(s&&void 0===e){const s=void 0!==t&&1===t.length;s&&(e=i.get(t)),void 0===e&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),s&&i.set(t,e))}return e}toString(){return this.cssText}};const n=(e,...t)=>{const s=1===e.length?e[0]:t.reduce((t,s,a)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if("number"==typeof e)return e;throw Error("Value passed to 'css' function must be a 'css' function result: "+e+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+e[a+1],e[0]);return new r(s,e,a)},o=s?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t="";for(const s of e.cssRules)t+=s.cssText;return(e=>new r("string"==typeof e?e:e+"",void 0,a))(t)})(e):e,{is:l,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:h,getOwnPropertySymbols:p,getPrototypeOf:u}=Object,g=globalThis,f=g.trustedTypes,v=f?f.emptyScript:"",m=g.reactiveElementPolyfillSupport,b=(e,t)=>e,y={toAttribute(e,t){switch(t){case Boolean:e=e?v:null;break;case Object:case Array:e=null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){let s=e;switch(t){case Boolean:s=null!==e;break;case Number:s=null===e?null:Number(e);break;case Object:case Array:try{s=JSON.parse(e)}catch(e){s=null}}return s}},x=(e,t)=>!l(e,t),_={attribute:!0,type:String,converter:y,reflect:!1,useDefault:!1,hasChanged:x};Symbol.metadata??=Symbol("metadata"),g.litPropertyMetadata??=new WeakMap;let $=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=_){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){const s=Symbol(),a=this.getPropertyDescriptor(e,s,t);void 0!==a&&d(this.prototype,e,a)}}static getPropertyDescriptor(e,t,s){const{get:a,set:i}=c(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get:a,set(t){const r=a?.call(this);i?.call(this,t),this.requestUpdate(e,r,s)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??_}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const e=u(this);e.finalize(),void 0!==e.l&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const e=this.properties,t=[...h(e),...p(e)];for(const s of t)this.createProperty(s,e[s])}const e=this[Symbol.metadata];if(null!==e){const t=litPropertyMetadata.get(e);if(void 0!==t)for(const[e,s]of t)this.elementProperties.set(e,s)}this._$Eh=new Map;for(const[e,t]of this.elementProperties){const s=this._$Eu(e,t);void 0!==s&&this._$Eh.set(s,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){const t=[];if(Array.isArray(e)){const s=new Set(e.flat(1/0).reverse());for(const e of s)t.unshift(o(e))}else void 0!==e&&t.push(o(e));return t}static _$Eu(e,t){const s=t.attribute;return!1===s?void 0:"string"==typeof s?s:"string"==typeof e?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),void 0!==this.renderRoot&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){const e=new Map,t=this.constructor.elementProperties;for(const s of t.keys())this.hasOwnProperty(s)&&(e.set(s,this[s]),delete this[s]);e.size>0&&(this._$Ep=e)}createRenderRoot(){const e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((e,a)=>{if(s)e.adoptedStyleSheets=a.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet);else for(const s of a){const a=document.createElement("style"),i=t.litNonce;void 0!==i&&a.setAttribute("nonce",i),a.textContent=s.cssText,e.appendChild(a)}})(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,s){this._$AK(e,s)}_$ET(e,t){const s=this.constructor.elementProperties.get(e),a=this.constructor._$Eu(e,s);if(void 0!==a&&!0===s.reflect){const i=(void 0!==s.converter?.toAttribute?s.converter:y).toAttribute(t,s.type);this._$Em=e,null==i?this.removeAttribute(a):this.setAttribute(a,i),this._$Em=null}}_$AK(e,t){const s=this.constructor,a=s._$Eh.get(e);if(void 0!==a&&this._$Em!==a){const e=s.getPropertyOptions(a),i="function"==typeof e.converter?{fromAttribute:e.converter}:void 0!==e.converter?.fromAttribute?e.converter:y;this._$Em=a;const r=i.fromAttribute(t,e.type);this[a]=r??this._$Ej?.get(a)??r,this._$Em=null}}requestUpdate(e,t,s,a=!1,i){if(void 0!==e){const r=this.constructor;if(!1===a&&(i=this[e]),s??=r.getPropertyOptions(e),!((s.hasChanged??x)(i,t)||s.useDefault&&s.reflect&&i===this._$Ej?.get(e)&&!this.hasAttribute(r._$Eu(e,s))))return;this.C(e,t,s)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(e,t,{useDefault:s,reflect:a,wrapped:i},r){s&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,r??t??this[e]),!0!==i||void 0!==r)||(this._$AL.has(e)||(this.hasUpdated||s||(t=void 0),this._$AL.set(e,t)),!0===a&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}const e=this.scheduleUpdate();return null!=e&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}const e=this.constructor.elementProperties;if(e.size>0)for(const[t,s]of e){const{wrapped:e}=s,a=this[t];!0!==e||this._$AL.has(t)||void 0===a||this.C(t,void 0,s,a)}}let e=!1;const t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(e=>e.hostUpdate?.()),this.update(t)):this._$EM()}catch(t){throw e=!1,this._$EM(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(e=>e.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(e=>this._$ET(e,this[e])),this._$EM()}updated(e){}firstUpdated(e){}};$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[b("elementProperties")]=new Map,$[b("finalized")]=new Map,m?.({ReactiveElement:$}),(g.reactiveElementVersions??=[]).push("2.1.2");const w=globalThis,k=e=>e,C=w.trustedTypes,A=C?C.createPolicy("lit-html",{createHTML:e=>e}):void 0,S="$lit$",T=`lit$${Math.random().toFixed(9).slice(2)}$`,E="?"+T,z=`<${E}>`,N=document,D=()=>N.createComment(""),M=e=>null===e||"object"!=typeof e&&"function"!=typeof e,P=Array.isArray,H="[ \t\n\f\r]",U=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,R=/-->/g,O=/>/g,j=RegExp(`>|${H}(?:([^\\s"'>=/]+)(${H}*=${H}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),L=/'/g,F=/"/g,I=/^(?:script|style|textarea|title)$/i,B=(e=>(t,...s)=>({_$litType$:e,strings:t,values:s}))(1),q=Symbol.for("lit-noChange"),W=Symbol.for("lit-nothing"),V=new WeakMap,Y=N.createTreeWalker(N,129);function G(e,t){if(!P(e)||!e.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==A?A.createHTML(t):t}const K=(e,t)=>{const s=e.length-1,a=[];let i,r=2===t?"<svg>":3===t?"<math>":"",n=U;for(let t=0;t<s;t++){const s=e[t];let o,l,d=-1,c=0;for(;c<s.length&&(n.lastIndex=c,l=n.exec(s),null!==l);)c=n.lastIndex,n===U?"!--"===l[1]?n=R:void 0!==l[1]?n=O:void 0!==l[2]?(I.test(l[2])&&(i=RegExp("</"+l[2],"g")),n=j):void 0!==l[3]&&(n=j):n===j?">"===l[0]?(n=i??U,d=-1):void 0===l[1]?d=-2:(d=n.lastIndex-l[2].length,o=l[1],n=void 0===l[3]?j:'"'===l[3]?F:L):n===F||n===L?n=j:n===R||n===O?n=U:(n=j,i=void 0);const h=n===j&&e[t+1].startsWith("/>")?" ":"";r+=n===U?s+z:d>=0?(a.push(o),s.slice(0,d)+S+s.slice(d)+T+h):s+T+(-2===d?t:h)}return[G(e,r+(e[s]||"<?>")+(2===t?"</svg>":3===t?"</math>":"")),a]};class J{constructor({strings:e,_$litType$:t},s){let a;this.parts=[];let i=0,r=0;const n=e.length-1,o=this.parts,[l,d]=K(e,t);if(this.el=J.createElement(l,s),Y.currentNode=this.el.content,2===t||3===t){const e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;null!==(a=Y.nextNode())&&o.length<n;){if(1===a.nodeType){if(a.hasAttributes())for(const e of a.getAttributeNames())if(e.endsWith(S)){const t=d[r++],s=a.getAttribute(e).split(T),n=/([.?@])?(.*)/.exec(t);o.push({type:1,index:i,name:n[2],strings:s,ctor:"."===n[1]?te:"?"===n[1]?se:"@"===n[1]?ae:ee}),a.removeAttribute(e)}else e.startsWith(T)&&(o.push({type:6,index:i}),a.removeAttribute(e));if(I.test(a.tagName)){const e=a.textContent.split(T),t=e.length-1;if(t>0){a.textContent=C?C.emptyScript:"";for(let s=0;s<t;s++)a.append(e[s],D()),Y.nextNode(),o.push({type:2,index:++i});a.append(e[t],D())}}}else if(8===a.nodeType)if(a.data===E)o.push({type:2,index:i});else{let e=-1;for(;-1!==(e=a.data.indexOf(T,e+1));)o.push({type:7,index:i}),e+=T.length-1}i++}}static createElement(e,t){const s=N.createElement("template");return s.innerHTML=e,s}}function Z(e,t,s=e,a){if(t===q)return t;let i=void 0!==a?s._$Co?.[a]:s._$Cl;const r=M(t)?void 0:t._$litDirective$;return i?.constructor!==r&&(i?._$AO?.(!1),void 0===r?i=void 0:(i=new r(e),i._$AT(e,s,a)),void 0!==a?(s._$Co??=[])[a]=i:s._$Cl=i),void 0!==i&&(t=Z(e,i._$AS(e,t.values),i,a)),t}class Q{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){const{el:{content:t},parts:s}=this._$AD,a=(e?.creationScope??N).importNode(t,!0);Y.currentNode=a;let i=Y.nextNode(),r=0,n=0,o=s[0];for(;void 0!==o;){if(r===o.index){let t;2===o.type?t=new X(i,i.nextSibling,this,e):1===o.type?t=new o.ctor(i,o.name,o.strings,this,e):6===o.type&&(t=new ie(i,this,e)),this._$AV.push(t),o=s[++n]}r!==o?.index&&(i=Y.nextNode(),r++)}return Y.currentNode=N,a}p(e){let t=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(e,s,t),t+=s.strings.length-2):s._$AI(e[t])),t++}}class X{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,s,a){this.type=2,this._$AH=W,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=s,this.options=a,this._$Cv=a?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode;const t=this._$AM;return void 0!==t&&11===e?.nodeType&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=Z(this,e,t),M(e)?e===W||null==e||""===e?(this._$AH!==W&&this._$AR(),this._$AH=W):e!==this._$AH&&e!==q&&this._(e):void 0!==e._$litType$?this.$(e):void 0!==e.nodeType?this.T(e):(e=>P(e)||"function"==typeof e?.[Symbol.iterator])(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==W&&M(this._$AH)?this._$AA.nextSibling.data=e:this.T(N.createTextNode(e)),this._$AH=e}$(e){const{values:t,_$litType$:s}=e,a="number"==typeof s?this._$AC(e):(void 0===s.el&&(s.el=J.createElement(G(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===a)this._$AH.p(t);else{const e=new Q(a,this),s=e.u(this.options);e.p(t),this.T(s),this._$AH=e}}_$AC(e){let t=V.get(e.strings);return void 0===t&&V.set(e.strings,t=new J(e)),t}k(e){P(this._$AH)||(this._$AH=[],this._$AR());const t=this._$AH;let s,a=0;for(const i of e)a===t.length?t.push(s=new X(this.O(D()),this.O(D()),this,this.options)):s=t[a],s._$AI(i),a++;a<t.length&&(this._$AR(s&&s._$AB.nextSibling,a),t.length=a)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){const t=k(e).nextSibling;k(e).remove(),e=t}}setConnected(e){void 0===this._$AM&&(this._$Cv=e,this._$AP?.(e))}}class ee{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,s,a,i){this.type=1,this._$AH=W,this._$AN=void 0,this.element=e,this.name=t,this._$AM=a,this.options=i,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=W}_$AI(e,t=this,s,a){const i=this.strings;let r=!1;if(void 0===i)e=Z(this,e,t,0),r=!M(e)||e!==this._$AH&&e!==q,r&&(this._$AH=e);else{const a=e;let n,o;for(e=i[0],n=0;n<i.length-1;n++)o=Z(this,a[s+n],t,n),o===q&&(o=this._$AH[n]),r||=!M(o)||o!==this._$AH[n],o===W?e=W:e!==W&&(e+=(o??"")+i[n+1]),this._$AH[n]=o}r&&!a&&this.j(e)}j(e){e===W?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}}class te extends ee{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===W?void 0:e}}class se extends ee{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==W)}}class ae extends ee{constructor(e,t,s,a,i){super(e,t,s,a,i),this.type=5}_$AI(e,t=this){if((e=Z(this,e,t,0)??W)===q)return;const s=this._$AH,a=e===W&&s!==W||e.capture!==s.capture||e.once!==s.once||e.passive!==s.passive,i=e!==W&&(s===W||a);a&&this.element.removeEventListener(this.name,this,s),i&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}}class ie{constructor(e,t,s){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=s}get _$AU(){return this._$AM._$AU}_$AI(e){Z(this,e)}}const re=w.litHtmlPolyfillSupport;re?.(J,X),(w.litHtmlVersions??=[]).push("3.3.2");const ne=globalThis;class oe extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){const t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=((e,t,s)=>{const a=s?.renderBefore??t;let i=a._$litPart$;if(void 0===i){const e=s?.renderBefore??null;a._$litPart$=i=new X(t.insertBefore(D(),e),e,void 0,s??{})}return i._$AI(e),i})(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return q}}oe._$litElement$=!0,oe.finalized=!0,ne.litElementHydrateSupport?.({LitElement:oe});const le=ne.litElementPolyfillSupport;le?.({LitElement:oe}),(ne.litElementVersions??=[]).push("4.2.2");const de={attribute:!0,type:String,converter:y,reflect:!1,hasChanged:x},ce=(e=de,t,s)=>{const{kind:a,metadata:i}=s;let r=globalThis.litPropertyMetadata.get(i);if(void 0===r&&globalThis.litPropertyMetadata.set(i,r=new Map),"setter"===a&&((e=Object.create(e)).wrapped=!0),r.set(s.name,e),"accessor"===a){const{name:a}=s;return{set(s){const i=t.get.call(this);t.set.call(this,s),this.requestUpdate(a,i,e,!0,s)},init(t){return void 0!==t&&this.C(a,void 0,e,t),t}}}if("setter"===a){const{name:a}=s;return function(s){const i=this[a];t.call(this,s),this.requestUpdate(a,i,e,!0,s)}}throw Error("Unsupported decorator location: "+a)};function he(e){return(t,s)=>"object"==typeof s?ce(e,t,s):((e,t,s)=>{const a=t.hasOwnProperty(s);return t.constructor.createProperty(s,e),a?Object.getOwnPropertyDescriptor(t,s):void 0})(e,t,s)}function pe(e){return he({...e,state:!0,attribute:!1})}async function ue(e){return e.callWS({type:"eon_next/backfill_status"})}async function ge(e,t,s=7){return e.callWS({type:"eon_next/consumption_history",meter_serial:t,days:s})}const fe={name:"EON Next",sub:"home energy",logoPath:"M27 4 11 27h11l-2 17 18-24H26z",fontsUrl:"https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Mono&display=swap",fontsId:"eon-next-fonts"};class ve{constructor(e,t){this._host=e,this._fetcher=t,this.data=null,this.loading=!0,this.refreshing=!1,this.error=null,this._requestSeq=0,this._lastConnection=void 0,this._started=!1,this._host.addController(this)}hostConnected(){this._startTimer()}hostUpdated(){const e=this._host.hass;e&&(this._started?this._lastConnection!==e.connection&&(this._lastConnection=e.connection,this._fetch(e)):(this._started=!0,this._fetch(e)))}async refresh(){const e=this._host.hass;e&&await this._fetch(e)}_startTimer(){this._stopTimer(),this._timer=setInterval(()=>{const e=this._host.hass;e&&this._fetch(e)},3e5)}_stopTimer(){void 0!==this._timer&&(clearInterval(this._timer),this._timer=void 0)}async _fetch(e){const t=++this._requestSeq;this._lastConnection=e.connection,null===this.data?this.loading=!0:this.refreshing=!0,this.error=null,this._host.requestUpdate();try{const s=await this._fetcher(e);if(t!==this._requestSeq)return;this.data=s}catch(e){if(t!==this._requestSeq)return;this.error=e instanceof Error?e.message:String(e)}finally{t===this._requestSeq&&(this.loading=!1,this.refreshing=!1,this._host.requestUpdate())}}hostDisconnected(){this._stopTimer(),this._requestSeq++,this.data=null,this.loading=!0,this.refreshing=!1,this._lastConnection=void 0,this._started=!1}}let me={symbol:"£",minorSymbol:"p",minorScale:100,symbolBefore:!0};function be(e,t){return t.symbolBefore?`${t.symbol}${e}`:`${e}${t.symbol}`}function ye(e,t){return e?e.meters.find(e=>xe(e.type)===t)??null:null}function xe(e){return"gas"===e?"gas":"electricity"}const _e={electricity:{label:"Electricity",icon:"mdi:lightning-bolt",tileClass:"tile--elec",usageColor:"var(--eon-elec)",standColor:"var(--eon-elec-standing)"},gas:{label:"Gas",icon:"mdi:fire",tileClass:"tile--gas",usageColor:"var(--eon-gas)",standColor:"var(--eon-gas-standing)"}};function $e(e,t){if(!e)return{rate:null,validFrom:null,validTo:null};switch(t){case"current":return{rate:e.unit_rate,validFrom:e.unit_rate_valid_from,validTo:e.unit_rate_valid_to};case"previous":return{rate:e.previous_unit_rate,validFrom:e.previous_unit_rate_valid_from,validTo:e.previous_unit_rate_valid_to};case"next":return{rate:e.next_unit_rate,validFrom:e.next_unit_rate_valid_from,validTo:e.next_unit_rate_valid_to}}}function we(e){return e?.is_time_of_use??!1}function ke(e,t=2){return function(e,t=2,s=me){return null!=e&&Number.isFinite(e)?be(e.toFixed(t),s):"-"}(e,t)}function Ce(e,t=2){return function(e,t=2,s=me){return null!=e&&Number.isFinite(e)?`${(e*s.minorScale).toFixed(t)}${s.minorSymbol}`:"-"}(e,t)}function Ae(e){return function(e,t=4,s=me){return null!=e&&Number.isFinite(e)?be(e.toFixed(t),s):"-"}(e)}function Se(e,t="en"){if(!e)return"-";const s=new Date(e.length<=10?`${e}T00:00:00`:e);return isNaN(s.getTime())?e:s.toLocaleDateString(t,{day:"numeric",month:"short"})}function Te(e,t,s,a,i="en"){const r=t??0,n=s??0,o=e.map(e=>({date:e.date,usageCost:Math.max(0,e.consumption)*r,standCost:n})),l=Math.max(1e-4,...o.map(e=>e.usageCost+e.standCost));return o.map((t,s)=>({usagePct:t.usageCost/l*100,standPct:t.standCost/l*100,usageCost:t.usageCost,standCost:t.standCost,label:Ee(t.date,s,e.length,a,i)}))}function Ee(e,t,s,a,i){const r=new Date(`${e}T00:00:00`);if(isNaN(r.getTime()))return"";if(a<=14)return r.toLocaleDateString(i,{weekday:"short"});return t%(a<=31?5:15)!==0&&t!==s-1?"":r.toLocaleDateString(i,{day:"numeric",month:"short"})}function ze(e,t,s,a){const i=t??0,r=s??0,n=a.getFullYear(),o=a.getMonth(),l=new Date(n,o-1,1),d=l.getFullYear(),c=l.getMonth();let h=0,p=0,u=0,g=0;for(const t of e){const e=new Date(`${t.date}T00:00:00`);if(isNaN(e.getTime()))continue;const s=Math.max(0,t.consumption)*i+r;e.getFullYear()===n&&e.getMonth()===o?(h+=s,p++):e.getFullYear()===d&&e.getMonth()===c&&(u+=s,g++)}return{monthToDate:Ne(h),daysWithData:p,previousMonth:g>0?Ne(u):null}}function Ne(e){return Math.round(100*e)/100}const De=[{page:"overview",label:"Overview",icon:"mdi:view-grid-outline"},{page:"elec",label:"Electricity",icon:"mdi:lightning-bolt"},{page:"gas",label:"Gas",icon:"mdi:fire"},{page:"tariff",label:"Tariff & rates",icon:"mdi:tag-outline"},{page:"ev",label:"EV charging",icon:"mdi:ev-station"}],Me={overview:"Overview",elec:"Electricity",gas:"Gas",tariff:"Tariff & rates",ev:"EV charging",settings:"Settings"},Pe=n`/*
+function e(e,t,a,s){var i,r=arguments.length,n=r<3?t:null===s?s=Object.getOwnPropertyDescriptor(t,a):s;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)n=Reflect.decorate(e,t,a,s);else for(var o=e.length-1;o>=0;o--)(i=e[o])&&(n=(r<3?i(n):r>3?i(t,a,n):i(t,a))||n);return r>3&&n&&Object.defineProperty(t,a,n),n}"function"==typeof SuppressedError&&SuppressedError;const t=globalThis,a=t.ShadowRoot&&(void 0===t.ShadyCSS||t.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s=Symbol(),i=new WeakMap;let r=class{constructor(e,t,a){if(this._$cssResult$=!0,a!==s)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o;const t=this.t;if(a&&void 0===e){const a=void 0!==t&&1===t.length;a&&(e=i.get(t)),void 0===e&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),a&&i.set(t,e))}return e}toString(){return this.cssText}};const n=(e,...t)=>{const a=1===e.length?e[0]:t.reduce((t,a,s)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if("number"==typeof e)return e;throw Error("Value passed to 'css' function must be a 'css' function result: "+e+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(a)+e[s+1],e[0]);return new r(a,e,s)},o=a?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t="";for(const a of e.cssRules)t+=a.cssText;return(e=>new r("string"==typeof e?e:e+"",void 0,s))(t)})(e):e,{is:l,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:h,getOwnPropertySymbols:p,getPrototypeOf:u}=Object,g=globalThis,f=g.trustedTypes,v=f?f.emptyScript:"",m=g.reactiveElementPolyfillSupport,b=(e,t)=>e,x={toAttribute(e,t){switch(t){case Boolean:e=e?v:null;break;case Object:case Array:e=null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){let a=e;switch(t){case Boolean:a=null!==e;break;case Number:a=null===e?null:Number(e);break;case Object:case Array:try{a=JSON.parse(e)}catch(e){a=null}}return a}},y=(e,t)=>!l(e,t),_={attribute:!0,type:String,converter:x,reflect:!1,useDefault:!1,hasChanged:y};Symbol.metadata??=Symbol("metadata"),g.litPropertyMetadata??=new WeakMap;let $=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=_){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){const a=Symbol(),s=this.getPropertyDescriptor(e,a,t);void 0!==s&&d(this.prototype,e,s)}}static getPropertyDescriptor(e,t,a){const{get:s,set:i}=c(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get:s,set(t){const r=s?.call(this);i?.call(this,t),this.requestUpdate(e,r,a)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??_}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const e=u(this);e.finalize(),void 0!==e.l&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const e=this.properties,t=[...h(e),...p(e)];for(const a of t)this.createProperty(a,e[a])}const e=this[Symbol.metadata];if(null!==e){const t=litPropertyMetadata.get(e);if(void 0!==t)for(const[e,a]of t)this.elementProperties.set(e,a)}this._$Eh=new Map;for(const[e,t]of this.elementProperties){const a=this._$Eu(e,t);void 0!==a&&this._$Eh.set(a,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){const t=[];if(Array.isArray(e)){const a=new Set(e.flat(1/0).reverse());for(const e of a)t.unshift(o(e))}else void 0!==e&&t.push(o(e));return t}static _$Eu(e,t){const a=t.attribute;return!1===a?void 0:"string"==typeof a?a:"string"==typeof e?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),void 0!==this.renderRoot&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){const e=new Map,t=this.constructor.elementProperties;for(const a of t.keys())this.hasOwnProperty(a)&&(e.set(a,this[a]),delete this[a]);e.size>0&&(this._$Ep=e)}createRenderRoot(){const e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((e,s)=>{if(a)e.adoptedStyleSheets=s.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet);else for(const a of s){const s=document.createElement("style"),i=t.litNonce;void 0!==i&&s.setAttribute("nonce",i),s.textContent=a.cssText,e.appendChild(s)}})(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,a){this._$AK(e,a)}_$ET(e,t){const a=this.constructor.elementProperties.get(e),s=this.constructor._$Eu(e,a);if(void 0!==s&&!0===a.reflect){const i=(void 0!==a.converter?.toAttribute?a.converter:x).toAttribute(t,a.type);this._$Em=e,null==i?this.removeAttribute(s):this.setAttribute(s,i),this._$Em=null}}_$AK(e,t){const a=this.constructor,s=a._$Eh.get(e);if(void 0!==s&&this._$Em!==s){const e=a.getPropertyOptions(s),i="function"==typeof e.converter?{fromAttribute:e.converter}:void 0!==e.converter?.fromAttribute?e.converter:x;this._$Em=s;const r=i.fromAttribute(t,e.type);this[s]=r??this._$Ej?.get(s)??r,this._$Em=null}}requestUpdate(e,t,a,s=!1,i){if(void 0!==e){const r=this.constructor;if(!1===s&&(i=this[e]),a??=r.getPropertyOptions(e),!((a.hasChanged??y)(i,t)||a.useDefault&&a.reflect&&i===this._$Ej?.get(e)&&!this.hasAttribute(r._$Eu(e,a))))return;this.C(e,t,a)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(e,t,{useDefault:a,reflect:s,wrapped:i},r){a&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,r??t??this[e]),!0!==i||void 0!==r)||(this._$AL.has(e)||(this.hasUpdated||a||(t=void 0),this._$AL.set(e,t)),!0===s&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}const e=this.scheduleUpdate();return null!=e&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}const e=this.constructor.elementProperties;if(e.size>0)for(const[t,a]of e){const{wrapped:e}=a,s=this[t];!0!==e||this._$AL.has(t)||void 0===s||this.C(t,void 0,a,s)}}let e=!1;const t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(e=>e.hostUpdate?.()),this.update(t)):this._$EM()}catch(t){throw e=!1,this._$EM(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(e=>e.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(e=>this._$ET(e,this[e])),this._$EM()}updated(e){}firstUpdated(e){}};$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[b("elementProperties")]=new Map,$[b("finalized")]=new Map,m?.({ReactiveElement:$}),(g.reactiveElementVersions??=[]).push("2.1.2");const w=globalThis,k=e=>e,A=w.trustedTypes,C=A?A.createPolicy("lit-html",{createHTML:e=>e}):void 0,S="$lit$",T=`lit$${Math.random().toFixed(9).slice(2)}$`,E="?"+T,z=`<${E}>`,N=document,D=()=>N.createComment(""),M=e=>null===e||"object"!=typeof e&&"function"!=typeof e,P=Array.isArray,H="[ \t\n\f\r]",U=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,R=/-->/g,j=/>/g,O=RegExp(`>|${H}(?:([^\\s"'>=/]+)(${H}*=${H}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),L=/'/g,F=/"/g,I=/^(?:script|style|textarea|title)$/i,B=(e=>(t,...a)=>({_$litType$:e,strings:t,values:a}))(1),q=Symbol.for("lit-noChange"),W=Symbol.for("lit-nothing"),V=new WeakMap,Y=N.createTreeWalker(N,129);function G(e,t){if(!P(e)||!e.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==C?C.createHTML(t):t}const K=(e,t)=>{const a=e.length-1,s=[];let i,r=2===t?"<svg>":3===t?"<math>":"",n=U;for(let t=0;t<a;t++){const a=e[t];let o,l,d=-1,c=0;for(;c<a.length&&(n.lastIndex=c,l=n.exec(a),null!==l);)c=n.lastIndex,n===U?"!--"===l[1]?n=R:void 0!==l[1]?n=j:void 0!==l[2]?(I.test(l[2])&&(i=RegExp("</"+l[2],"g")),n=O):void 0!==l[3]&&(n=O):n===O?">"===l[0]?(n=i??U,d=-1):void 0===l[1]?d=-2:(d=n.lastIndex-l[2].length,o=l[1],n=void 0===l[3]?O:'"'===l[3]?F:L):n===F||n===L?n=O:n===R||n===j?n=U:(n=O,i=void 0);const h=n===O&&e[t+1].startsWith("/>")?" ":"";r+=n===U?a+z:d>=0?(s.push(o),a.slice(0,d)+S+a.slice(d)+T+h):a+T+(-2===d?t:h)}return[G(e,r+(e[a]||"<?>")+(2===t?"</svg>":3===t?"</math>":"")),s]};class J{constructor({strings:e,_$litType$:t},a){let s;this.parts=[];let i=0,r=0;const n=e.length-1,o=this.parts,[l,d]=K(e,t);if(this.el=J.createElement(l,a),Y.currentNode=this.el.content,2===t||3===t){const e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;null!==(s=Y.nextNode())&&o.length<n;){if(1===s.nodeType){if(s.hasAttributes())for(const e of s.getAttributeNames())if(e.endsWith(S)){const t=d[r++],a=s.getAttribute(e).split(T),n=/([.?@])?(.*)/.exec(t);o.push({type:1,index:i,name:n[2],strings:a,ctor:"."===n[1]?te:"?"===n[1]?ae:"@"===n[1]?se:ee}),s.removeAttribute(e)}else e.startsWith(T)&&(o.push({type:6,index:i}),s.removeAttribute(e));if(I.test(s.tagName)){const e=s.textContent.split(T),t=e.length-1;if(t>0){s.textContent=A?A.emptyScript:"";for(let a=0;a<t;a++)s.append(e[a],D()),Y.nextNode(),o.push({type:2,index:++i});s.append(e[t],D())}}}else if(8===s.nodeType)if(s.data===E)o.push({type:2,index:i});else{let e=-1;for(;-1!==(e=s.data.indexOf(T,e+1));)o.push({type:7,index:i}),e+=T.length-1}i++}}static createElement(e,t){const a=N.createElement("template");return a.innerHTML=e,a}}function Z(e,t,a=e,s){if(t===q)return t;let i=void 0!==s?a._$Co?.[s]:a._$Cl;const r=M(t)?void 0:t._$litDirective$;return i?.constructor!==r&&(i?._$AO?.(!1),void 0===r?i=void 0:(i=new r(e),i._$AT(e,a,s)),void 0!==s?(a._$Co??=[])[s]=i:a._$Cl=i),void 0!==i&&(t=Z(e,i._$AS(e,t.values),i,s)),t}class Q{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){const{el:{content:t},parts:a}=this._$AD,s=(e?.creationScope??N).importNode(t,!0);Y.currentNode=s;let i=Y.nextNode(),r=0,n=0,o=a[0];for(;void 0!==o;){if(r===o.index){let t;2===o.type?t=new X(i,i.nextSibling,this,e):1===o.type?t=new o.ctor(i,o.name,o.strings,this,e):6===o.type&&(t=new ie(i,this,e)),this._$AV.push(t),o=a[++n]}r!==o?.index&&(i=Y.nextNode(),r++)}return Y.currentNode=N,s}p(e){let t=0;for(const a of this._$AV)void 0!==a&&(void 0!==a.strings?(a._$AI(e,a,t),t+=a.strings.length-2):a._$AI(e[t])),t++}}class X{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,a,s){this.type=2,this._$AH=W,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=a,this.options=s,this._$Cv=s?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode;const t=this._$AM;return void 0!==t&&11===e?.nodeType&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=Z(this,e,t),M(e)?e===W||null==e||""===e?(this._$AH!==W&&this._$AR(),this._$AH=W):e!==this._$AH&&e!==q&&this._(e):void 0!==e._$litType$?this.$(e):void 0!==e.nodeType?this.T(e):(e=>P(e)||"function"==typeof e?.[Symbol.iterator])(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==W&&M(this._$AH)?this._$AA.nextSibling.data=e:this.T(N.createTextNode(e)),this._$AH=e}$(e){const{values:t,_$litType$:a}=e,s="number"==typeof a?this._$AC(e):(void 0===a.el&&(a.el=J.createElement(G(a.h,a.h[0]),this.options)),a);if(this._$AH?._$AD===s)this._$AH.p(t);else{const e=new Q(s,this),a=e.u(this.options);e.p(t),this.T(a),this._$AH=e}}_$AC(e){let t=V.get(e.strings);return void 0===t&&V.set(e.strings,t=new J(e)),t}k(e){P(this._$AH)||(this._$AH=[],this._$AR());const t=this._$AH;let a,s=0;for(const i of e)s===t.length?t.push(a=new X(this.O(D()),this.O(D()),this,this.options)):a=t[s],a._$AI(i),s++;s<t.length&&(this._$AR(a&&a._$AB.nextSibling,s),t.length=s)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){const t=k(e).nextSibling;k(e).remove(),e=t}}setConnected(e){void 0===this._$AM&&(this._$Cv=e,this._$AP?.(e))}}class ee{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,a,s,i){this.type=1,this._$AH=W,this._$AN=void 0,this.element=e,this.name=t,this._$AM=s,this.options=i,a.length>2||""!==a[0]||""!==a[1]?(this._$AH=Array(a.length-1).fill(new String),this.strings=a):this._$AH=W}_$AI(e,t=this,a,s){const i=this.strings;let r=!1;if(void 0===i)e=Z(this,e,t,0),r=!M(e)||e!==this._$AH&&e!==q,r&&(this._$AH=e);else{const s=e;let n,o;for(e=i[0],n=0;n<i.length-1;n++)o=Z(this,s[a+n],t,n),o===q&&(o=this._$AH[n]),r||=!M(o)||o!==this._$AH[n],o===W?e=W:e!==W&&(e+=(o??"")+i[n+1]),this._$AH[n]=o}r&&!s&&this.j(e)}j(e){e===W?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}}class te extends ee{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===W?void 0:e}}class ae extends ee{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==W)}}class se extends ee{constructor(e,t,a,s,i){super(e,t,a,s,i),this.type=5}_$AI(e,t=this){if((e=Z(this,e,t,0)??W)===q)return;const a=this._$AH,s=e===W&&a!==W||e.capture!==a.capture||e.once!==a.once||e.passive!==a.passive,i=e!==W&&(a===W||s);s&&this.element.removeEventListener(this.name,this,a),i&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}}class ie{constructor(e,t,a){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=a}get _$AU(){return this._$AM._$AU}_$AI(e){Z(this,e)}}const re=w.litHtmlPolyfillSupport;re?.(J,X),(w.litHtmlVersions??=[]).push("3.3.2");const ne=globalThis;class oe extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){const t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=((e,t,a)=>{const s=a?.renderBefore??t;let i=s._$litPart$;if(void 0===i){const e=a?.renderBefore??null;s._$litPart$=i=new X(t.insertBefore(D(),e),e,void 0,a??{})}return i._$AI(e),i})(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return q}}oe._$litElement$=!0,oe.finalized=!0,ne.litElementHydrateSupport?.({LitElement:oe});const le=ne.litElementPolyfillSupport;le?.({LitElement:oe}),(ne.litElementVersions??=[]).push("4.2.2");const de={attribute:!0,type:String,converter:x,reflect:!1,hasChanged:y},ce=(e=de,t,a)=>{const{kind:s,metadata:i}=a;let r=globalThis.litPropertyMetadata.get(i);if(void 0===r&&globalThis.litPropertyMetadata.set(i,r=new Map),"setter"===s&&((e=Object.create(e)).wrapped=!0),r.set(a.name,e),"accessor"===s){const{name:s}=a;return{set(a){const i=t.get.call(this);t.set.call(this,a),this.requestUpdate(s,i,e,!0,a)},init(t){return void 0!==t&&this.C(s,void 0,e,t),t}}}if("setter"===s){const{name:s}=a;return function(a){const i=this[s];t.call(this,a),this.requestUpdate(s,i,e,!0,a)}}throw Error("Unsupported decorator location: "+s)};function he(e){return(t,a)=>"object"==typeof a?ce(e,t,a):((e,t,a)=>{const s=t.hasOwnProperty(a);return t.constructor.createProperty(a,e),s?Object.getOwnPropertyDescriptor(t,a):void 0})(e,t,a)}function pe(e){return he({...e,state:!0,attribute:!1})}async function ue(e){return e.callWS({type:"eon_next/backfill_status"})}async function ge(e,t,a=7){return e.callWS({type:"eon_next/consumption_history",meter_serial:t,days:a})}const fe={name:"EON Next",sub:"home energy",logoPath:"M27 4 11 27h11l-2 17 18-24H26z",fontsUrl:"https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Mono&display=swap",fontsId:"eon-next-fonts"};class ve{constructor(e,t){this._host=e,this._fetcher=t,this.data=null,this.loading=!0,this.refreshing=!1,this.error=null,this._requestSeq=0,this._lastConnection=void 0,this._started=!1,this._host.addController(this)}hostConnected(){this._startTimer()}hostUpdated(){const e=this._host.hass;e&&(this._started?this._lastConnection!==e.connection&&(this._lastConnection=e.connection,this._fetch(e)):(this._started=!0,this._fetch(e)))}async refresh(){const e=this._host.hass;e&&await this._fetch(e)}_startTimer(){this._stopTimer(),this._timer=setInterval(()=>{const e=this._host.hass;e&&this._fetch(e)},3e5)}_stopTimer(){void 0!==this._timer&&(clearInterval(this._timer),this._timer=void 0)}async _fetch(e){const t=++this._requestSeq;this._lastConnection=e.connection,null===this.data?this.loading=!0:this.refreshing=!0,this.error=null,this._host.requestUpdate();try{const a=await this._fetcher(e);if(t!==this._requestSeq)return;this.data=a}catch(e){if(t!==this._requestSeq)return;this.error=e instanceof Error?e.message:String(e)}finally{t===this._requestSeq&&(this.loading=!1,this.refreshing=!1,this._host.requestUpdate())}}hostDisconnected(){this._stopTimer(),this._requestSeq++,this.data=null,this.loading=!0,this.refreshing=!1,this._lastConnection=void 0,this._started=!1}}let me={symbol:"£",minorSymbol:"p",minorScale:100,symbolBefore:!0};function be(e,t){return t.symbolBefore?`${t.symbol}${e}`:`${e}${t.symbol}`}function xe(e,t){return e?e.meters.find(e=>ye(e.type)===t)??null:null}function ye(e){return"gas"===e?"gas":"electricity"}const _e={electricity:{label:"Electricity",icon:"mdi:lightning-bolt",tileClass:"tile--elec",usageColor:"var(--eon-elec)",standColor:"var(--eon-elec-standing)"},gas:{label:"Gas",icon:"mdi:fire",tileClass:"tile--gas",usageColor:"var(--eon-gas)",standColor:"var(--eon-gas-standing)"}};function $e(e,t){if(!e)return{rate:null,validFrom:null,validTo:null};switch(t){case"current":return{rate:e.unit_rate,validFrom:e.unit_rate_valid_from,validTo:e.unit_rate_valid_to};case"previous":return{rate:e.previous_unit_rate,validFrom:e.previous_unit_rate_valid_from,validTo:e.previous_unit_rate_valid_to};case"next":return{rate:e.next_unit_rate,validFrom:e.next_unit_rate_valid_from,validTo:e.next_unit_rate_valid_to}}}function we(e){return e?.is_time_of_use??!1}function ke(e,t=2){return function(e,t=2,a=me){return null!=e&&Number.isFinite(e)?be(e.toFixed(t),a):"-"}(e,t)}function Ae(e,t=2){return function(e,t=2,a=me){return null!=e&&Number.isFinite(e)?`${(e*a.minorScale).toFixed(t)}${a.minorSymbol}`:"-"}(e,t)}function Ce(e){return function(e,t=4,a=me){return null!=e&&Number.isFinite(e)?be(e.toFixed(t),a):"-"}(e)}function Se(e,t="en"){if(!e)return"-";const a=new Date(e.length<=10?`${e}T00:00:00`:e);return isNaN(a.getTime())?e:a.toLocaleDateString(t,{day:"numeric",month:"short"})}function Te(e,t,a,s,i="en"){const r=t??0,n=a??0,o=e.map(e=>({date:e.date,usageCost:Math.max(0,e.consumption)*r,standCost:n})),l=Math.max(1e-4,...o.map(e=>e.usageCost+e.standCost));return o.map((t,a)=>({usagePct:t.usageCost/l*100,standPct:t.standCost/l*100,usageCost:t.usageCost,standCost:t.standCost,label:Ee(t.date,a,e.length,s,i)}))}function Ee(e,t,a,s,i){const r=new Date(`${e}T00:00:00`);if(isNaN(r.getTime()))return"";if(s<=14)return r.toLocaleDateString(i,{weekday:"short"});return t%(s<=31?5:15)!==0&&t!==a-1?"":r.toLocaleDateString(i,{day:"numeric",month:"short"})}function ze(e,t,a,s){const i=t??0,r=a??0,n=s.getFullYear(),o=s.getMonth(),l=new Date(n,o-1,1),d=l.getFullYear(),c=l.getMonth();let h=0,p=0,u=0,g=0;for(const t of e){const e=new Date(`${t.date}T00:00:00`);if(isNaN(e.getTime()))continue;const a=Math.max(0,t.consumption)*i+r;e.getFullYear()===n&&e.getMonth()===o?(h+=a,p++):e.getFullYear()===d&&e.getMonth()===c&&(u+=a,g++)}return{monthToDate:Ne(h),daysWithData:p,previousMonth:g>0?Ne(u):null}}function Ne(e){return Math.round(100*e)/100}const De=[{page:"overview",label:"Overview",icon:"mdi:view-grid-outline"},{page:"elec",label:"Electricity",icon:"mdi:lightning-bolt"},{page:"gas",label:"Gas",icon:"mdi:fire"},{page:"tariff",label:"Tariff & rates",icon:"mdi:tag-outline"},{page:"ev",label:"EV charging",icon:"mdi:ev-station"}],Me={overview:"Overview",elec:"Electricity",gas:"Gas",tariff:"Tariff & rates",ev:"EV charging",settings:"Settings"},Pe=n`/*
  * Design tokens for the redesigned EON Next dashboard.
  *
  * These are the final, brand-specific colours, radii and fonts from the design
@@ -387,7 +387,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
   padding: 24px 0;
   text-align: center;
 }
-`,Oe=n`.greeting {
+`,je=n`.greeting {
   font-size: 13px;
   color: var(--eon-muted);
   margin-top: -6px;
@@ -641,7 +641,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
   height: 100%;
   background: var(--eon-green);
 }
-`;class je extends oe{constructor(){super(...arguments),this.summary=null,this.refreshToken=0,this.showProjection=!0,this.showStandingCallout=!0,this.showMeterHealth=!0,this._history={},this._backfill=new ve(this,e=>ue(e)),this._fetchedToken=-1,this._fetching=new Set}updated(){if(!this.hass||!this.summary)return;this.refreshToken!==this._fetchedToken&&(this._fetchedToken=this.refreshToken,this._history={},this._fetching.clear());const e=(new Date).getDate(),t=Math.min(62,e+31);for(const e of this.summary.meters){const s=e.serial;!s||this._history[s]||this._fetching.has(s)||this._fetch(s,t)}}async _fetch(e,t){this._fetching.add(e);try{const s=await ge(this.hass,e,t);this._history={...this._history,[e]:s.entries}}catch{this._history={...this._history,[e]:[]}}finally{this._fetching.delete(e)}}_split(e){return e?.serial?function(e,t,s,a){const i=t??0,r=s??0,n=a.getFullYear(),o=a.getMonth();let l=0,d=0,c=0;for(const t of e){const e=new Date(`${t.date}T00:00:00`);isNaN(e.getTime())||e.getFullYear()===n&&e.getMonth()===o&&(l+=Math.max(0,t.consumption)*i,d+=r,c++)}return{usage:Ne(l),standing:Ne(d),total:Ne(l+d),days:c}}(this._history[e.serial]??[],e.unit_rate,e.standing_charge,new Date):{usage:0,standing:0,total:0,days:0}}_nav(e){this.dispatchEvent(new CustomEvent("navigate",{detail:{page:e},bubbles:!0,composed:!0}))}render(){if(!this.summary)return B`<div class="placeholder">Loading…</div>`;const e=new Date,t=this.hass?.language??"en",s=ye(this.summary,"electricity"),a=ye(this.summary,"gas"),i=this._split(s),r=this._split(a),n=Ne(i.usage+r.usage),o=Ne(i.standing+r.standing),l=Ne(n+o),d=e.toLocaleDateString(t,{month:"long"}),c=Math.max(i.days,r.days,e.getDate()),h=c>0?Ne(l/c):0;return B`
+`;class Oe extends oe{constructor(){super(...arguments),this.summary=null,this.refreshToken=0,this.showProjection=!0,this.showStandingCallout=!0,this.showMeterHealth=!0,this._history={},this._backfill=new ve(this,e=>ue(e)),this._fetchedToken=-1,this._fetching=new Set}updated(){if(!this.hass||!this.summary)return;this.refreshToken!==this._fetchedToken&&(this._fetchedToken=this.refreshToken,this._history={},this._fetching.clear());const e=(new Date).getDate(),t=Math.min(62,e+31);for(const e of this.summary.meters){const a=e.serial;!a||this._history[a]||this._fetching.has(a)||this._fetch(a,t)}}async _fetch(e,t){this._fetching.add(e);try{const a=await ge(this.hass,e,t);this._history={...this._history,[e]:a.entries}}catch{this._history={...this._history,[e]:[]}}finally{this._fetching.delete(e)}}_split(e){return e?.serial?function(e,t,a,s){const i=t??0,r=a??0,n=s.getFullYear(),o=s.getMonth();let l=0,d=0,c=0;for(const t of e){const e=new Date(`${t.date}T00:00:00`);isNaN(e.getTime())||e.getFullYear()===n&&e.getMonth()===o&&(l+=Math.max(0,t.consumption)*i,d+=r,c++)}return{usage:Ne(l),standing:Ne(d),total:Ne(l+d),days:c}}(this._history[e.serial]??[],e.unit_rate,e.standing_charge,new Date):{usage:0,standing:0,total:0,days:0}}_nav(e){this.dispatchEvent(new CustomEvent("navigate",{detail:{page:e},bubbles:!0,composed:!0}))}render(){if(!this.summary)return B`<div class="placeholder">Loading…</div>`;const e=new Date,t=this.hass?.language??"en",a=xe(this.summary,"electricity"),s=xe(this.summary,"gas"),i=this._split(a),r=this._split(s),n=Ne(i.usage+r.usage),o=Ne(i.standing+r.standing),l=Ne(n+o),d=e.toLocaleDateString(t,{month:"long"}),c=Math.max(i.days,r.days,e.getDate()),h=c>0?Ne(l/c):0;return B`
       <div class="page">
         <div class="greeting">
           ${function(e){const t=e.getHours();return t<12?"Good morning":t<18?"Good afternoon":"Good evening"}(e)} ·
@@ -649,10 +649,10 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         </div>
 
         ${this._renderHero(d,l,n,o,c,h)}
-        ${this._renderFuelCards(s,i,a,r)}
-        ${this._renderTariffAndHealth(s,a)}
+        ${this._renderFuelCards(a,i,s,r)}
+        ${this._renderTariffAndHealth(a,s)}
       </div>
-    `}_renderHero(e,t,s,a,i,r){const n=t>0?s/t*100:0,o=t>0?a/t*100:0,l=t>0?a/t:0;return B`
+    `}_renderHero(e,t,a,s,i,r){const n=t>0?a/t*100:0,o=t>0?s/t*100:0,l=t>0?s/t:0;return B`
       <div class="card hero">
         <div class="hero-top">
           <div>
@@ -682,39 +682,39 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           <div class="legend split-legend">
             <span class="legend-item">
               <span class="legend-swatch" style="background:var(--eon-elec)"></span>
-              Energy used <b class="split-val">${ke(s)}</b>
+              Energy used <b class="split-val">${ke(a)}</b>
             </span>
             <span class="legend-item">
               <span
                 class="legend-swatch"
                 style="background:var(--eon-elec-standing)"
               ></span>
-              Standing charge <b class="split-val">${ke(a)}</b>
+              Standing charge <b class="split-val">${ke(s)}</b>
             </span>
           </div>
-          ${this.showStandingCallout&&l>=.4&&a>0?B`<div class="callout hero-callout">
+          ${this.showStandingCallout&&l>=.4&&s>0?B`<div class="callout hero-callout">
                   ${l>=.5?"Over half":"A large part"} of this month's bill
                   -
-                  <b>${ke(a)}</b> - is the fixed daily standing charge
+                  <b>${ke(s)}</b> - is the fixed daily standing charge
                   you pay before using anything.
                 </div>`:W}
         </div>
       </div>
-    `}_renderProjection(e){if(!this.showProjection)return W;const t=new Date,s=function(e,t){const s=t.getDate(),a=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();return s<=0?e:Ne(e/s*a)}(e,t),a=this.summary?.meters??[];let i=0,r=a.length>0;for(const e of a){const s=e.serial?this._history[e.serial]??null:null,a=s?ze(s,e.unit_rate,e.standing_charge,t).previousMonth:null;if(null==a){r=!1;break}i+=a}const n=r?Ne(s-Ne(i)):null;return B`
+    `}_renderProjection(e){if(!this.showProjection)return W;const t=new Date,a=function(e,t){const a=t.getDate(),s=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();return a<=0?e:Ne(e/a*s)}(e,t),s=this.summary?.meters??[];let i=0,r=s.length>0;for(const e of s){const a=e.serial?this._history[e.serial]??null:null,s=a?ze(a,e.unit_rate,e.standing_charge,t).previousMonth:null;if(null==s){r=!1;break}i+=s}const n=r?Ne(a-Ne(i)):null;return B`
       <div class="projection">
         <div class="muted proj-label">On track for</div>
-        <div class="serif proj-value">~${ke(s)}</div>
+        <div class="serif proj-value">~${ke(a)}</div>
         ${null!=n?B`<span class="pill pill--green proj-pill">
                 ${n<=0?"▼":"▲"} ${ke(Math.abs(n))} vs last month
               </span>`:W}
       </div>
-    `}_renderFuelCards(e,t,s,a){return B`
+    `}_renderFuelCards(e,t,a,s){return B`
       <div class="grid-2">
         ${this._renderFuelCard("electricity",e,t)}
-        ${this._renderFuelCard("gas",s,a)}
+        ${this._renderFuelCard("gas",a,s)}
       </div>
-    `}_renderFuelCard(e,t,s){const a=_e[e];if(!t)return B`<div class="card fuel-card">
-        <div class="muted">No ${a.label.toLowerCase()} meter.</div>
+    `}_renderFuelCard(e,t,a){const s=_e[e];if(!t)return B`<div class="card fuel-card">
+        <div class="muted">No ${s.label.toLowerCase()} meter.</div>
       </div>`;const i=Te((t.serial?this._history[t.serial]??[]:[]).slice(-7),t.unit_rate,t.standing_charge,7,this.hass?.language??"en");return B`
       <button
         class="card fuel-card card--clickable"
@@ -722,28 +722,28 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
       >
         <div class="fuel-head">
           <div class="fuel-name">
-            <span class="tile ${a.tileClass}">
-              <ha-icon .icon=${a.icon} style="--mdc-icon-size:16px"></ha-icon>
+            <span class="tile ${s.tileClass}">
+              <ha-icon .icon=${s.icon} style="--mdc-icon-size:16px"></ha-icon>
             </span>
             <div>
-              <div class="fuel-label">${a.label}</div>
+              <div class="fuel-label">${s.label}</div>
               <div class="mono fuel-serial">${t.serial??"-"}</div>
             </div>
           </div>
-          <div class="serif fuel-cost">${ke(s.total)}</div>
+          <div class="serif fuel-cost">${ke(a.total)}</div>
         </div>
         ${i.length?B`<eon-stacked-bar-chart
                 class="fuel-chart"
                 .bars=${i}
-                usageColor=${a.usageColor}
-                standColor=${a.standColor}
+                usageColor=${s.usageColor}
+                standColor=${s.standColor}
                 .height=${88}
                 .maxBarWidth=${13}
                 .showLabels=${!1}
               ></eon-stacked-bar-chart>`:B`<div class="fuel-chart-empty"></div>`}
         <div class="fuel-foot muted">
-          <span>${Ce(t.unit_rate)} /kWh</span>
-          <span>${Ce(t.standing_charge,0)} /day standing</span>
+          <span>${Ae(t.unit_rate)} /kWh</span>
+          <span>${Ae(t.standing_charge,0)} /day standing</span>
         </div>
       </button>
     `}_renderTariffAndHealth(e,t){return B`
@@ -751,7 +751,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         ${this._renderTariffCard(e,t)}
         ${this.showMeterHealth?this._renderHealthCard(e??t):W}
       </div>
-    `}_renderTariffCard(e,t){const s=e?.tariff_name??t?.tariff_name??"Tariff unavailable",a=we(e)||we(t);return B`
+    `}_renderTariffCard(e,t){const a=e?.tariff_name??t?.tariff_name??"Tariff unavailable",s=we(e)||we(t);return B`
       <button
         class="card card--dark tariff-card card--clickable"
         @click=${()=>this._nav("tariff")}
@@ -759,30 +759,30 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         <div class="tariff-head">
           <div>
             <div class="eyebrow">Your tariff</div>
-            <div class="serif tariff-name">${s}</div>
+            <div class="serif tariff-name">${a}</div>
           </div>
-          <span class="pill pill--dark">${a?"Time-of-use":"Flat rate"}</span>
+          <span class="pill pill--dark">${s?"Time-of-use":"Flat rate"}</span>
         </div>
         <div class="tariff-stats">
           <div>
-            <div class="tariff-stat-value">${Ae(e?.unit_rate)}</div>
+            <div class="tariff-stat-value">${Ce(e?.unit_rate)}</div>
             <div class="tariff-stat-label">Electricity /kWh</div>
           </div>
           <div>
-            <div class="tariff-stat-value">${Ae(t?.unit_rate)}</div>
+            <div class="tariff-stat-value">${Ce(t?.unit_rate)}</div>
             <div class="tariff-stat-label">Gas /kWh</div>
           </div>
           <div class="tariff-note">
             <div class="accent">
-              ${a?"Off-peak window available":"No cheaper window today"}
+              ${s?"Off-peak window available":"No cheaper window today"}
             </div>
             <div class="tariff-stat-label">
-              ${a?"shift usage to save":"same price around the clock"}
+              ${s?"shift usage to save":"same price around the clock"}
             </div>
           </div>
         </div>
       </button>
-    `}_renderHealthCard(e){const t=this.hass?.language??"en",s=this._backfill.data,a=s&&s.total_meters>0?Math.round(s.completed_meters/s.total_meters*100):!1===s?.enabled?0:100,i=this.summary?.meters.length??0,r=null!=e?.latest_reading?`${e.latest_reading.toLocaleString(t)} · ${Se(e.latest_reading_date,t)}`:"-";return B`
+    `}_renderHealthCard(e){const t=this.hass?.language??"en",a=this._backfill.data,s=a&&a.total_meters>0?Math.round(a.completed_meters/a.total_meters*100):!1===a?.enabled?0:100,i=this.summary?.meters.length??0,r=null!=e?.latest_reading?`${e.latest_reading.toLocaleString(t)} · ${Se(e.latest_reading_date,t)}`:"-";return B`
       <div class="card health-card">
         <div class="health-head">
           <div class="health-title">Meter health</div>
@@ -801,14 +801,14 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         <div class="health-backfill">
           <div class="health-backfill-head faint">
             <span>Historical backfill</span>
-            <span>${a}%${a>=100?" · done":""}</span>
+            <span>${s}%${s>=100?" · done":""}</span>
           </div>
           <div class="progress">
-            <div class="progress-fill" style="width:${a}%"></div>
+            <div class="progress-fill" style="width:${s}%"></div>
           </div>
         </div>
       </div>
-    `}}je.styles=[Pe,Re,Oe],e([he({attribute:!1})],je.prototype,"hass",void 0),e([he({attribute:!1})],je.prototype,"summary",void 0),e([he({type:Number})],je.prototype,"refreshToken",void 0),e([he({type:Boolean})],je.prototype,"showProjection",void 0),e([he({type:Boolean})],je.prototype,"showStandingCallout",void 0),e([he({type:Boolean})],je.prototype,"showMeterHealth",void 0),e([pe()],je.prototype,"_history",void 0),customElements.get("eon-overview-page")||customElements.define("eon-overview-page",je);const Le=n`.range-picker {
+    `}}Oe.styles=[Pe,Re,je],e([he({attribute:!1})],Oe.prototype,"hass",void 0),e([he({attribute:!1})],Oe.prototype,"summary",void 0),e([he({type:Number})],Oe.prototype,"refreshToken",void 0),e([he({type:Boolean})],Oe.prototype,"showProjection",void 0),e([he({type:Boolean})],Oe.prototype,"showStandingCallout",void 0),e([he({type:Boolean})],Oe.prototype,"showMeterHealth",void 0),e([pe()],Oe.prototype,"_history",void 0),customElements.get("eon-overview-page")||customElements.define("eon-overview-page",Oe);const Le=n`.range-picker {
   display: inline-flex;
   gap: 0;
   border-radius: 8px;
@@ -852,21 +852,21 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
 }
 `,Fe=[{label:"7d",value:7},{label:"30d",value:30},{label:"90d",value:90},{label:"1y",value:365}];class Ie extends oe{constructor(){super(...arguments),this.value=7,this.options=Fe}render(){const e=this.options.findIndex(e=>e.value===this.value),t=e>=0?e:0;return B`
       <div class="range-picker" role="radiogroup" aria-label="Time range">
-        ${this.options.map((e,s)=>B`
+        ${this.options.map((e,a)=>B`
             <button
               type="button"
               class="range-btn ${this.value===e.value?"active":""}"
               role="radio"
               aria-checked=${this.value===e.value?"true":"false"}
-              tabindex=${s===t?"0":"-1"}
-              @keydown=${e=>this._onKeydown(e,s)}
+              tabindex=${a===t?"0":"-1"}
+              @keydown=${e=>this._onKeydown(e,a)}
               @click=${()=>this._select(e.value)}
             >
               ${e.label}
             </button>
           `)}
       </div>
-    `}_select(e){e!==this.value&&(this.value=e,this.dispatchEvent(new CustomEvent("range-changed",{detail:{value:e},bubbles:!0,composed:!0})))}_onKeydown(e,t){let s=null;if("ArrowLeft"===e.key||"ArrowUp"===e.key?s=(t-1+this.options.length)%this.options.length:"ArrowRight"===e.key||"ArrowDown"===e.key?s=(t+1)%this.options.length:"Home"===e.key?s=0:"End"===e.key?s=this.options.length-1:" "!==e.key&&"Enter"!==e.key||(s=t),null==s)return;e.preventDefault();const a=this.options[s]?.value;null!=a&&(this._select(a),this.updateComplete.then(()=>{const e=this.renderRoot.querySelectorAll(".range-btn");e[s]?.focus()}))}}Ie.styles=[Le],e([he({type:Number})],Ie.prototype,"value",void 0),e([he({type:Array})],Ie.prototype,"options",void 0),customElements.get("eon-range-picker")||customElements.define("eon-range-picker",Ie);const Be=n`.detail-header {
+    `}_select(e){e!==this.value&&(this.value=e,this.dispatchEvent(new CustomEvent("range-changed",{detail:{value:e},bubbles:!0,composed:!0})))}_onKeydown(e,t){let a=null;if("ArrowLeft"===e.key||"ArrowUp"===e.key?a=(t-1+this.options.length)%this.options.length:"ArrowRight"===e.key||"ArrowDown"===e.key?a=(t+1)%this.options.length:"Home"===e.key?a=0:"End"===e.key?a=this.options.length-1:" "!==e.key&&"Enter"!==e.key||(a=t),null==a)return;e.preventDefault();const s=this.options[a]?.value;null!=s&&(this._select(s),this.updateComplete.then(()=>{const e=this.renderRoot.querySelectorAll(".range-btn");e[a]?.focus()}))}}Ie.styles=[Le],e([he({type:Number})],Ie.prototype,"value",void 0),e([he({type:Array})],Ie.prototype,"options",void 0),customElements.get("eon-range-picker")||customElements.define("eon-range-picker",Ie);const Be=n`.detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -956,13 +956,13 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
 .reading-unit {
   font-size: 13px;
 }
-`;class qe extends oe{constructor(){super(...arguments),this.meter=null,this.refreshToken=0,this._days=30,this._history=[],this._loading=!0,this._fetchedSerial=null,this._fetchedDays=0,this._fetchedToken=-1,this._requestId=0,this._memoHistory=null,this._memoDays=-1,this._memoRate=void 0,this._memoStanding=void 0,this._memoBars=[],this._memoMonthToDate=0}get kind(){return xe(this.meter?.type??null)}updated(e){if(!this.hass||!this.meter?.serial)return;const t=this._daysToFetch();(this.meter.serial!==this._fetchedSerial||t!==this._fetchedDays||this.refreshToken!==this._fetchedToken||e.has("meter"))&&this._fetch(t)}_daysToFetch(){const e=(new Date).getDate();return Math.max(this._days,e)}async _fetch(e){this._fetchedSerial=this.meter.serial,this._fetchedDays=e,this._fetchedToken=this.refreshToken,this._loading=!0;const t=++this._requestId;try{const s=await ge(this.hass,this.meter.serial,e);if(t!==this._requestId)return;this._history=s.entries}catch{if(t!==this._requestId)return;this._history=[]}this._loading=!1}_onRange(e){this._days=e.detail.value}_ensureComputed(){const e=this.meter?.unit_rate,t=this.meter?.standing_charge;if(this._memoHistory===this._history&&this._memoDays===this._days&&this._memoRate===e&&this._memoStanding===t)return;this._memoHistory=this._history,this._memoDays=this._days,this._memoRate=e,this._memoStanding=t;const s=this.hass?.language??"en",a=this._history.slice(-this._days);this._memoBars=this._days>=365?function(e,t,s,a="en"){const i=t??0,r=s??0,n=new Map;for(const t of e){const e=new Date(`${t.date}T00:00:00`);if(isNaN(e.getTime()))continue;const s=`${e.getFullYear()}-${e.getMonth()}`,a=n.get(s)??{kwh:0,days:0,date:new Date(e.getFullYear(),e.getMonth(),1)};a.kwh+=Math.max(0,t.consumption),a.days+=1,n.set(s,a)}const o=[...n.values()].sort((e,t)=>e.date.getTime()-t.date.getTime()),l=o.map(e=>({date:e.date,usageCost:e.kwh*i,standCost:e.days*r})),d=Math.max(1e-4,...l.map(e=>e.usageCost+e.standCost));return l.map(e=>({usagePct:e.usageCost/d*100,standPct:e.standCost/d*100,usageCost:e.usageCost,standCost:e.standCost,label:e.date.toLocaleDateString(a,{month:"narrow"})}))}(this._history,e,t,s):Te(a,e,t,this._days,s),this._memoMonthToDate=ze(this._history,e,t,new Date).monthToDate}render(){if(!this.meter)return B`<div class="placeholder">No meter available.</div>`;this._ensureComputed();const e=this.kind,t=_e[e],s=Ce(this.meter.standing_charge,0);return B`
+`;class qe extends oe{constructor(){super(...arguments),this.meter=null,this.refreshToken=0,this._days=30,this._history=[],this._loading=!0,this._fetchedSerial=null,this._fetchedDays=0,this._fetchedToken=-1,this._requestId=0,this._memoHistory=null,this._memoDays=-1,this._memoRate=void 0,this._memoStanding=void 0,this._memoBars=[],this._memoMonthToDate=0}get kind(){return ye(this.meter?.type??null)}updated(e){if(!this.hass||!this.meter?.serial)return;const t=this._daysToFetch();(this.meter.serial!==this._fetchedSerial||t!==this._fetchedDays||this.refreshToken!==this._fetchedToken||e.has("meter"))&&this._fetch(t)}_daysToFetch(){const e=(new Date).getDate();return Math.max(this._days,e)}async _fetch(e){this._fetchedSerial=this.meter.serial,this._fetchedDays=e,this._fetchedToken=this.refreshToken,this._loading=!0;const t=++this._requestId;try{const a=await ge(this.hass,this.meter.serial,e);if(t!==this._requestId)return;this._history=a.entries}catch{if(t!==this._requestId)return;this._history=[]}this._loading=!1}_onRange(e){this._days=e.detail.value}_ensureComputed(){const e=this.meter?.unit_rate,t=this.meter?.standing_charge;if(this._memoHistory===this._history&&this._memoDays===this._days&&this._memoRate===e&&this._memoStanding===t)return;this._memoHistory=this._history,this._memoDays=this._days,this._memoRate=e,this._memoStanding=t;const a=this.hass?.language??"en",s=this._history.slice(-this._days);this._memoBars=this._days>=365?function(e,t,a,s="en"){const i=t??0,r=a??0,n=new Map;for(const t of e){const e=new Date(`${t.date}T00:00:00`);if(isNaN(e.getTime()))continue;const a=`${e.getFullYear()}-${e.getMonth()}`,s=n.get(a)??{kwh:0,days:0,date:new Date(e.getFullYear(),e.getMonth(),1)};s.kwh+=Math.max(0,t.consumption),s.days+=1,n.set(a,s)}const o=[...n.values()].sort((e,t)=>e.date.getTime()-t.date.getTime()),l=o.map(e=>({date:e.date,usageCost:e.kwh*i,standCost:e.days*r})),d=Math.max(1e-4,...l.map(e=>e.usageCost+e.standCost));return l.map(e=>({usagePct:e.usageCost/d*100,standPct:e.standCost/d*100,usageCost:e.usageCost,standCost:e.standCost,label:e.date.toLocaleDateString(s,{month:"narrow"})}))}(this._history,e,t,a):Te(s,e,t,this._days,a),this._memoMonthToDate=ze(this._history,e,t,new Date).monthToDate}render(){if(!this.meter)return B`<div class="placeholder">No meter available.</div>`;this._ensureComputed();const e=this.kind,t=_e[e],a=Ae(this.meter.standing_charge,0);return B`
       <div class="page">
         ${this._renderHeader(t)}
-        ${this._renderChartCard(e,this._memoBars,t,s)}
-        ${this._renderStats(s)} ${this._renderReadingStrip(e)}
+        ${this._renderChartCard(e,this._memoBars,t,a)}
+        ${this._renderStats(a)} ${this._renderReadingStrip(e)}
       </div>
-    `}_renderHeader(e){const t=we(this.meter),s="gas"===this.kind?"Import · volume m³ → kWh":t?"Import · time-of-use":"Import · single rate";return B`
+    `}_renderHeader(e){const t=we(this.meter),a="gas"===this.kind?"Import · volume m³ → kWh":t?"Import · time-of-use":"Import · single rate";return B`
       <div class="detail-header">
         <div class="meter-id">
           <span class="tile ${e.tileClass}">
@@ -970,7 +970,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           </span>
           <div>
             <div class="mono meter-serial">Meter ${this.meter?.serial??"-"}</div>
-            <div class="muted meter-descriptor">${s}</div>
+            <div class="muted meter-descriptor">${a}</div>
           </div>
         </div>
         <eon-range-picker
@@ -978,7 +978,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           @range-changed=${this._onRange}
         ></eon-range-picker>
       </div>
-    `}_renderChartCard(e,t,s,a){return B`
+    `}_renderChartCard(e,t,a,s){return B`
       <div class="card chart-card">
         <div class="chart-title-row">
           <div class="chart-title">Daily cost - usage &amp; standing charge</div>
@@ -986,20 +986,20 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         </div>
         ${t.length?B`<eon-stacked-bar-chart
                 .bars=${t}
-                usageColor=${s.usageColor}
-                standColor=${s.standColor}
+                usageColor=${a.usageColor}
+                standColor=${a.standColor}
                 .height=${240}
               ></eon-stacked-bar-chart>`:B`<div class="placeholder">
                 ${this._loading?"Loading chart…":"No consumption data for this range."}
               </div>`}
         <div class="legend chart-legend">
           <span class="legend-item">
-            <span class="legend-swatch" style="background:${s.usageColor}"></span
+            <span class="legend-swatch" style="background:${a.usageColor}"></span
             >Energy used
           </span>
           <span class="legend-item">
-            <span class="legend-swatch" style="background:${s.standColor}"></span>
-            Standing charge (${a} / day, fixed)
+            <span class="legend-swatch" style="background:${a.standColor}"></span>
+            Standing charge (${s} / day, fixed)
           </span>
         </div>
         ${"gas"===e?B`<div class="callout">
@@ -1016,23 +1016,23 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
       <div class="grid-4">
         ${this._statCard("This month",ke(this._memoMonthToDate))}
         ${this._statCard("Yesterday",ke(this.meter?.previous_day_cost))}
-        ${this._statCard("Unit rate",Ce(this.meter?.unit_rate),"per kWh")}
+        ${this._statCard("Unit rate",Ae(this.meter?.unit_rate),"per kWh")}
         ${this._statCard("Standing",e,"per day")}
       </div>
-    `}_statCard(e,t,s){return B`
+    `}_statCard(e,t,a){return B`
       <div class="card card--stat">
         <div class="stat-label">${e}</div>
         <div class="stat-value">${t}</div>
-        ${s?B`<div class="stat-sub">${s}</div>`:W}
+        ${a?B`<div class="stat-sub">${a}</div>`:W}
       </div>
-    `}_renderReadingStrip(e){const t=this.meter?.latest_reading;if(null==t)return W;const s=this.hass?.language??"en",a=`${"gas"===e?"Volume":"Register"} read · ${Se(this.meter?.latest_reading_date,s)}`;return B`
+    `}_renderReadingStrip(e){const t=this.meter?.latest_reading;if(null==t)return W;const a=this.hass?.language??"en",s=`${"gas"===e?"Volume":"Register"} read · ${Se(this.meter?.latest_reading_date,a)}`;return B`
       <div class="card reading-strip">
         <div>
           <div class="reading-title">Latest meter reading</div>
-          <div class="faint reading-descriptor">${a}</div>
+          <div class="faint reading-descriptor">${s}</div>
         </div>
         <div class="mono reading-value">
-          ${t.toLocaleString(s)}
+          ${t.toLocaleString(a)}
           <span class="reading-unit faint">kWh</span>
         </div>
       </div>
@@ -1217,12 +1217,12 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
   font-weight: 400;
   margin-left: 2px;
 }
-`;class Ge extends oe{constructor(){super(...arguments),this.summary=null}render(){const e=ye(this.summary,"electricity"),t=ye(this.summary,"gas"),s=we(e)||we(t);return B`
+`;class Ge extends oe{constructor(){super(...arguments),this.summary=null}render(){const e=xe(this.summary,"electricity"),t=xe(this.summary,"gas"),a=we(e)||we(t);return B`
       <div class="page">
-        ${this._renderTariffCard(e,t,s)} ${this._renderRateStrip(e,s)}
+        ${this._renderTariffCard(e,t,a)} ${this._renderRateStrip(e,a)}
         ${this._renderTimelines(e,t)}
       </div>
-    `}_renderTariffCard(e,t,s){const a=this.hass?.language??"en",i=e?.tariff_name??t?.tariff_name??"Tariff unavailable",r=e??t,n=r?.tariff_valid_from??null,o=r?.tariff_valid_to??null,l=r?.tariff_type??null,d=[];return l&&d.push(l),n&&d.push(`started ${Ke(n,a)}`),o&&d.push(`locked until ${Ke(o,a)}`),B`
+    `}_renderTariffCard(e,t,a){const s=this.hass?.language??"en",i=e?.tariff_name??t?.tariff_name??"Tariff unavailable",r=e??t,n=r?.tariff_valid_from??null,o=r?.tariff_valid_to??null,l=r?.tariff_type??null,d=[];return l&&d.push(l),n&&d.push(`started ${Ke(n,s)}`),o&&d.push(`locked until ${Ke(o,s)}`),B`
       <div class="card card--dark tariff-hero">
         <div class="tariff-hero-head">
           <div>
@@ -1231,23 +1231,23 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
             ${d.length?B`<div class="tariff-hero-dates">${d.join(" · ")}</div>`:W}
           </div>
           <span class="pill pill--dark tariff-hero-pill">
-            ${s?"Time-of-use":"Flat rate · no off-peak"}
+            ${a?"Time-of-use":"Flat rate · no off-peak"}
           </span>
         </div>
         <div class="tariff-hero-stats">
-          ${this._heroStat("Electricity unit",Ae(e?.unit_rate),"per kWh","var(--eon-elec)")}
-          ${this._heroStat("Elec standing",Ae(e?.standing_charge),"per day","var(--eon-elec-standing)")}
-          ${this._heroStat("Gas unit",Ae(t?.unit_rate),"per kWh","var(--eon-gas)")}
-          ${this._heroStat("Gas standing",Ae(t?.standing_charge),"per day","var(--eon-gas-standing)")}
+          ${this._heroStat("Electricity unit",Ce(e?.unit_rate),"per kWh","var(--eon-elec)")}
+          ${this._heroStat("Elec standing",Ce(e?.standing_charge),"per day","var(--eon-elec-standing)")}
+          ${this._heroStat("Gas unit",Ce(t?.unit_rate),"per kWh","var(--eon-gas)")}
+          ${this._heroStat("Gas standing",Ce(t?.standing_charge),"per day","var(--eon-gas-standing)")}
         </div>
       </div>
-    `}_heroStat(e,t,s,a){return B`
-      <div class="hero-stat" style="border-left-color:${a}">
+    `}_heroStat(e,t,a,s){return B`
+      <div class="hero-stat" style="border-left-color:${s}">
         <div class="tariff-stat-label">${e}</div>
         <div class="serif hero-stat-value">${t}</div>
-        <div class="hero-stat-sub">${s}</div>
+        <div class="hero-stat-sub">${a}</div>
       </div>
-    `}_renderRateStrip(e,t){const s=(a=e,a?.day_rates?a.day_rates.map(e=>({start:e.start,end:e.end,rate:e.rate,isOffPeak:e.is_off_peak})):[]);var a;const i=function(e,t){const s=[],a=[],i=new Date;i.setHours(0,0,0,0);for(let r=0;r<48;r++){const n=new Date(i.getTime()+30*r*6e4),o=new Date(n.getTime()+9e5);let l=t??0,d=!1;for(const t of e){const e=new Date(t.start),s=new Date(t.end);if(!isNaN(e.getTime())&&!isNaN(s.getTime())&&(o>=e&&o<s)){l=t.rate,d=t.isOffPeak;break}}s.push(l),a.push(d)}const r=Math.min(...s),n=Math.max(...s),o=n-r<1e-6;return s.map((e,t)=>({heightPct:o?72:45+(e-r)/(n-r)*50,color:a[t]?"var(--eon-green-light)":"var(--eon-elec-tile)"}))}(s,e?.unit_rate??null),r=new Date,n=(60*r.getHours()+r.getMinutes())/1440,o=t?"Varies through the day":`Flat · ${Ce(e?.unit_rate)}/kWh all day`;return B`
+    `}_renderRateStrip(e,t){const a=(s=e,s?.day_rates?s.day_rates.map(e=>({start:e.start,end:e.end,rate:e.rate,isOffPeak:e.is_off_peak})):[]);var s;const i=function(e,t){const a=[],s=[],i=new Date;i.setHours(0,0,0,0);for(let r=0;r<48;r++){const n=new Date(i.getTime()+30*r*6e4),o=new Date(n.getTime()+9e5);let l=t??0,d=!1;for(const t of e){const e=new Date(t.start),a=new Date(t.end);if(!isNaN(e.getTime())&&!isNaN(a.getTime())&&(o>=e&&o<a)){l=t.rate,d=t.isOffPeak;break}}a.push(l),s.push(d)}const r=Math.min(...a),n=Math.max(...a),o=n-r<1e-6;return a.map((e,t)=>({heightPct:o?72:45+(e-r)/(n-r)*50,color:s[t]?"var(--eon-green-light)":"var(--eon-elec-tile)"}))}(a,e?.unit_rate??null),r=new Date,n=(60*r.getHours()+r.getMinutes())/1440,o=t?"Varies through the day":`Flat · ${Ae(e?.unit_rate)}/kWh all day`;return B`
       <div class="card rate-strip-card">
         <div class="chart-title-row">
           <div class="chart-title">Today's electricity rate</div>
@@ -1271,22 +1271,22 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         ${this._renderTimeline("Electricity",e,"var(--eon-elec)")}
         ${this._renderTimeline("Gas",t,"var(--eon-gas)")}
       </div>
-    `}_renderTimeline(e,t,s){const a=this.hass?.language??"en",i=$e(t,"previous"),r=$e(t,"next"),n=t?.unit_rate??null;return B`
+    `}_renderTimeline(e,t,a){const s=this.hass?.language??"en",i=$e(t,"previous"),r=$e(t,"next"),n=t?.unit_rate??null;return B`
       <div class="card timeline-card">
         <div class="timeline-title">${e} rate timeline</div>
-        ${this._timelineRow("Previous",i.rate,i.validTo?`→ ${Ke(i.validTo,a)}`:"",!1,s)}
-        ${this._timelineRow("Current",n,i.validTo?`from ${Ke(i.validTo,a)}`:"",!0,s)}
-        ${this._timelineRow("Next",r.rate??n,null==r.rate?"fixed":r.validFrom?`from ${Ke(r.validFrom,a)}`:"",!1,s)}
+        ${this._timelineRow("Previous",i.rate,i.validTo?`→ ${Ke(i.validTo,s)}`:"",!1,a)}
+        ${this._timelineRow("Current",n,i.validTo?`from ${Ke(i.validTo,s)}`:"",!0,a)}
+        ${this._timelineRow("Next",r.rate??n,null==r.rate?"fixed":r.validFrom?`from ${Ke(r.validFrom,s)}`:"",!1,a)}
       </div>
-    `}_timelineRow(e,t,s,a,i){return B`
-      <div class="timeline-row ${a?"timeline-row--current":""}">
+    `}_timelineRow(e,t,a,s,i){return B`
+      <div class="timeline-row ${s?"timeline-row--current":""}">
         <span class="muted">${e}</span>
-        <span class="timeline-rate" style=${a?`color:${i}`:""}>
-          ${Ce(t)}
-          ${s?B`<span class="faint timeline-note">${s}</span>`:W}
+        <span class="timeline-rate" style=${s?`color:${i}`:""}>
+          ${Ae(t)}
+          ${a?B`<span class="faint timeline-note">${a}</span>`:W}
         </span>
       </div>
-    `}}function Ke(e,t){const s=new Date(e.length<=10?`${e}T00:00:00`:e);return isNaN(s.getTime())?e:s.toLocaleDateString(t,{day:"numeric",month:"short",year:"numeric"})}Ge.styles=[Pe,Re,Ye],e([he({attribute:!1})],Ge.prototype,"hass",void 0),e([he({attribute:!1})],Ge.prototype,"summary",void 0),customElements.get("eon-tariff-page")||customElements.define("eon-tariff-page",Ge);const Je=n`.ev-banner {
+    `}}function Ke(e,t){const a=new Date(e.length<=10?`${e}T00:00:00`:e);return isNaN(a.getTime())?e:a.toLocaleDateString(t,{day:"numeric",month:"short",year:"numeric"})}Ge.styles=[Pe,Re,Ye],e([he({attribute:!1})],Ge.prototype,"hass",void 0),e([he({attribute:!1})],Ge.prototype,"summary",void 0),customElements.get("eon-tariff-page")||customElements.define("eon-tariff-page",Ge);const Je=n`.ev-banner {
   display: flex;
   align-items: center;
   gap: 22px;
@@ -1358,9 +1358,9 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
 .schedule-legend {
   margin-top: 14px;
 }
-`;class Ze extends oe{constructor(){super(...arguments),this.deviceId="",this.refreshToken=0,this._data=null,this._loading=!0,this._error=!1,this._fetchedDeviceId=null,this._fetchedToken=-1}updated(){this.hass&&this.deviceId&&(this.deviceId===this._fetchedDeviceId&&this.refreshToken===this._fetchedToken||this._fetch())}async _fetch(){this._fetchedDeviceId=this.deviceId,this._fetchedToken=this.refreshToken,this._loading=!0,this._error=!1;try{this._data=await async function(e,t){return e.callWS({type:"eon_next/ev_schedule",device_id:t})}(this.hass,this.deviceId)}catch{this._error=!0,this._data=null}this._loading=!1}render(){if(!this.deviceId)return B`<div class="placeholder">No EV charger available.</div>`;if(this._loading&&!this._data)return B`<div class="placeholder">Loading EV schedule…</div>`;if(this._error||!this._data)return B`<div class="placeholder">Unable to load EV schedule.</div>`;const{status:e,slots:t}=this._data,s="scheduled"===e||"active"===e;return B`
+`;class Ze extends oe{constructor(){super(...arguments),this.deviceId="",this.refreshToken=0,this._data=null,this._loading=!0,this._error=!1,this._fetchedDeviceId=null,this._fetchedToken=-1}updated(){this.hass&&this.deviceId&&(this.deviceId===this._fetchedDeviceId&&this.refreshToken===this._fetchedToken||this._fetch())}async _fetch(){this._fetchedDeviceId=this.deviceId,this._fetchedToken=this.refreshToken,this._loading=!0,this._error=!1;try{this._data=await async function(e,t){return e.callWS({type:"eon_next/ev_schedule",device_id:t})}(this.hass,this.deviceId)}catch{this._error=!0,this._data=null}this._loading=!1}render(){if(!this.deviceId)return B`<div class="placeholder">No EV charger available.</div>`;if(this._loading&&!this._data)return B`<div class="placeholder">Loading EV schedule…</div>`;if(this._error||!this._data)return B`<div class="placeholder">Unable to load EV schedule.</div>`;const{status:e,slots:t}=this._data,a="scheduled"===e||"active"===e;return B`
       <div class="page">
-        ${this._renderBanner(s)} ${this._renderChargeCards(t)}
+        ${this._renderBanner(a)} ${this._renderChargeCards(t)}
         ${this._renderSchedule(t)}
       </div>
     `}_renderBanner(e){return B`
@@ -1385,16 +1385,16 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
         ${this._chargeCard("Next charge",e[0],t)}
         ${this._chargeCard("Following charge",e[1],t)}
       </div>
-    `}_chargeCard(e,t,s){if(!t)return B`<div class="card card--stat charge-card">
+    `}_chargeCard(e,t,a){if(!t)return B`<div class="card card--stat charge-card">
         <div class="muted charge-label">${e}</div>
         <div class="serif charge-value charge-value--empty">Not scheduled</div>
-      </div>`;const a=new Date(t.start),i=new Date(t.end),r=`${Qe(a)} → ${Qe(i)}`,n=function(e,t){const s=Math.round((t.getTime()-e.getTime())/6e4);if(!Number.isFinite(s)||s<=0)return"scheduled";const a=Math.floor(s/60),i=s%60,r=0===i?`${a} hr`:`${(s/60).toFixed(1)} hr`;return`${r} window`}(a,i),o=`${function(e,t){if(isNaN(e.getTime()))return"";const s=new Date,a=new Date(s.getFullYear(),s.getMonth(),s.getDate()),i=new Date(e.getFullYear(),e.getMonth(),e.getDate()),r=Math.round((i.getTime()-a.getTime())/864e5);return r<=0?e.getHours()>=18||e.getHours()<6?"Tonight":"Today":1===r?"Tomorrow":e.toLocaleDateString(t,{weekday:"short"})}(a,s)} · ${n}`;return B`
+      </div>`;const s=new Date(t.start),i=new Date(t.end),r=`${Qe(s)} → ${Qe(i)}`,n=function(e,t){const a=Math.round((t.getTime()-e.getTime())/6e4);if(!Number.isFinite(a)||a<=0)return"scheduled";const s=Math.floor(a/60),i=a%60,r=0===i?`${s} hr`:`${(a/60).toFixed(1)} hr`;return`${r} window`}(s,i),o=`${function(e,t){if(isNaN(e.getTime()))return"";const a=new Date,s=new Date(a.getFullYear(),a.getMonth(),a.getDate()),i=new Date(e.getFullYear(),e.getMonth(),e.getDate()),r=Math.round((i.getTime()-s.getTime())/864e5);return r<=0?e.getHours()>=18||e.getHours()<6?"Tonight":"Today":1===r?"Tomorrow":e.toLocaleDateString(t,{weekday:"short"})}(s,a)} · ${n}`;return B`
       <div class="card card--stat charge-card">
         <div class="muted charge-label">${e}</div>
         <div class="serif charge-value">${r}</div>
         <div class="charge-desc">${o}</div>
       </div>
-    `}_renderSchedule(e){const t=function(e){const t=new Date;t.setHours(18,0,0,0);const s=e.map(e=>[new Date(e.start).getTime(),new Date(e.end).getTime()]).filter(([e,t])=>Number.isFinite(e)&&Number.isFinite(t)&&t>e),a=[];for(let e=0;e<48;e++){const i=t.getTime()+30*e*6e4,r=i+18e5,n=s.some(([e,t])=>e<r&&t>i);a.push({heightPct:n?90:18,color:n?"var(--eon-green)":"var(--eon-hairline)"})}return a}(e);return B`
+    `}_renderSchedule(e){const t=function(e){const t=new Date;t.setHours(18,0,0,0);const a=e.map(e=>[new Date(e.start).getTime(),new Date(e.end).getTime()]).filter(([e,t])=>Number.isFinite(e)&&Number.isFinite(t)&&t>e),s=[];for(let e=0;e<48;e++){const i=t.getTime()+30*e*6e4,r=i+18e5,n=a.some(([e,t])=>e<r&&t>i);s.push({heightPct:n?90:18,color:n?"var(--eon-green)":"var(--eon-hairline)"})}return s}(e);return B`
       <div class="card schedule-card">
         <div class="schedule-title">Charging schedule</div>
         <eon-halfhour-strip
@@ -1617,7 +1617,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
                   </div>
                 `)}
             </div>`:W}
-    `}}tt.styles=[Xe,et],e([he({attribute:!1})],tt.prototype,"hass",void 0),customElements.get("eon-backfill-status")||customElements.define("eon-backfill-status",tt);const st=n`.intro {
+    `}}tt.styles=[Xe,et],e([he({attribute:!1})],tt.prototype,"hass",void 0),customElements.get("eon-backfill-status")||customElements.define("eon-backfill-status",tt);const at=n`.intro {
   padding: 28px 30px;
 }
 
@@ -1638,22 +1638,178 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
   margin-top: 14px;
   font-family: var(--eon-font-mono);
 }
-`;class at extends oe{constructor(){super(...arguments),this.version=null}render(){return B`
+
+/* --- Connected accounts --- */
+
+.accounts {
+  padding: 22px 24px;
+}
+
+.accounts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.accounts-title {
+  font-size: 18px;
+  color: var(--eon-text);
+}
+
+.acct-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acct-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--eon-card-border);
+  border-radius: var(--eon-radius-tile);
+  background: var(--eon-card);
+}
+
+.acct-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--eon-text);
+}
+
+.acct-num {
+  font-size: 12px;
+  color: var(--eon-muted);
+  margin-top: 2px;
+}
+
+.acct-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.acct-balance {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--eon-text);
+}
+
+.acct-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--eon-radius-pill);
+  white-space: nowrap;
+}
+
+.acct-status--ok {
+  color: var(--eon-green-text);
+  background: var(--eon-green-bg);
+}
+
+.acct-status--warn {
+  color: var(--eon-amber-text);
+  background: var(--eon-amber-bg);
+}
+
+.acct-status--err {
+  color: #9a3b2f;
+  background: #f6e3da;
+}
+
+.acct-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--eon-elec);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.acct-link:hover {
+  text-decoration: underline;
+}
+
+.acct-link--primary {
+  padding: 6px 14px;
+  border-radius: var(--eon-radius-control);
+  background: var(--eon-dark);
+  color: var(--eon-on-dark);
+}
+
+.acct-link--primary:hover {
+  text-decoration: none;
+  opacity: 0.92;
+}
+
+.acct-empty {
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.accounts-foot {
+  font-size: 12px;
+  margin-top: 14px;
+}
+`,st="/config/integrations/integration/eon_next",it={connected:"Connected",reauth_required:"Reauthentication needed",error:"Needs attention"};class rt extends oe{constructor(){super(...arguments),this.version=null,this._accounts=new ve(this,e=>async function(e){return e.callWS({type:"eon_next/accounts"})}(e))}get _isAdmin(){return!0===this.hass?.user?.is_admin}_openHa(e){e.preventDefault(),history.pushState(null,"",st),window.dispatchEvent(new CustomEvent("location-changed"))}render(){return B`
       <div class="page">
         <div class="card intro">
           <div class="serif intro-title">Settings</div>
           <div class="muted intro-body">
-            Account details, the integration refresh interval and backfill controls are
-            managed from the E.ON Next integration's options in Home Assistant.
+            The integration refresh interval and backfill controls are managed from the
+            integration's options in Home Assistant.
           </div>
           ${this.version?B`<div class="faint version">Version ${this.version}</div>`:W}
         </div>
+
+        ${this._renderAccounts()}
 
         <div class="card">
           <eon-backfill-status .hass=${this.hass}></eon-backfill-status>
         </div>
       </div>
-    `}}at.styles=[Pe,Re,st],e([he({attribute:!1})],at.prototype,"hass",void 0),e([he()],at.prototype,"version",void 0),customElements.get("eon-settings-page")||customElements.define("eon-settings-page",at);const it=n`:host {
+    `}_renderAccounts(){const e=this._accounts.data?.accounts??[];return B`
+      <div class="card accounts">
+        <div class="accounts-head">
+          <div class="serif accounts-title">Connected accounts</div>
+          ${this._isAdmin?B`<a
+                  class="acct-link acct-link--primary"
+                  href=${st}
+                  @click=${this._openHa}
+                  >Add account</a
+                >`:W}
+        </div>
+
+        ${this._accounts.loading&&!this._accounts.data?B`<div class="muted acct-empty">Loading accounts…</div>`:0===e.length?B`<div class="muted acct-empty">No accounts configured.</div>`:B`<div class="acct-list">
+                  ${e.map(e=>this._renderAccount(e))}
+                </div>`}
+
+        <div class="faint accounts-foot">
+          ${this._isAdmin?"Adding, re-authenticating or removing an account opens Home Assistant.":"Ask an administrator to add or change accounts."}
+        </div>
+      </div>
+    `}_renderAccount(e){const t=it[e.status]??e.status,a="connected"===e.status?"acct-status--ok":"reauth_required"===e.status?"acct-status--warn":"acct-status--err";return B`
+      <div class="acct-row">
+        <div class="acct-main">
+          <div class="acct-name">${e.provider_name}</div>
+          ${e.account_number?B`<div class="mono acct-num">${e.account_number}</div>`:W}
+        </div>
+        <div class="acct-meta">
+          ${null!=e.balance?B`<div class="acct-balance">${ke(e.balance)}</div>`:W}
+          <span class="acct-status ${a}">${t}</span>
+          ${this._isAdmin?B`<a
+                  class="acct-link"
+                  href=${st}
+                  @click=${this._openHa}
+                  >Manage</a
+                >`:W}
+        </div>
+      </div>
+    `}}rt.styles=[Pe,Re,at],e([he({attribute:!1})],rt.prototype,"hass",void 0),e([he()],rt.prototype,"version",void 0),customElements.get("eon-settings-page")||customElements.define("eon-settings-page",rt);const nt=n`:host {
   display: block;
   font-family: var(--eon-font-ui);
   color: var(--eon-text);
@@ -1990,7 +2146,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
     display: none;
   }
 }
-`;class rt extends oe{constructor(){super(...arguments),this.narrow=!1,this._page="overview",this._lastUpdated=null,this._refreshToken=0,this._version=new ve(this,e=>async function(e){return e.callWS({type:"eon_next/version"})}(e)),this._summary=new ve(this,e=>async function(e){return e.callWS({type:"eon_next/dashboard_summary"})}(e)),this._hadData=!1,this._navigate=e=>{this._page=e},this._toggleSidebar=()=>{this.dispatchEvent(new CustomEvent("hass-toggle-menu",{bubbles:!0,composed:!0}))},this._onNavigateEvent=e=>{this._navigate(e.detail.page)},this._refresh=()=>{this._refreshToken++,this._lastUpdated=new Date,this._summary.refresh(),this._version.refresh()}}connectedCallback(){super.connectedCallback(),this._ensureFonts()}updated(){!this._summary.data||this._summary.loading||this._summary.refreshing||this._hadData||(this._hadData=!0,this._lastUpdated=new Date)}_ensureFonts(){const e=this.ownerDocument;if(!e||e.getElementById(fe.fontsId))return;const t=e.createElement("link");t.id=fe.fontsId,t.rel="stylesheet",t.href=fe.fontsUrl,e.head.appendChild(t)}render(){return B`
+`;class ot extends oe{constructor(){super(...arguments),this.narrow=!1,this._page="overview",this._lastUpdated=null,this._refreshToken=0,this._version=new ve(this,e=>async function(e){return e.callWS({type:"eon_next/version"})}(e)),this._summary=new ve(this,e=>async function(e){return e.callWS({type:"eon_next/dashboard_summary"})}(e)),this._hadData=!1,this._navigate=e=>{this._page=e},this._toggleSidebar=()=>{this.dispatchEvent(new CustomEvent("hass-toggle-menu",{bubbles:!0,composed:!0}))},this._onNavigateEvent=e=>{this._navigate(e.detail.page)},this._refresh=()=>{this._refreshToken++,this._lastUpdated=new Date,this._summary.refresh(),this._version.refresh()}}connectedCallback(){super.connectedCallback(),this._ensureFonts()}updated(){!this._summary.data||this._summary.loading||this._summary.refreshing||this._hadData||(this._hadData=!0,this._lastUpdated=new Date)}_ensureFonts(){const e=this.ownerDocument;if(!e||e.getElementById(fe.fontsId))return;const t=e.createElement("link");t.id=fe.fontsId,t.rel="stylesheet",t.href=fe.fontsUrl,e.head.appendChild(t)}render(){return B`
       <div class="shell" @navigate=${this._onNavigateEvent}>
         ${this._renderRail()}
         <main class="main">
@@ -2040,16 +2196,16 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           ${this._renderNavButton("settings","Settings","mdi:cog-outline")}
         </div>
       </nav>
-    `}_renderNavButton(e,t,s){const a=this._page===e;return B`
+    `}_renderNavButton(e,t,a){const s=this._page===e;return B`
       <button
-        class="nav-item ${a?"nav-item--active":""}"
-        aria-current=${a?"page":"false"}
+        class="nav-item ${s?"nav-item--active":""}"
+        aria-current=${s?"page":"false"}
         @click=${()=>this._navigate(e)}
       >
-        <ha-icon .icon=${s} style="--mdc-icon-size:18px"></ha-icon>
+        <ha-icon .icon=${a} style="--mdc-icon-size:18px"></ha-icon>
         <span>${t}</span>
       </button>
-    `}_renderTopBar(){const e=this._summary.refreshing?"Updating…":`Updated ${function(e){if(!e)return"-";const t=Math.max(0,Math.round((Date.now()-e.getTime())/1e3));if(t<45)return"just now";const s=Math.round(t/60);if(s<60)return`${s} min${1===s?"":"s"} ago`;const a=Math.round(s/60);if(a<24)return`${a} hr${1===a?"":"s"} ago`;const i=Math.round(a/24);return`${i} day${1===i?"":"s"} ago`}(this._lastUpdated)}`;return B`
+    `}_renderTopBar(){const e=this._summary.refreshing?"Updating…":`Updated ${function(e){if(!e)return"-";const t=Math.max(0,Math.round((Date.now()-e.getTime())/1e3));if(t<45)return"just now";const a=Math.round(t/60);if(a<60)return`${a} min${1===a?"":"s"} ago`;const s=Math.round(a/60);if(s<24)return`${s} hr${1===s?"":"s"} ago`;const i=Math.round(s/24);return`${i} day${1===i?"":"s"} ago`}(this._lastUpdated)}`;return B`
       <header class="topbar">
         <div class="topbar-left">
           <h1 class="serif topbar-title">${Me[this._page]}</h1>
@@ -2072,7 +2228,7 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           <div>Unable to load data</div>
           <div class="state-sub">${this._summary.error}</div>
         </div>
-      `;const e=this._summary.data,t=(e?.meters.length??0)>0,s=(e?.ev_chargers.length??0)>0;if(!t&&!s)return B`
+      `;const e=this._summary.data,t=(e?.meters.length??0)>0,a=(e?.ev_chargers.length??0)>0;if(!t&&!a)return B`
         <div class="state-msg" role="status">
           <ha-icon
             icon="mdi:lightning-bolt-circle"
@@ -2081,26 +2237,26 @@ function e(e,t,s,a){var i,r=arguments.length,n=r<3?t:null===a?a=Object.getOwnPro
           <div>No data available</div>
           <div class="state-sub">No meter or EV data found for this account.</div>
         </div>
-      `;const a=this._refreshToken;switch(this._page){case"overview":return B`<eon-overview-page
+      `;const s=this._refreshToken;switch(this._page){case"overview":return B`<eon-overview-page
           .hass=${this.hass}
           .summary=${e}
-          .refreshToken=${a}
+          .refreshToken=${s}
         ></eon-overview-page>`;case"elec":return B`<eon-meter-detail-page
           .hass=${this.hass}
-          .meter=${ye(e,"electricity")}
-          .refreshToken=${a}
+          .meter=${xe(e,"electricity")}
+          .refreshToken=${s}
         ></eon-meter-detail-page>`;case"gas":return B`<eon-meter-detail-page
           .hass=${this.hass}
-          .meter=${ye(e,"gas")}
-          .refreshToken=${a}
+          .meter=${xe(e,"gas")}
+          .refreshToken=${s}
         ></eon-meter-detail-page>`;case"tariff":return B`<eon-tariff-page
           .hass=${this.hass}
           .summary=${e}
         ></eon-tariff-page>`;case"ev":return B`<eon-ev-page
           .hass=${this.hass}
           .deviceId=${e?.ev_chargers[0]?.device_id??""}
-          .refreshToken=${a}
+          .refreshToken=${s}
         ></eon-ev-page>`;case"settings":return B`<eon-settings-page
           .hass=${this.hass}
           .version=${this._version.data?.version??null}
-        ></eon-settings-page>`}}}rt.styles=[Pe,it],e([he({attribute:!1})],rt.prototype,"hass",void 0),e([he({type:Boolean})],rt.prototype,"narrow",void 0),e([he({attribute:!1})],rt.prototype,"route",void 0),e([he({attribute:!1})],rt.prototype,"panel",void 0),e([pe()],rt.prototype,"_page",void 0),e([pe()],rt.prototype,"_lastUpdated",void 0),e([pe()],rt.prototype,"_refreshToken",void 0),customElements.define("eon-next-panel",rt);
+        ></eon-settings-page>`}}}ot.styles=[Pe,nt],e([he({attribute:!1})],ot.prototype,"hass",void 0),e([he({type:Boolean})],ot.prototype,"narrow",void 0),e([he({attribute:!1})],ot.prototype,"route",void 0),e([he({attribute:!1})],ot.prototype,"panel",void 0),e([pe()],ot.prototype,"_page",void 0),e([pe()],ot.prototype,"_lastUpdated",void 0),e([pe()],ot.prototype,"_refreshToken",void 0),customElements.define("eon-next-panel",ot);

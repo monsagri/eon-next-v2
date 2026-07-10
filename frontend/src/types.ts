@@ -14,6 +14,8 @@ export interface HomeAssistant {
   locale: HassLocale
   /** The active WebSocket connection; its identity changes on reconnect. */
   connection?: unknown
+  /** Current user; `is_admin` gates account-management actions. */
+  user?: { is_admin: boolean }
 }
 
 export interface HassEntity {

@@ -79,6 +79,7 @@ const FIXTURES = {
       {
         serial: ELEC_SERIAL,
         type: 'electricity',
+        provider: 'eon_next',
         latest_reading: 3243.222,
         latest_reading_date: isoDaysAgo(3),
         daily_consumption: 4.44,
@@ -103,6 +104,7 @@ const FIXTURES = {
       {
         serial: GAS_SERIAL,
         type: 'gas',
+        provider: 'eon_next',
         latest_reading: 11318.4,
         latest_reading_date: isoDaysAgo(3),
         daily_consumption: 0.6,
@@ -162,7 +164,28 @@ const FIXTURES = {
     ]
   },
 
-  empty: { account_balance: null, meters: [], ev_chargers: [] }
+  empty: { account_balance: null, meters: [], ev_chargers: [] },
+
+  accounts: {
+    accounts: [
+      {
+        entry_id: 'entry-eon',
+        provider: 'eon_next',
+        provider_name: 'E.ON Next',
+        account_number: 'A-1234ABCD',
+        balance: 42.17,
+        status: 'connected'
+      },
+      {
+        entry_id: 'entry-octopus',
+        provider: 'octopus',
+        provider_name: 'Octopus Energy',
+        account_number: 'A-9876WXYZ',
+        balance: -8.4,
+        status: 'reauth_required'
+      }
+    ]
+  }
 }
 
 let simulateError = false
@@ -252,6 +275,8 @@ function createMockHass() {
             : historyFor(msg.meter_serial, msg.days ?? 7)
         case 'eon_next/backfill_status':
           return FIXTURES.backfill
+        case 'eon_next/accounts':
+          return simulateEmpty ? { accounts: [] } : FIXTURES.accounts
         case 'eon_next/ev_schedule':
           return {
             device_id: msg.device_id,
@@ -266,7 +291,8 @@ function createMockHass() {
     states: buildStates(),
     themes: { darkMode: false },
     language: 'en',
-    locale: { language: 'en', number_format: 'language' }
+    locale: { language: 'en', number_format: 'language' },
+    user: { is_admin: true }
   }
 }
 
