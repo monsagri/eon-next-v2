@@ -17,7 +17,7 @@ import {
   formatRatePounds,
   formatShortDate,
   greeting,
-  isTimeOfUse,
+  meterIsTimeOfUse,
   projectMonth,
   round2,
   toStackedBars
@@ -313,9 +313,7 @@ class EonOverviewPage extends LitElement {
 
   private _renderTariffCard(elec: MeterSummary | null, gas: MeterSummary | null) {
     const tariffName = elec?.tariff_name ?? gas?.tariff_name ?? 'Tariff unavailable'
-    const tou =
-      isTimeOfUse(this.hass, elec?.serial ?? null) ||
-      isTimeOfUse(this.hass, gas?.serial ?? null)
+    const tou = meterIsTimeOfUse(elec) || meterIsTimeOfUse(gas)
 
     return html`
       <button

@@ -2,12 +2,7 @@ import { LitElement, html, nothing } from 'lit'
 import { property, state } from 'lit/decorators.js'
 import { getDashboardSummary, getVersion } from './api'
 import { WsDataController } from './controllers/ws-data-controller'
-import {
-  findAccountBalance,
-  findMeter,
-  formatPounds,
-  formatRelative
-} from './utils/dashboard-data'
+import { findMeter, formatPounds, formatRelative } from './utils/dashboard-data'
 import { NAV_ITEMS, PAGE_TITLES, type DashboardPage } from './components/dashboard/pages'
 import type {
   DashboardSummary,
@@ -124,7 +119,7 @@ class EonNextPanel extends LitElement {
   }
 
   private _renderRail() {
-    const balance = findAccountBalance(this.hass)
+    const balance = this._summary.data?.account_balance ?? null
     return html`
       <nav class="rail" aria-label="Dashboard sections">
         <div class="brand">

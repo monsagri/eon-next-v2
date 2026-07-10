@@ -74,6 +74,7 @@ const FIXTURES = {
   version: { version: '2.0.0' },
 
   summary: {
+    account_balance: 42.17,
     meters: [
       {
         serial: ELEC_SERIAL,
@@ -84,7 +85,20 @@ const FIXTURES = {
         standing_charge: ELEC_STANDING,
         previous_day_cost: 0.94,
         unit_rate: ELEC_RATE,
-        tariff_name: 'Next Fixed 12m v106'
+        tariff_name: 'Next Fixed 12m v106',
+        tariff_type: 'Fixed dual-fuel',
+        tariff_valid_from: '2025-07-07',
+        tariff_valid_to: '2027-07-06',
+        unit_rate_valid_from: null,
+        unit_rate_valid_to: null,
+        previous_unit_rate: 0.2034,
+        previous_unit_rate_valid_from: null,
+        previous_unit_rate_valid_to: isoDaysAgo(3),
+        next_unit_rate: 0.2117,
+        next_unit_rate_valid_from: null,
+        next_unit_rate_valid_to: null,
+        is_time_of_use: false,
+        day_rates: buildFlatDayRates(ELEC_RATE)
       },
       {
         serial: GAS_SERIAL,
@@ -95,7 +109,20 @@ const FIXTURES = {
         standing_charge: GAS_STANDING,
         previous_day_cost: 0.34,
         unit_rate: GAS_RATE,
-        tariff_name: 'Next Fixed 12m v106'
+        tariff_name: 'Next Fixed 12m v106',
+        tariff_type: 'Fixed dual-fuel',
+        tariff_valid_from: '2025-07-07',
+        tariff_valid_to: '2027-07-06',
+        unit_rate_valid_from: null,
+        unit_rate_valid_to: null,
+        previous_unit_rate: 0.0471,
+        previous_unit_rate_valid_from: null,
+        previous_unit_rate_valid_to: isoDaysAgo(3),
+        next_unit_rate: 0.0495,
+        next_unit_rate_valid_from: null,
+        next_unit_rate_valid_to: null,
+        is_time_of_use: false,
+        day_rates: buildFlatDayRates(GAS_RATE)
       }
     ],
     ev_chargers: [
@@ -135,7 +162,7 @@ const FIXTURES = {
     ]
   },
 
-  empty: { meters: [], ev_chargers: [] }
+  empty: { account_balance: null, meters: [], ev_chargers: [] }
 }
 
 let simulateError = false

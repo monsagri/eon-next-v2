@@ -3,14 +3,12 @@ import { property } from 'lit/decorators.js'
 import type { DashboardSummary, HomeAssistant, MeterSummary } from '../../types'
 import {
   type DayRate,
-  attrString,
   findMeter,
-  findMeterEntity,
   formatPence,
   formatRatePounds,
-  isTimeOfUse,
-  readDayRates,
-  readRateWindow
+  meterDayRates,
+  meterIsTimeOfUse,
+  meterRateWindow
 } from '../../utils/dashboard-data'
 import type { HalfHourBar } from './halfhour-strip'
 import './halfhour-strip'
@@ -29,9 +27,7 @@ class EonTariffPage extends LitElement {
   render() {
     const elec = findMeter(this.summary, 'electricity')
     const gas = findMeter(this.summary, 'gas')
-    const tou =
-      isTimeOfUse(this.hass, elec?.serial ?? null) ||
-      isTimeOfUse(this.hass, gas?.serial ?? null)
+    const tou = meterIsTimeOfUse(elec) || meterIsTimeOfUse(gas)
 
     return html`
       <div class="page">
@@ -48,15 +44,10 @@ class EonTariffPage extends LitElement {
   ) {
     const locale = this.hass?.language ?? 'en'
     const name = elec?.tariff_name ?? gas?.tariff_name ?? 'Tariff unavailable'
-    const tariffEntity = findMeterEntity(
-      this.hass,
-      'sensor',
-      elec?.serial ?? gas?.serial ?? null,
-      'current_tariff'
-    )
-    const validFrom = attrString(tariffEntity, 'tariff_valid_from')
-    const validTo = attrString(tariffEntity, 'tariff_valid_to')
-    const type = attrString(tariffEntity, 'tariff_type')
+    const primary = elec ?? gas
+    const validFrom = primary?.tariff_valid_from ?? null
+    const validTo = primary?.tariff_valid_to ?? null
+    const type = primary?.tariff_type ?? null
 
     const dates: string[] = []
     if (type) dates.push(type)
@@ -100,7 +91,7 @@ class EonTariffPage extends LitElement {
   }
 
   private _renderRateStrip(elec: MeterSummary | null, tou: boolean) {
-    const rates = readDayRates(this.hass, elec?.serial ?? null)
+    const rates = meterDayRates(elec)
     const bars = buildRateBars(rates, elec?.unit_rate ?? null)
     const now = new Date()
     const nowFraction = (now.getHours() * 60 + now.getMinutes()) / 1440
@@ -145,9 +136,8 @@ class EonTariffPage extends LitElement {
 
   private _renderTimeline(label: string, meter: MeterSummary | null, color: string) {
     const locale = this.hass?.language ?? 'en'
-    const serial = meter?.serial ?? null
-    const previous = readRateWindow(this.hass, serial, 'previous_unit_rate')
-    const next = readRateWindow(this.hass, serial, 'next_unit_rate')
+    const previous = meterRateWindow(meter, 'previous')
+    const next = meterRateWindow(meter, 'next')
     const currentRate = meter?.unit_rate ?? null
 
     return html`

@@ -14,7 +14,7 @@
  */
 
 import type { ConsumptionHistoryEntry } from '../api'
-import type { DashboardSummary, HassEntity, HomeAssistant, MeterSummary } from '../types'
+import type { DashboardSummary, MeterSummary } from '../types'
 
 export type FuelKind = 'electricity' | 'gas'
 
@@ -28,7 +28,7 @@ export interface StackedBar {
   standCost: number
 }
 
-/** Rate window read from a `*_unit_rate` sensor's attributes. */
+/** A unit rate together with its validity window. */
 export interface RateWindow {
   rate: number | null
   validFrom: string | null
@@ -75,113 +75,12 @@ export const FUEL: Record<FuelKind, FuelDescriptor> = {
   }
 }
 
-// --- HA entity-state lookups (Path B) ---------------------------------------
-
-/** Slugify a serial/name the way HA derives entity object-ids from names. */
-function slug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-}
-
-/**
- * Per-`states`-object cache. HA replaces the whole `states` map on every state
- * tick, and pages re-render on every tick, so an entity lookup that falls
- * through to scanning every entity (the common flat-rate case, where the direct
- * id misses) would otherwise re-scan hundreds-to-thousands of entities several
- * times per render. Keying on the map's identity makes repeated lookups within
- * a tick O(1) while staying fresh across ticks.
- */
-const lookupCache = new WeakMap<object, Map<string, HassEntity | null>>()
-
-function cachedLookup(
-  states: HomeAssistant['states'],
-  key: string,
-  compute: () => HassEntity | null
-): HassEntity | null {
-  let byKey = lookupCache.get(states)
-  if (!byKey) {
-    byKey = new Map()
-    lookupCache.set(states, byKey)
-  }
-  if (byKey.has(key)) return byKey.get(key) ?? null
-  const result = compute()
-  byKey.set(key, result)
-  return result
-}
-
-/**
- * Find an entity for a meter by its `<serial> <name>`-derived object-id.
- *
- * Entity ids are `sensor.<slug(serial)>_<suffix>` (single underscores), while
- * the integration's *unique_ids* use a `<serial>__<suffix>` form - so we match
- * against the state map rather than assuming an exact id.
- */
-export function findMeterEntity(
-  hass: HomeAssistant | undefined,
-  domain: string,
-  serial: string | null,
-  suffix: string
-): HassEntity | null {
-  if (!hass?.states || !serial) return null
-  const states = hass.states
-  return cachedLookup(states, `${domain}|${serial}|${suffix}`, () => {
-    const wanted = `${domain}.${slug(serial)}_${suffix}`
-    const direct = states[wanted]
-    if (direct) return direct
-
-    const serialSlug = slug(serial)
-    const suffixSlug = `_${suffix}`
-    for (const [entityId, state] of Object.entries(states)) {
-      if (!entityId.startsWith(`${domain}.`)) continue
-      if (entityId.includes(serialSlug) && entityId.endsWith(suffixSlug)) {
-        return state
-      }
-    }
-    return null
-  })
-}
-
-/** Account balance in pounds (positive = in credit). */
-export function findAccountBalance(hass: HomeAssistant | undefined): number | null {
-  if (!hass?.states) return null
-  const entity = cachedLookup(hass.states, 'account_balance', () => {
-    for (const [entityId, state] of Object.entries(hass.states)) {
-      if (entityId.startsWith('sensor.') && entityId.endsWith('_account_balance')) {
-        return state
-      }
-    }
-    return null
-  })
-  return numericState(entity)
-}
-
-function numericState(entity: HassEntity | null): number | null {
-  if (!entity) return null
-  const n = Number(entity.state)
-  return Number.isFinite(n) ? n : null
-}
-
-/** Read a `*_unit_rate` sensor into a rate window. */
-export function readRateWindow(
-  hass: HomeAssistant | undefined,
-  serial: string | null,
-  suffix: 'current_unit_rate' | 'previous_unit_rate' | 'next_unit_rate'
-): RateWindow {
-  const entity = findMeterEntity(hass, 'sensor', serial, suffix)
-  return {
-    rate: numericState(entity),
-    validFrom: attrString(entity, 'valid_from'),
-    validTo: attrString(entity, 'valid_to')
-  }
-}
-
-/** Read a string attribute off an entity, treating empty strings as absent. */
-export function attrString(entity: HassEntity | null, key: string): string | null {
-  const v = entity?.attributes?.[key]
-  return typeof v === 'string' && v !== '' ? v : null
-}
+// --- Contract-based tariff/rate accessors -----------------------------------
+//
+// Tariff detail (current/previous/next rates, today's rate shape, time-of-use
+// and account balance) now travels on the normalised WebSocket contract
+// (DashboardSummary / MeterSummary), so the dashboard reads a single provider
+// -neutral model instead of scraping HA entity states/attributes.
 
 /** Half-hour rate window for the today's-rate strip. */
 export interface DayRate {
@@ -191,37 +90,48 @@ export interface DayRate {
   isOffPeak: boolean
 }
 
-/** Read today's rate schedule from the `*_current_day_rates` event entity. */
-export function readDayRates(
-  hass: HomeAssistant | undefined,
-  serial: string | null
-): DayRate[] {
-  const entity = findMeterEntity(hass, 'event', serial, 'current_day_rates')
-  const raw = entity?.attributes?.rates
-  if (!Array.isArray(raw)) return []
-  const out: DayRate[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue
-    const r = item as Record<string, unknown>
-    const rate = Number(r.rate)
-    if (!Number.isFinite(rate)) continue
-    out.push({
-      start: typeof r.start === 'string' ? r.start : '',
-      end: typeof r.end === 'string' ? r.end : '',
-      rate,
-      isOffPeak: r.is_off_peak === true
-    })
+/** Read a meter's current / previous / next unit-rate window from the contract. */
+export function meterRateWindow(
+  meter: MeterSummary | null,
+  which: 'current' | 'previous' | 'next'
+): RateWindow {
+  if (!meter) return { rate: null, validFrom: null, validTo: null }
+  switch (which) {
+    case 'current':
+      return {
+        rate: meter.unit_rate,
+        validFrom: meter.unit_rate_valid_from,
+        validTo: meter.unit_rate_valid_to
+      }
+    case 'previous':
+      return {
+        rate: meter.previous_unit_rate,
+        validFrom: meter.previous_unit_rate_valid_from,
+        validTo: meter.previous_unit_rate_valid_to
+      }
+    case 'next':
+      return {
+        rate: meter.next_unit_rate,
+        validFrom: meter.next_unit_rate_valid_from,
+        validTo: meter.next_unit_rate_valid_to
+      }
   }
-  return out
 }
 
-/** Whether a meter is on a time-of-use tariff (has an off-peak binary sensor). */
-export function isTimeOfUse(
-  hass: HomeAssistant | undefined,
-  serial: string | null
-): boolean {
-  const entity = findMeterEntity(hass, 'binary_sensor', serial, 'off_peak')
-  return entity != null && entity.state !== 'unavailable' && entity.state !== 'unknown'
+/** Today's rate schedule from the contract, in the strip's camelCase shape. */
+export function meterDayRates(meter: MeterSummary | null): DayRate[] {
+  if (!meter?.day_rates) return []
+  return meter.day_rates.map((r) => ({
+    start: r.start,
+    end: r.end,
+    rate: r.rate,
+    isOffPeak: r.is_off_peak
+  }))
+}
+
+/** Whether a meter is on a time-of-use tariff. */
+export function meterIsTimeOfUse(meter: MeterSummary | null): boolean {
+  return meter?.is_time_of_use ?? false
 }
 
 // --- Formatting -------------------------------------------------------------

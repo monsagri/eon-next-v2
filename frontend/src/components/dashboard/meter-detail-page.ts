@@ -12,7 +12,7 @@ import {
   formatPence,
   formatPounds,
   formatShortDate,
-  isTimeOfUse,
+  meterIsTimeOfUse,
   normaliseType,
   toMonthlyStackedBars,
   toStackedBars
@@ -147,7 +147,7 @@ class EonMeterDetailPage extends LitElement {
   }
 
   private _renderHeader(fuel: (typeof FUEL)[FuelKind]) {
-    const tou = isTimeOfUse(this.hass, this.meter?.serial ?? null)
+    const tou = meterIsTimeOfUse(this.meter)
     const descriptor =
       this.kind === 'gas'
         ? 'Import · volume m³ → kWh'
