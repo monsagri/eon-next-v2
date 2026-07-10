@@ -20,10 +20,11 @@
             },
             "user": {
                 "data": {
+                    "provider": "Energy provider",
                     "email": "Email address",
                     "password": "Password"
                 },
-                "description": "Login to your Eon Next account.",
+                "description": "Choose your energy provider and log in to your account.",
                 "title": "Login"
             }
         }

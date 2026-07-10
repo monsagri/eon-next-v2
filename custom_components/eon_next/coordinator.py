@@ -11,10 +11,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .eonnext import (
-    EonNext,
     EonNextApiError,
     EonNextAuthError,
     GasMeter,
+    KrakenClient,
     METER_TYPE_GAS,
 )
 from .statistics import async_import_consumption_statistics
@@ -31,7 +31,7 @@ def ev_data_key(device_id: str) -> str:
 class EonNextCoordinator(DataUpdateCoordinator):
     """Coordinator to manage fetching Eon Next data."""
 
-    def __init__(self, hass, api: EonNext, update_interval_minutes: int = 30):
+    def __init__(self, hass, api: KrakenClient, update_interval_minutes: int = 30):
         super().__init__(
             hass,
             _LOGGER,

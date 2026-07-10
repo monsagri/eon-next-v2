@@ -20,13 +20,16 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import recorder as recorder_helper
 from homeassistant.setup import async_setup_component
 
+from custom_components.eon_next.config_flow import _entry_unique_id
 from custom_components.eon_next.const import (
     CONF_EMAIL,
     CONF_PASSWORD,
+    CONF_PROVIDER,
     CONF_REFRESH_TOKEN,
     DOMAIN,
 )
 from custom_components.eon_next.eonnext import EonNextApiError
+from custom_components.eon_next.providers import DEFAULT_PROVIDER_ID
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +73,7 @@ class _FakeFlowApi:
 
 def _patch_api(fake: _FakeFlowApi):
     return patch(
-        "custom_components.eon_next.config_flow.EonNext", return_value=fake
+        "custom_components.eon_next.config_flow.KrakenClient", return_value=fake
     )
 
 
@@ -111,6 +114,38 @@ async def test_user_flow_creates_entry(
     assert result["data"][CONF_EMAIL] == "user@example.com"
     assert result["data"][CONF_PASSWORD] == "secret"
     assert result["data"][CONF_REFRESH_TOKEN] == "rt-1"
+
+
+@pytest.mark.asyncio
+async def test_user_flow_defaults_to_eon_next_provider(
+    hass: HomeAssistant, enable_custom_integrations: None
+) -> None:
+    """The entry records the selected provider; default keeps the email as id."""
+    del enable_custom_integrations
+    await _ensure_recorder(hass)
+    with _patch_api(_FakeFlowApi(token="rt-1")):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        # With a single supported provider the form omits the picker; the
+        # handler defaults CONF_PROVIDER, so the user still submits just
+        # email + password.
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_EMAIL: "User@Example.com", CONF_PASSWORD: "secret"},
+        )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PROVIDER] == DEFAULT_PROVIDER_ID
+    # Default provider keeps the bare email as the config-entry unique id, so
+    # existing E.ON Next installs are unaffected.
+    assert result["result"].unique_id == "user@example.com"
+
+
+def test_entry_unique_id_namespaces_non_default_providers() -> None:
+    """Default provider -> bare email; others -> provider-prefixed."""
+    assert _entry_unique_id(DEFAULT_PROVIDER_ID, "a@b.com") == "a@b.com"
+    assert _entry_unique_id("octopus", "a@b.com") == "octopus:a@b.com"
 
 
 @pytest.mark.asyncio

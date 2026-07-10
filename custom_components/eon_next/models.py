@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.config_entries import ConfigEntry
 
 from .coordinator import EonNextCoordinator
-from .eonnext import EonNext
+from .eonnext import KrakenClient
 
 if TYPE_CHECKING:
     from .backfill import EonNextBackfillManager
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class EonNextRuntimeData:
     """Runtime data for an Eon Next config entry."""
 
-    api: EonNext
+    api: KrakenClient
     coordinator: EonNextCoordinator
     backfill: EonNextBackfillManager
     cost_trackers: EonNextCostTrackerManager

@@ -8,6 +8,10 @@ CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
 CONF_REFRESH_TOKEN = "refresh_token"
 
+# Energy provider (Kraken tenant); absent on pre-multi-provider entries, which
+# default to E.ON Next. See providers.py.
+CONF_PROVIDER = "provider"
+
 # Frontend / dashboard
 CONF_SHOW_PANEL = "show_panel"
 CONF_SHOW_CARD = "show_card"

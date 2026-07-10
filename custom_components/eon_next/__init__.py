@@ -18,6 +18,7 @@ from .const import (
     CARDS_URL,
     CONF_EMAIL,
     CONF_PASSWORD,
+    CONF_PROVIDER,
     CONF_REFRESH_TOKEN,
     CONF_SHOW_CARD,
     CONF_SHOW_PANEL,
@@ -30,8 +31,9 @@ from .const import (
 )
 from .coordinator import EonNextCoordinator
 from .cost_tracker import EonNextCostTrackerManager
-from .eonnext import EonNext, EonNextAuthError
+from .eonnext import EonNextAuthError, KrakenClient
 from .models import EonNextConfigEntry, EonNextRuntimeData
+from .providers import get_provider
 from .services import async_register_services
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -221,7 +223,9 @@ async def _async_migrate_unique_ids(
 
 async def async_setup_entry(hass: HomeAssistant, entry: EonNextConfigEntry) -> bool:
     """Set up Eon Next from a config entry."""
-    api = EonNext()
+    # Entries created before multi-provider support have no CONF_PROVIDER key;
+    # get_provider(None) defaults to E.ON Next, so they set up unchanged.
+    api = KrakenClient(get_provider(entry.data.get(CONF_PROVIDER)))
     authenticated = False
 
     def _persist_refresh_token(refresh_token: str) -> None:

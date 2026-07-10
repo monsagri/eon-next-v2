@@ -23,6 +23,7 @@ from .const import (
     CONF_BACKFILL_RUN_INTERVAL_MINUTES,
     CONF_EMAIL,
     CONF_PASSWORD,
+    CONF_PROVIDER,
     CONF_REFRESH_TOKEN,
     CONF_SHOW_CARD,
     CONF_SHOW_PANEL,
@@ -37,9 +38,22 @@ from .const import (
     DEFAULT_SHOW_PANEL,
     DOMAIN,
 )
-from .eonnext import EonNext, EonNextApiError
+from .eonnext import EonNextApiError, KrakenClient
+from .providers import DEFAULT_PROVIDER_ID, PROVIDERS, get_provider
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _entry_unique_id(provider_id: str, email: str) -> str:
+    """Config-entry unique id for a (provider, account-email) pair.
+
+    The default provider keeps the bare email so existing E.ON Next entries are
+    unaffected; other providers are namespaced so the same email can be used on
+    more than one supplier without a false duplicate.
+    """
+    if provider_id == DEFAULT_PROVIDER_ID:
+        return email
+    return f"{provider_id}:{email}"
 
 
 class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -56,12 +70,14 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._reauth_entry: ConfigEntry | None = None
 
-    async def _validate_credentials(self, email: str, password: str) -> str | None:
-        """Validate credentials against E.ON Next.
+    async def _validate_credentials(
+        self, email: str, password: str, provider_id: str
+    ) -> str | None:
+        """Validate credentials against the selected provider.
 
         Returns the refresh token on success, or None on failure.
         """
-        api = EonNext()
+        api = KrakenClient(get_provider(provider_id))
         try:
             success = await api.login_with_username_and_password(
                 email,
@@ -85,14 +101,17 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            provider_id = user_input.get(CONF_PROVIDER, DEFAULT_PROVIDER_ID)
             email = user_input[CONF_EMAIL].strip().lower()
             password = user_input[CONF_PASSWORD]
 
-            await self.async_set_unique_id(email)
+            await self.async_set_unique_id(_entry_unique_id(provider_id, email))
             self._abort_if_unique_id_configured()
 
             try:
-                refresh_token = await self._validate_credentials(email, password)
+                refresh_token = await self._validate_credentials(
+                    email, password, provider_id
+                )
             except EonNextApiError:
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
@@ -100,8 +119,9 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 if refresh_token is not None:
                     return self.async_create_entry(
-                        title="Eon Next",
+                        title=get_provider(provider_id).display_name,
                         data={
+                            CONF_PROVIDER: provider_id,
                             CONF_EMAIL: email,
                             CONF_PASSWORD: password,
                             CONF_REFRESH_TOKEN: refresh_token,
@@ -109,14 +129,20 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 errors["base"] = "invalid_auth"
 
+        schema: dict[Any, Any] = {}
+        # Only surface the provider picker once there is a real choice; with a
+        # single supported provider the handler defaults to it and the form
+        # stays exactly as existing users know it.
+        if len(PROVIDERS) > 1:
+            schema[vol.Required(CONF_PROVIDER, default=DEFAULT_PROVIDER_ID)] = vol.In(
+                {pid: p.display_name for pid, p in PROVIDERS.items()}
+            )
+        schema[vol.Required(CONF_EMAIL)] = cv.string
+        schema[vol.Required(CONF_PASSWORD)] = cv.string
+
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_EMAIL): cv.string,
-                    vol.Required(CONF_PASSWORD): cv.string,
-                }
-            ),
+            data_schema=vol.Schema(schema),
             errors=errors,
         )
 
@@ -140,6 +166,9 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="unknown")
 
         existing_email = self._reauth_entry.data[CONF_EMAIL]
+        provider_id = (
+            self._reauth_entry.data.get(CONF_PROVIDER) or DEFAULT_PROVIDER_ID
+        )
 
         if user_input is not None:
             email = user_input[CONF_EMAIL].strip().lower()
@@ -150,11 +179,13 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # another account (which would leave unique_id pointing at A while
             # its data belongs to B - duplicate entries and colliding
             # meter-serial unique_ids follow).
-            await self.async_set_unique_id(email)
+            await self.async_set_unique_id(_entry_unique_id(provider_id, email))
             self._abort_if_unique_id_mismatch(reason="reauth_account_mismatch")
 
             try:
-                refresh_token = await self._validate_credentials(email, password)
+                refresh_token = await self._validate_credentials(
+                    email, password, provider_id
+                )
             except EonNextApiError:
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
