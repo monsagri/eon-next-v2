@@ -1,6 +1,7 @@
 import { LitElement, html, nothing } from 'lit'
 import { property, state } from 'lit/decorators.js'
 import { getDashboardSummary, getVersion } from './api'
+import { BRAND } from './brand'
 import { WsDataController } from './controllers/ws-data-controller'
 import { findMeter, formatPounds, formatRelative } from './utils/dashboard-data'
 import { NAV_ITEMS, PAGE_TITLES, type DashboardPage } from './components/dashboard/pages'
@@ -20,10 +21,6 @@ import './components/dashboard/settings-page'
 
 import tokens from './styles/dashboard-tokens.css'
 import styles from './styles/panel.css'
-
-const FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800' +
-  '&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Space+Mono&display=swap'
 
 /**
  * The EON Next sidebar panel - a self-contained dashboard app.
@@ -71,11 +68,11 @@ class EonNextPanel extends LitElement {
   /** Load the design's Google Fonts once, into the main document. */
   private _ensureFonts() {
     const doc = this.ownerDocument
-    if (!doc || doc.getElementById('eon-next-fonts')) return
+    if (!doc || !BRAND.fontsUrl || doc.getElementById(BRAND.fontsId)) return
     const link = doc.createElement('link')
-    link.id = 'eon-next-fonts'
+    link.id = BRAND.fontsId
     link.rel = 'stylesheet'
-    link.href = FONTS_URL
+    link.href = BRAND.fontsUrl
     doc.head.appendChild(link)
   }
 
@@ -136,12 +133,12 @@ class EonNextPanel extends LitElement {
               focusable="false"
               aria-hidden="true"
             >
-              <path d="M27 4 11 27h11l-2 17 18-24H26z" fill="#fff" />
+              <path d=${BRAND.logoPath} fill="#fff" />
             </svg>
           </button>
           <div>
-            <div class="brand-name">EON Next</div>
-            <div class="brand-sub mono">home energy</div>
+            <div class="brand-name">${BRAND.name}</div>
+            <div class="brand-sub mono">${BRAND.sub}</div>
           </div>
         </div>
 
