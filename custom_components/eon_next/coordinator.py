@@ -100,6 +100,11 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "tariff_valid_to": None,
                         "tariff_rates_schedule": None,
                         "tariff_is_tou": False,
+                        # Provider's off-peak pattern registry, used by
+                        # tariff_helpers as a fallback when the API schedule
+                        # omits time windows (so Octopus meters match Octopus
+                        # products, not E.ON's).
+                        "tariff_patterns": self.api.provider.tariff_patterns,
                     }
 
                     if (

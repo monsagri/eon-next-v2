@@ -15,6 +15,7 @@ from custom_components.eon_next.eonnext import EonNext, KrakenClient
 from custom_components.eon_next.providers import (
     DEFAULT_PROVIDER_ID,
     EON_NEXT,
+    OCTOPUS,
     PROVIDERS,
     ProviderDescriptor,
     get_provider,
@@ -47,7 +48,30 @@ def test_get_provider_defaults_to_eon_next() -> None:
 
 def test_get_provider_rejects_unknown_id() -> None:
     with pytest.raises(ValueError, match="Unknown energy provider"):
-        get_provider("octopus")
+        get_provider("british_gas")
+
+
+def test_octopus_provider_is_registered() -> None:
+    """Octopus is a second Kraken tenant: different base URL, same UK market."""
+    octopus = get_provider("octopus")
+    assert octopus is OCTOPUS
+    assert octopus.display_name == "Octopus Energy"
+    assert octopus.base_url == "https://api.octopus.energy/v1"
+    assert octopus.platform == "kraken"
+    # UK market defaults are shared with E.ON.
+    assert octopus.currency == "GBP"
+    assert octopus.gas_calorific_value == EON_NEXT.gas_calorific_value
+    # But it carries its own tariff patterns, not E.ON's.
+    assert octopus.tariff_patterns is not EON_NEXT.tariff_patterns
+
+
+def test_octopus_tariff_patterns_match_octopus_products() -> None:
+    """Octopus Go / Intelligent codes resolve against Octopus's patterns."""
+    patterns = get_provider("octopus").tariff_patterns
+    assert get_tariff_pattern("E-1R-GO-VAR-22-10-14-A", patterns) is not None
+    assert get_tariff_pattern("E-1R-INTELLI-VAR-22-10-14-A", patterns) is not None
+    # E.ON's products do not match Octopus's set.
+    assert get_tariff_pattern("E-1R-NEXT-DRIVE-A", patterns) is None
 
 
 def test_eonnext_shim_is_a_kraken_client_pinned_to_eon() -> None:

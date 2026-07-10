@@ -16,9 +16,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import time
 
 from .const import API_BASE_URL, GAS_CALORIC_VALUE, GAS_VOLUME_CORRECTION
-from .tariff_patterns import KNOWN_TARIFF_PATTERNS, TariffPattern
+from .tariff_patterns import KNOWN_TARIFF_PATTERNS, TariffPattern, TariffRateWindow
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,8 +58,35 @@ EON_NEXT = ProviderDescriptor(
 )
 
 
+# Off-peak windows for Octopus's fixed-window smart tariffs, used only as a
+# fallback when the API tariff schedule omits time windows. Dynamic tariffs
+# (Agile, Flux) and the multi-rate Cosy tariff carry full half-hourly schedules
+# from the API, so they need no pattern here.
+_OCTOPUS_TARIFF_PATTERNS: tuple[TariffPattern, ...] = (
+    # Octopus Go: cheap 00:30-05:30.
+    TariffPattern(
+        product_prefix="GO",
+        windows=[TariffRateWindow("off_peak", time(0, 30), time(5, 30))],
+    ),
+    # Intelligent Octopus Go: cheap 23:30-05:30 (wraps midnight).
+    TariffPattern(
+        product_prefix="INTELLI",
+        windows=[TariffRateWindow("off_peak", time(23, 30), time(5, 30))],
+    ),
+)
+
+
+OCTOPUS = ProviderDescriptor(
+    id="octopus",
+    display_name="Octopus Energy",
+    base_url="https://api.octopus.energy/v1",
+    tariff_patterns=_OCTOPUS_TARIFF_PATTERNS,
+)
+
+
 PROVIDERS: dict[str, ProviderDescriptor] = {
     EON_NEXT.id: EON_NEXT,
+    OCTOPUS.id: OCTOPUS,
 }
 
 DEFAULT_PROVIDER_ID = EON_NEXT.id

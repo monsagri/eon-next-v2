@@ -123,10 +123,23 @@ resources:
     type: module
 ```
 
+## Supported energy providers
+
+E.ON Next runs on the **Kraken** platform, which powers a number of energy
+suppliers behind the same API. This integration therefore works with more than
+one provider - you choose yours when you add the integration:
+
+- **E.ON Next** (default)
+- **Octopus Energy**
+
+Both use the same login (the email and password for your provider account) and
+the same dashboard, sensors and Energy Dashboard integration. The dashboard's
+visual style is shared across providers.
+
 ## Requirements
 
 - Home Assistant `2024.7.0` or newer.
-- An active E.ON Next account.
+- An active account with a supported provider (E.ON Next or Octopus Energy).
 
 ## Install with HACS (recommended)
 
@@ -138,7 +151,7 @@ resources:
 4. Find **Eon Next Integration** in HACS and install it.
 5. Restart Home Assistant.
 6. Go to **Settings → Devices & Services → Add Integration**.
-7. Search for **Eon Next** and complete login.
+7. Search for **Eon Next**, choose your energy provider, and complete login.
 
 ## Manual installation
 

@@ -238,7 +238,7 @@ def get_previous_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     if schedule:
         distinct = _distinct_rates_pence(schedule)
         if len(distinct) >= 2:
-            pattern = get_tariff_pattern(tariff_code)
+            pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
             if pattern and pattern.windows:
                 now_local = dt_util.now().time()
                 in_off_peak = _time_in_off_peak_windows(
@@ -315,7 +315,7 @@ def get_next_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     if schedule:
         distinct = _distinct_rates_pence(schedule)
         if len(distinct) >= 2:
-            pattern = get_tariff_pattern(tariff_code)
+            pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
             if pattern and pattern.windows:
                 now_local = dt_util.now().time()
                 in_off_peak = _time_in_off_peak_windows(
@@ -375,7 +375,7 @@ def get_current_rate(meter_data: dict[str, Any]) -> RateInfo | None:
     if schedule:
         distinct = _distinct_rates_pence(schedule)
         if len(distinct) >= 2:
-            pattern = get_tariff_pattern(tariff_code)
+            pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
             if pattern and pattern.windows:
                 in_off_peak = _time_in_off_peak_windows(
                     dt_util.now().time(), pattern.windows
@@ -425,7 +425,7 @@ def rate_for_timestamp(
     if schedule:
         distinct = _distinct_rates_pence(schedule)
         if len(distinct) >= 2:
-            pattern = get_tariff_pattern(tariff_code)
+            pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
             if pattern and pattern.windows:
                 local_time = dt_util.as_local(when_utc).time()
                 if _time_in_off_peak_windows(local_time, pattern.windows):
@@ -495,7 +495,7 @@ def is_off_peak(meter_data: dict[str, Any]) -> bool | None:
             return _is_off_peak_rate(cur_val, schedule)
 
     # Pattern registry fallback
-    pattern = get_tariff_pattern(tariff_code)
+    pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
     if pattern and pattern.windows:
         now_local = dt_util.now().time()
         return _time_in_off_peak_windows(now_local, pattern.windows)
@@ -534,7 +534,7 @@ def get_off_peak_metadata(
         # boundary-refresh mixin still gets a next_transition to schedule on.
 
     # Pattern registry fallback
-    pattern = get_tariff_pattern(tariff_code)
+    pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
     if pattern and pattern.windows:
         now_local = dt_util.now()
         in_off_peak = _time_in_off_peak_windows(now_local.time(), pattern.windows)
@@ -609,7 +609,7 @@ def build_day_rates(meter_data: dict[str, Any]) -> list[dict[str, Any]]:
             return rates
 
     # Pattern fallback - construct windows from known tariff structure
-    pattern = get_tariff_pattern(tariff_code)
+    pattern = get_tariff_pattern(tariff_code, meter_data.get("tariff_patterns"))
     if pattern and pattern.windows and schedule:
         distinct = _distinct_rates_pence(schedule)
         if len(distinct) >= 2:

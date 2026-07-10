@@ -149,6 +149,32 @@ def test_entry_unique_id_namespaces_non_default_providers() -> None:
 
 
 @pytest.mark.asyncio
+async def test_user_flow_creates_octopus_entry(
+    hass: HomeAssistant, enable_custom_integrations: None
+) -> None:
+    """Selecting a non-default provider namespaces the entry's unique id."""
+    del enable_custom_integrations
+    await _ensure_recorder(hass)
+    with _patch_api(_FakeFlowApi(token="rt-oct")):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_PROVIDER: "octopus",
+                CONF_EMAIL: "User@Example.com",
+                CONF_PASSWORD: "secret",
+            },
+        )
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PROVIDER] == "octopus"
+    assert result["title"] == "Octopus Energy"
+    assert result["result"].unique_id == "octopus:user@example.com"
+
+
+@pytest.mark.asyncio
 async def test_user_flow_invalid_auth(
     hass: HomeAssistant, enable_custom_integrations: None
 ) -> None:
