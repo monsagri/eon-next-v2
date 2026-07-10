@@ -15,6 +15,7 @@
 
 import type { ConsumptionHistoryEntry } from '../api'
 import type { DashboardSummary, MeterSummary } from '../types'
+import { formatMajor, formatMajorRate, formatMinor } from './currency'
 
 export type FuelKind = 'electricity' | 'gas'
 
@@ -135,23 +136,24 @@ export function meterIsTimeOfUse(meter: MeterSummary | null): boolean {
 }
 
 // --- Formatting -------------------------------------------------------------
+//
+// These wrap the currency-agnostic formatters in ./currency so call sites keep
+// their names while the actual symbol/precision come from the active currency
+// (GBP by default). Money values are in the major unit (pounds).
 
-/** `£11.52` - money is already in pounds. */
+/** Money in the major unit, e.g. `£11.52`. */
 export function formatPounds(value: number | null | undefined, dp = 2): string {
-  if (value == null || !Number.isFinite(value)) return '-'
-  return `£${value.toFixed(dp)}`
+  return formatMajor(value, dp)
 }
 
-/** `21.17p` - a GBP/kWh rate shown in pence. */
+/** A rate shown in the minor unit, e.g. `21.17p`. */
 export function formatPence(rate: number | null | undefined, dp = 2): string {
-  if (rate == null || !Number.isFinite(rate)) return '-'
-  return `${(rate * 100).toFixed(dp)}p`
+  return formatMinor(rate, dp)
 }
 
-/** `£0.2117` - a GBP/kWh rate shown to full precision. */
+/** A rate shown to full precision, e.g. `£0.2117`. */
 export function formatRatePounds(rate: number | null | undefined): string {
-  if (rate == null || !Number.isFinite(rate)) return '-'
-  return `£${rate.toFixed(4)}`
+  return formatMajorRate(rate)
 }
 
 /** Human date like `6 Jul`. */
