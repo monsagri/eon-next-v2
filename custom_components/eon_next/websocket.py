@@ -25,6 +25,7 @@ from .schemas import (
     ConsumptionHistoryEntry,
     ConsumptionHistoryResponse,
     DashboardSummary,
+    DayRate,
     EvChargerSummary,
     EvScheduleResponse,
     EvScheduleSlot,
@@ -32,6 +33,12 @@ from .schemas import (
     VersionResponse,
 )
 from .statistics import statistic_id_for_meter
+from .tariff_helpers import (
+    build_day_rates,
+    get_current_rate,
+    get_next_rate,
+    get_previous_rate,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,6 +108,7 @@ def ws_dashboard_summary(
     """
     meters: list[MeterSummary] = []
     ev_chargers: list[EvChargerSummary] = []
+    balance_total: float | None = None
 
     entries: list[EonNextConfigEntry] = (
         hass.config_entries.async_entries(DOMAIN)  # type: ignore[assignment]
@@ -119,19 +127,7 @@ def ws_dashboard_summary(
             data_type = data.get("type")
 
             if data_type in ("electricity", "gas"):
-                meters.append(
-                    MeterSummary(
-                        serial=data.get("serial"),
-                        type=data_type,
-                        latest_reading=data.get("latest_reading"),
-                        latest_reading_date=data.get("latest_reading_date"),
-                        daily_consumption=data.get("daily_consumption"),
-                        standing_charge=data.get("standing_charge"),
-                        previous_day_cost=data.get("previous_day_cost"),
-                        unit_rate=data.get("unit_rate"),
-                        tariff_name=data.get("tariff_name"),
-                    )
-                )
+                meters.append(_meter_summary(data))
 
             elif data_type == "ev_charger":
                 schedule = data.get("schedule", [])
@@ -145,9 +141,67 @@ def ws_dashboard_summary(
                     )
                 )
 
+            elif data_type == "account":
+                balance = data.get("balance")
+                if isinstance(balance, int | float):
+                    balance_total = (balance_total or 0.0) + float(balance)
+
     connection.send_result(
         msg["id"],
-        dataclasses.asdict(DashboardSummary(meters=meters, ev_chargers=ev_chargers)),
+        dataclasses.asdict(
+            DashboardSummary(
+                meters=meters,
+                ev_chargers=ev_chargers,
+                account_balance=balance_total,
+            )
+        ),
+    )
+
+
+def _meter_summary(data: dict[str, Any]) -> MeterSummary:
+    """Build a :class:`MeterSummary` from a meter's coordinator data.
+
+    The tariff/rate detail is derived here (via ``tariff_helpers``) so the
+    normalised contract carries what the frontend previously read from HA
+    entity attributes. All computation is over in-memory data - no I/O.
+    """
+    current = get_current_rate(data)
+    previous = get_previous_rate(data)
+    following = get_next_rate(data)
+    day_rates = [
+        DayRate(
+            start=str(window.get("start", "")),
+            end=str(window.get("end", "")),
+            rate=float(window["rate"]),
+            is_off_peak=bool(window.get("is_off_peak", False)),
+        )
+        for window in build_day_rates(data)
+        if window.get("rate") is not None
+    ]
+
+    return MeterSummary(
+        serial=data.get("serial"),
+        type=data.get("type"),
+        latest_reading=data.get("latest_reading"),
+        latest_reading_date=data.get("latest_reading_date"),
+        daily_consumption=data.get("daily_consumption"),
+        standing_charge=data.get("standing_charge"),
+        previous_day_cost=data.get("previous_day_cost"),
+        unit_rate=data.get("unit_rate"),
+        tariff_name=data.get("tariff_name"),
+        tariff_type=data.get("tariff_type"),
+        tariff_valid_from=data.get("tariff_valid_from"),
+        tariff_valid_to=data.get("tariff_valid_to"),
+        unit_rate_valid_from=current.valid_from if current else None,
+        unit_rate_valid_to=current.valid_to if current else None,
+        previous_unit_rate=previous.rate if previous else None,
+        previous_unit_rate_valid_from=previous.valid_from if previous else None,
+        previous_unit_rate_valid_to=previous.valid_to if previous else None,
+        next_unit_rate=following.rate if following else None,
+        next_unit_rate_valid_from=following.valid_from if following else None,
+        next_unit_rate_valid_to=following.valid_to if following else None,
+        is_time_of_use=bool(data.get("tariff_is_tou", False)),
+        day_rates=day_rates,
     )
 
 

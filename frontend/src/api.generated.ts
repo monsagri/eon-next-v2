@@ -13,6 +13,13 @@ export interface VersionResponse {
   version: string
 }
 
+export interface DayRate {
+  start: string
+  end: string
+  rate: number
+  is_off_peak: boolean
+}
+
 export interface MeterSummary {
   serial: string | null
   type: string | null
@@ -23,6 +30,19 @@ export interface MeterSummary {
   previous_day_cost: number | null
   unit_rate: number | null
   tariff_name: string | null
+  tariff_type: string | null
+  tariff_valid_from: string | null
+  tariff_valid_to: string | null
+  unit_rate_valid_from: string | null
+  unit_rate_valid_to: string | null
+  previous_unit_rate: number | null
+  previous_unit_rate_valid_from: string | null
+  previous_unit_rate_valid_to: string | null
+  next_unit_rate: number | null
+  next_unit_rate_valid_from: string | null
+  next_unit_rate_valid_to: string | null
+  is_time_of_use: boolean
+  day_rates: DayRate[]
 }
 
 export interface EvChargerSummary {
@@ -36,6 +56,7 @@ export interface EvChargerSummary {
 export interface DashboardSummary {
   meters: MeterSummary[]
   ev_chargers: EvChargerSummary[]
+  account_balance: number | null
 }
 
 export interface BackfillMeterProgress {

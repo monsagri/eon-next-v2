@@ -25,8 +25,26 @@ class VersionResponse:
 
 
 @dataclass
+class DayRate:
+    """A single rate window within today's rate shape.
+
+    ``start``/``end`` are ISO 8601 local timestamps; ``rate`` is GBP/kWh.
+    """
+
+    start: str
+    end: str
+    rate: float
+    is_off_peak: bool
+
+
+@dataclass
 class MeterSummary:
-    """Per-meter data included in the dashboard summary."""
+    """Per-meter data included in the dashboard summary.
+
+    The tariff/rate fields below carry the richer detail the frontend
+    previously scraped from HA entity attributes, so the dashboard can read a
+    single normalised contract rather than reaching into entity states.
+    """
 
     serial: str | None
     type: str | None
@@ -37,6 +55,23 @@ class MeterSummary:
     previous_day_cost: float | None
     unit_rate: float | None
     tariff_name: str | None
+    # Tariff metadata
+    tariff_type: str | None
+    tariff_valid_from: str | None
+    tariff_valid_to: str | None
+    # Current unit-rate validity window (rate itself is ``unit_rate`` above)
+    unit_rate_valid_from: str | None
+    unit_rate_valid_to: str | None
+    # Previous / next unit rates with their validity windows
+    previous_unit_rate: float | None
+    previous_unit_rate_valid_from: str | None
+    previous_unit_rate_valid_to: str | None
+    next_unit_rate: float | None
+    next_unit_rate_valid_from: str | None
+    next_unit_rate_valid_to: str | None
+    # Whether this meter is on a time-of-use tariff, and today's rate shape
+    is_time_of_use: bool
+    day_rates: list[DayRate]
 
 
 @dataclass
@@ -56,6 +91,9 @@ class DashboardSummary:
 
     meters: list[MeterSummary]
     ev_chargers: list[EvChargerSummary]
+    # Total account balance in pounds (positive = in credit), summed across
+    # configured accounts; ``None`` when no balance is known.
+    account_balance: float | None
 
 
 @dataclass

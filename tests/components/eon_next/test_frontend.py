@@ -300,6 +300,84 @@ class TestWsDashboardSummary:
         result = mock_connection.send_result.call_args[0][1]
         assert result["meters"] == []
         assert result["ev_chargers"] == []
+        assert result["account_balance"] is None
+
+    @pytest.mark.asyncio
+    async def test_ws_dashboard_summary_includes_tariff_detail_and_balance(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The summary carries the normalised tariff/rate contract + balance."""
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        data = _electricity_meter_data()
+        # A flat-rate meter still needs the schedule inputs day_rates reads.
+        data["meter-1"]["tariff_unit_rate"] = 0.24
+        data["meter-1"]["tariff_type"] = "StandardTariff"
+        # An account balance that must be summed into the summary.
+        data["account::A1"] = {"type": "account", "balance": 12.5}
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(data)
+
+        from custom_components.eon_next.websocket import ws_dashboard_summary
+
+        mock_connection = MagicMock()
+        ws_dashboard_summary(
+            hass, mock_connection, {"id": 4, "type": "eon_next/dashboard_summary"}
+        )
+        await hass.async_block_till_done()
+
+        result = mock_connection.send_result.call_args[0][1]
+        assert result["account_balance"] == 12.5
+        meter = result["meters"][0]
+        # New contract fields are present...
+        assert meter["tariff_type"] == "StandardTariff"
+        assert meter["is_time_of_use"] is False
+        # ...and a flat tariff yields a single all-day rate window.
+        assert len(meter["day_rates"]) == 1
+        assert meter["day_rates"][0]["rate"] == 0.24
+        assert meter["day_rates"][0]["is_off_peak"] is False
+
+    @pytest.mark.asyncio
+    async def test_ws_dashboard_summary_sums_multiple_account_balances(
+        self,
+        hass: HomeAssistant,
+        enable_custom_integrations: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        del enable_custom_integrations
+        fake_api = FakeApi()
+        _patch_integration(monkeypatch, fake_api)
+        entry = _mock_entry()
+
+        await _setup_entry(hass, entry)
+
+        coordinator = entry.runtime_data.coordinator
+        coordinator.async_set_updated_data(
+            {
+                "account::A1": {"type": "account", "balance": 10.0},
+                "account::A2": {"type": "account", "balance": 5.5},
+            }
+        )
+
+        from custom_components.eon_next.websocket import ws_dashboard_summary
+
+        mock_connection = MagicMock()
+        ws_dashboard_summary(
+            hass, mock_connection, {"id": 5, "type": "eon_next/dashboard_summary"}
+        )
+        await hass.async_block_till_done()
+
+        result = mock_connection.send_result.call_args[0][1]
+        assert result["account_balance"] == 15.5
 
 
 class TestWsConsumptionHistory:
