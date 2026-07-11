@@ -8,6 +8,7 @@
 - [HACS Dashboard Plan](./hacs_dashboard_plan.md)
 - [Provider Generalisation (multi-provider architecture)](./provider_generalization.md)
 - [Adapter / Normaliser Architecture (full multi-source build plan)](./adapter_normaliser_architecture.md)
+- [Greenfield Build Plan (fresh repo/domain - supersedes the build order above)](./greenfield_build_plan.md)
 
 ## Research inputs
 
