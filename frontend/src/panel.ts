@@ -81,27 +81,29 @@ class EonNextPanel extends LitElement {
     const { data } = this._summary
 
     return html`
-      ${!data?.meters.length && !data?.ev_chargers.length
-        ? html`<div class="empty-state">
-            <ha-icon
-              icon="mdi:lightning-bolt-circle"
-              style="--mdc-icon-size: 48px;"
-            ></ha-icon>
-            <h2>No data available</h2>
-            <p>No meter or EV data found. Check your integration configuration.</p>
-          </div>`
-        : html`
-            <div class="grid">
-              ${data?.meters.map((m) => this._renderMeterCard(m)) ?? nothing}
-              ${data?.ev_chargers.map((ev) => this._renderEvCard(ev)) ?? nothing}
-            </div>
+      ${
+        !data?.meters.length && !data?.ev_chargers.length
+          ? html`<div class="empty-state">
+              <ha-icon
+                icon="mdi:lightning-bolt-circle"
+                style="--mdc-icon-size: 48px;"
+              ></ha-icon>
+              <h2>No data available</h2>
+              <p>No meter or EV data found. Check your integration configuration.</p>
+            </div>`
+          : html`
+              <div class="grid">
+                ${data?.meters.map((m) => this._renderMeterCard(m)) ?? nothing}
+                ${data?.ev_chargers.map((ev) => this._renderEvCard(ev)) ?? nothing}
+              </div>
 
-            <div class="section-divider"></div>
+              <div class="section-divider"></div>
 
-            <div class="diagnostics">
-              <eon-backfill-status .hass=${this.hass}></eon-backfill-status>
-            </div>
-          `}
+              <div class="diagnostics">
+                <eon-backfill-status .hass=${this.hass}></eon-backfill-status>
+              </div>
+            `
+      }
     `
   }
 

@@ -78,11 +78,13 @@ class EonEvScheduleView extends LitElement {
         <span class="status-badge ${badgeClass}">${badgeLabel}</span>
       </div>
 
-      ${slots.length > 0
-        ? html`<div class="timeline">
-            ${slots.map((slot, i) => this._renderSlot(slot, i))}
-          </div>`
-        : html`<div class="empty-schedule">No upcoming charge slots</div>`}
+      ${
+        slots.length > 0
+          ? html`<div class="timeline">
+              ${slots.map((slot, i) => this._renderSlot(slot, i))}
+            </div>`
+          : html`<div class="empty-schedule">No upcoming charge slots</div>`
+      }
     `
   }
 

@@ -83,35 +83,43 @@ class EonBackfillStatus extends LitElement {
         <div class="progress-bar-fill" style="width: ${pct}%"></div>
       </div>
 
-      ${status.lookback_days > 0
-        ? html`<div class="status-row">
-            <span class="label">Lookback</span>
-            <span class="value">${status.lookback_days} days</span>
-          </div>`
-        : nothing}
-      ${status.next_start_date
-        ? html`<div class="status-row">
-            <span class="label">Next backfill from</span>
-            <span class="value">${status.next_start_date}</span>
-          </div>`
-        : nothing}
-      ${status.meters.length > 0
-        ? html`<div class="meter-list">
-            ${status.meters.map(
-              (m) => html`
-                <div class="meter-item">
-                  <span class="meter-serial">${m.serial}</span>
-                  ${m.done
-                    ? html`<span class="meter-done">Complete</span>`
-                    : html`<span class="meter-pending"
-                        >${m.days_completed}/${m.days_completed + m.days_remaining}
-                        days</span
-                      >`}
-                </div>
-              `
-            )}
-          </div>`
-        : nothing}
+      ${
+        status.lookback_days > 0
+          ? html`<div class="status-row">
+              <span class="label">Lookback</span>
+              <span class="value">${status.lookback_days} days</span>
+            </div>`
+          : nothing
+      }
+      ${
+        status.next_start_date
+          ? html`<div class="status-row">
+              <span class="label">Next backfill from</span>
+              <span class="value">${status.next_start_date}</span>
+            </div>`
+          : nothing
+      }
+      ${
+        status.meters.length > 0
+          ? html`<div class="meter-list">
+              ${status.meters.map(
+                (m) => html`
+                  <div class="meter-item">
+                    <span class="meter-serial">${m.serial}</span>
+                    ${
+                      m.done
+                        ? html`<span class="meter-done">Complete</span>`
+                        : html`<span class="meter-pending"
+                            >${m.days_completed}/${m.days_completed + m.days_remaining}
+                            days</span
+                          >`
+                    }
+                  </div>
+                `
+              )}
+            </div>`
+          : nothing
+      }
     `
   }
 }

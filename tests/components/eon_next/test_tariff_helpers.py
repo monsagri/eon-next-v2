@@ -247,6 +247,31 @@ class TestGetOffPeakMetadata:
         assert meta["current_rate_name"] == "off_peak"
         assert "next_transition" in meta
 
+    def test_schedule_without_current_window_falls_back_to_pattern(self) -> None:
+        """A ToU schedule whose windows don't cover "now" must fall through to
+        the tariff pattern (matching is_off_peak/get_current_rate) so the
+        boundary-refresh mixin still gets a next_transition to schedule on."""
+        # All schedule windows are on the previous day, so none is current at
+        # _REF_DATE; the NEXT-DRIVE pattern then classifies 04:00 local as
+        # off-peak instead of returning an empty dict.
+        data = {
+            "tariff_unit_rate": 0.10,
+            "tariff_is_tou": True,
+            "tariff_code": "E-1R-NEXT-DRIVE-01",
+            "tariff_rates_schedule": [
+                _make_schedule_entry(
+                    7.0, _ts(2, _PREV_DATE_ISO), _ts(5, _PREV_DATE_ISO)
+                ),
+                _make_schedule_entry(
+                    25.0, _ts(5, _PREV_DATE_ISO), _ts(8, _PREV_DATE_ISO)
+                ),
+            ],
+        }
+        with _patch_utcnow(), _patch_now(_local_at(4)):
+            meta = get_off_peak_metadata(data)
+        assert meta["current_rate_name"] == "off_peak"
+        assert "next_transition" in meta
+
 
 # ═══════════════════════════════════════════════════════════════
 # build_day_rates

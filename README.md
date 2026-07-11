@@ -2,6 +2,10 @@
 
 Custom integration for E.ON Next accounts in Home Assistant.
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/monsagri)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/monsagri)
+
+
 ## What This Integration Provides
 
 - Latest electricity and gas meter readings.

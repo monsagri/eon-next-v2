@@ -13,24 +13,30 @@ class EonMeterView extends LitElement {
   render() {
     return html`
       <div class="reading-grid">
-        ${this.meter?.latest_reading != null
-          ? html`<div class="reading">
-              <span class="reading-value">${this.meter.latest_reading}</span>
-              <span class="reading-label">Latest reading</span>
-            </div>`
-          : nothing}
-        ${this.meter?.latest_reading_date
-          ? html`<div class="detail">
-              <span class="detail-label">Date</span>
-              <span>${this.meter.latest_reading_date}</span>
-            </div>`
-          : nothing}
-        ${this.meter?.tariff_name
-          ? html`<div class="detail">
-              <span class="detail-label">Tariff</span>
-              <span>${this.meter.tariff_name}</span>
-            </div>`
-          : nothing}
+        ${
+          this.meter?.latest_reading != null
+            ? html`<div class="reading">
+                <span class="reading-value">${this.meter.latest_reading}</span>
+                <span class="reading-label">Latest reading</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this.meter?.latest_reading_date
+            ? html`<div class="detail">
+                <span class="detail-label">Date</span>
+                <span>${this.meter.latest_reading_date}</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this.meter?.tariff_name
+            ? html`<div class="detail">
+                <span class="detail-label">Tariff</span>
+                <span>${this.meter.tariff_name}</span>
+              </div>`
+            : nothing
+        }
       </div>
     `
   }

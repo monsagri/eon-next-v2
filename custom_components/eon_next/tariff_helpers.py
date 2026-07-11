@@ -528,7 +528,10 @@ def get_off_peak_metadata(
             is_off = bool(_is_off_peak_rate(cur_val, schedule))
             result["current_rate_name"] = "off_peak" if is_off else "peak"
             result["next_transition"] = current.get("validTo")
-        return result
+            return result
+        # No window covers "now" (stale/gapped schedule) — fall through to the
+        # pattern registry, matching is_off_peak/get_current_rate so the
+        # boundary-refresh mixin still gets a next_transition to schedule on.
 
     # Pattern registry fallback
     pattern = get_tariff_pattern(tariff_code)

@@ -310,12 +310,14 @@ class EonConsumptionBreakdownView extends LitElement {
     return html`
       <div class="breakdown-header">
         <div class="totals">
-          ${this._memoTotalCost > 0
-            ? html`<div class="stat">
-                <span class="stat-value">£${this._memoTotalCost.toFixed(2)}</span>
-                <span class="stat-label">${this._memoPeriodLabel || 'Total'}</span>
-              </div>`
-            : nothing}
+          ${
+            this._memoTotalCost > 0
+              ? html`<div class="stat">
+                  <span class="stat-value">£${this._memoTotalCost.toFixed(2)}</span>
+                  <span class="stat-label">${this._memoPeriodLabel || 'Total'}</span>
+                </div>`
+              : nothing
+          }
         </div>
 
         <eon-range-picker
@@ -325,76 +327,83 @@ class EonConsumptionBreakdownView extends LitElement {
         ></eon-range-picker>
       </div>
 
-      ${this._memoSegments.length > 0
-        ? html`
-            <eon-pie-chart
-              .segments=${this._memoSegments}
-              ?darkMode=${darkMode}
-            ></eon-pie-chart>
+      ${
+        this._memoSegments.length > 0
+          ? html`
+              <eon-pie-chart
+                .segments=${this._memoSegments}
+                ?darkMode=${darkMode}
+              ></eon-pie-chart>
 
-            <div class="legend">
-              <div class="legend-item">
-                <span
-                  class="legend-swatch"
-                  style="background: ${isGas ? COLOR_CONSUMPTION_GAS : COLOR_CONSUMPTION}"
-                ></span>
-                Usage £${this._memoConsumptionCost.toFixed(2)}
+              <div class="legend">
+                <div class="legend-item">
+                  <span
+                    class="legend-swatch"
+                    style="background: ${isGas ? COLOR_CONSUMPTION_GAS : COLOR_CONSUMPTION}"
+                  ></span>
+                  Usage £${this._memoConsumptionCost.toFixed(2)}
+                </div>
+                <div class="legend-item">
+                  <span
+                    class="legend-swatch"
+                    style="background: ${COLOR_STANDING}"
+                  ></span>
+                  Standing £${this._memoStandingCost.toFixed(2)}
+                </div>
               </div>
-              <div class="legend-item">
-                <span class="legend-swatch" style="background: ${COLOR_STANDING}"></span>
-                Standing £${this._memoStandingCost.toFixed(2)}
-              </div>
-            </div>
 
-            ${this._memoTrackerSegments.length > 0
-              ? html`
-                  <div class="tracker-section">
-                    <div class="tracker-title">
-                      Today usage split (from cost trackers)
-                    </div>
-                    <eon-pie-chart
-                      .segments=${this._memoTrackerSegments}
-                      ?darkMode=${darkMode}
-                    ></eon-pie-chart>
-                    <div class="legend">
-                      <div class="legend-item">
-                        <span
-                          class="legend-swatch"
-                          style="background: ${COLOR_TRACKED}"
-                        ></span>
-                        Tracked £${this._memoTrackedTodayCost.toFixed(2)}
-                      </div>
-                      <div class="legend-item">
-                        <span
-                          class="legend-swatch"
-                          style="background: ${COLOR_UNTRACKED}"
-                        ></span>
-                        Untracked £${this._memoUntrackedTodayCost.toFixed(2)}
-                      </div>
-                    </div>
-                    <div class="tracker-subtitle">
-                      Based on today’s usage estimate
-                      (£${this._memoTodayUsageCost.toFixed(2)}).
-                    </div>
-                    <div class="tracker-list">
-                      ${this._memoTrackerItems.map(
-                        (item) => html`
-                          <div class="tracker-row">
-                            <span class="tracker-name">${item.name}</span>
-                            <span class="tracker-cost">£${item.cost.toFixed(2)}</span>
+              ${
+                this._memoTrackerSegments.length > 0
+                  ? html`
+                      <div class="tracker-section">
+                        <div class="tracker-title">
+                          Today usage split (from cost trackers)
+                        </div>
+                        <eon-pie-chart
+                          .segments=${this._memoTrackerSegments}
+                          ?darkMode=${darkMode}
+                        ></eon-pie-chart>
+                        <div class="legend">
+                          <div class="legend-item">
+                            <span
+                              class="legend-swatch"
+                              style="background: ${COLOR_TRACKED}"
+                            ></span>
+                            Tracked £${this._memoTrackedTodayCost.toFixed(2)}
                           </div>
-                        `
-                      )}
-                    </div>
-                  </div>
-                `
-              : nothing}
-          `
-        : this._loading
-          ? html`<div class="chart-placeholder">Loading…</div>`
-          : html`<div class="no-data">
-              No consumption data available for this period
-            </div>`}
+                          <div class="legend-item">
+                            <span
+                              class="legend-swatch"
+                              style="background: ${COLOR_UNTRACKED}"
+                            ></span>
+                            Untracked £${this._memoUntrackedTodayCost.toFixed(2)}
+                          </div>
+                        </div>
+                        <div class="tracker-subtitle">
+                          Based on today’s usage estimate
+                          (£${this._memoTodayUsageCost.toFixed(2)}).
+                        </div>
+                        <div class="tracker-list">
+                          ${this._memoTrackerItems.map(
+                            (item) => html`
+                              <div class="tracker-row">
+                                <span class="tracker-name">${item.name}</span>
+                                <span class="tracker-cost">£${item.cost.toFixed(2)}</span>
+                              </div>
+                            `
+                          )}
+                        </div>
+                      </div>
+                    `
+                  : nothing
+              }
+            `
+          : this._loading
+            ? html`<div class="chart-placeholder">Loading…</div>`
+            : html`<div class="no-data">
+                No consumption data available for this period
+              </div>`
+      }
     `
   }
 }

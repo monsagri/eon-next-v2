@@ -81,36 +81,48 @@ class EonCostView extends LitElement {
 
     return html`
       <div class="cost-grid">
-        ${todayCost != null
-          ? html`<div class="stat">
-              <span class="stat-value">£${todayCost.toFixed(2)}</span>
-              <span class="stat-label">Today (est)</span>
-            </div>`
-          : nothing}
-        ${this.meter?.previous_day_cost != null
-          ? html`<div class="stat">
-              <span class="stat-value">£${this.meter.previous_day_cost.toFixed(2)}</span>
-              <span class="stat-label">Yesterday</span>
-            </div>`
-          : nothing}
-        ${this._mtdCost != null
-          ? html`<div class="stat">
-              <span class="stat-value">£${this._mtdCost.toFixed(2)}</span>
-              <span class="stat-label">Month to date</span>
-            </div>`
-          : nothing}
-        ${this.meter?.standing_charge != null
-          ? html`<div class="stat">
-              <span class="stat-value">£${this.meter.standing_charge.toFixed(2)}</span>
-              <span class="stat-label">Standing/day</span>
-            </div>`
-          : nothing}
-        ${this.meter?.unit_rate != null
-          ? html`<div class="stat">
-              <span class="stat-value">£${this.meter.unit_rate.toFixed(4)}</span>
-              <span class="stat-label">Unit rate/kWh</span>
-            </div>`
-          : nothing}
+        ${
+          todayCost != null
+            ? html`<div class="stat">
+                <span class="stat-value">£${todayCost.toFixed(2)}</span>
+                <span class="stat-label">Today (est)</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this.meter?.previous_day_cost != null
+            ? html`<div class="stat">
+                <span class="stat-value"
+                  >£${this.meter.previous_day_cost.toFixed(2)}</span
+                >
+                <span class="stat-label">Yesterday</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this._mtdCost != null
+            ? html`<div class="stat">
+                <span class="stat-value">£${this._mtdCost.toFixed(2)}</span>
+                <span class="stat-label">Month to date</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this.meter?.standing_charge != null
+            ? html`<div class="stat">
+                <span class="stat-value">£${this.meter.standing_charge.toFixed(2)}</span>
+                <span class="stat-label">Standing/day</span>
+              </div>`
+            : nothing
+        }
+        ${
+          this.meter?.unit_rate != null
+            ? html`<div class="stat">
+                <span class="stat-value">£${this.meter.unit_rate.toFixed(4)}</span>
+                <span class="stat-label">Unit rate/kWh</span>
+              </div>`
+            : nothing
+        }
       </div>
     `
   }
