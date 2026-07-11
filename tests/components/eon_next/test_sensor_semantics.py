@@ -107,7 +107,7 @@ async def _setup_unique_ids(is_export: bool) -> set[str]:
 
 
 async def test_export_meter_skips_generic_duplicate_sensors() -> None:
-    """Export meters get Export* variants only — not the generic duplicates
+    """Export meters get Export* variants only - not the generic duplicates
     that read the same coordinator keys with identical values."""
     uids = await _setup_unique_ids(is_export=True)
     assert "E10EXPORT__export_unit_rate" in uids

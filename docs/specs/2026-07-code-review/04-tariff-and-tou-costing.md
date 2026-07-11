@@ -1,9 +1,9 @@
-# Spec 04 — Tariff Logic and Time-of-Use Costing
+# Spec 04 - Tariff Logic and Time-of-Use Costing
 
 Scope: `tariff_helpers.py`, `tariff_patterns.py`, and every place a rate is applied
 to consumption.
 
-**Theme:** TOU customers (the integration's headline audience — Next Drive etc.) get
+**Theme:** TOU customers (the integration's headline audience - Next Drive etc.) get
 systematically wrong costs in three independent places, even though
 `tariff_helpers._find_current_window()` already implements the correct
 current-window lookup. One wiring effort fixes all three.
@@ -18,7 +18,7 @@ current-window lookup. One wiring effort fixes all three.
   defunct stub returning `None`, so the mean is what always wins for TOU).
 - Failure scenario: the sensor is documented "for use with the HA Energy Dashboard"
   as the current-price entity; dashboard cost calculations are wrong in every
-  half-hour where the actual price differs from the mean — i.e. essentially always on
+  half-hour where the actual price differs from the mean - i.e. essentially always on
   a TOU tariff.
 - Fix: when `tariff_is_tou` and a schedule with time windows exists, resolve
   `_find_current_window(schedule, now)` and expose that value; keep the mean only as
@@ -39,7 +39,7 @@ current-window lookup. One wiring effort fixes all three.
 
 - Where: `custom_components/eon_next/cost_tracker.py:317-323` (`_current_rate`).
 - Problem: ignores `tariff_is_tou`/`tariff_rates_schedule` that the coordinator
-  already carries. An overnight EV-charging tracker — the flagship use case — is
+  already carries. An overnight EV-charging tracker - the flagship use case - is
   costed at the day rate. Fix alongside 4.1 (same lookup). See also spec 05 for the
   tracker's other defects.
 
@@ -66,7 +66,7 @@ current-window lookup. One wiring effort fixes all three.
 
 - Where: `custom_components/eon_next/tariff_patterns.py:43-55`.
 - Problem: case-insensitive substring match of `product_prefix` against the tariff
-  code — any future code *containing* "NEXT-DRIVE" (e.g. a V2 with different hours)
+  code - any future code *containing* "NEXT-DRIVE" (e.g. a V2 with different hours)
   silently inherits the 00:00–07:00 window with no log.
 - Fix: anchor the match to the product segment of the code and log which pattern
   matched at debug level.
@@ -98,5 +98,5 @@ current-window lookup. One wiring effort fixes all three.
   day. Timezone ignored. Fix: parse to aware datetimes and compare properly.
 
 Also related: the export-meter heuristic `mpan[:2] == "00"` (`eonnext.py:822-824`)
-is unreachable — the API returns the 13-digit MPAN core which never starts "00" — so
+is unreachable - the API returns the 13-digit MPAN core which never starts "00" - so
 export detection silently depends only on register names. [reported]

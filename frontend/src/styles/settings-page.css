@@ -1,0 +1,21 @@
+.intro {
+  padding: 28px 30px;
+}
+
+.intro-title {
+  font-size: 22px;
+  color: var(--eon-text);
+}
+
+.intro-body {
+  font-size: 14px;
+  margin-top: 8px;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+
+.version {
+  font-size: 12px;
+  margin-top: 14px;
+  font-family: var(--eon-font-mono);
+}

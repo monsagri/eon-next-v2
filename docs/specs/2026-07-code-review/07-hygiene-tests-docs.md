@@ -1,4 +1,4 @@
-# Spec 07 — Code Hygiene, Test Coverage, and Doc Drift
+# Spec 07 - Code Hygiene, Test Coverage, and Doc Drift
 
 Scope: dead code, test gaps, and places where the docs no longer match the code.
 
@@ -24,8 +24,8 @@ Scope: dead code, test gaps, and places where the docs no longer match the code.
 ### 7.2 Dead API stubs and dead coordinator branch obscure the real flow [reported]
 
 - Where: `custom_components/eon_next/eonnext.py:491-526`
-  (`async_get_consumption_data_by_mpxn_range` — zero callers;
-  `async_get_consumption_data_by_mpxn` — test-only; `async_get_daily_costs` —
+  (`async_get_consumption_data_by_mpxn_range` - zero callers;
+  `async_get_consumption_data_by_mpxn` - test-only; `async_get_daily_costs` -
   permanent `return None` stub), `coordinator.py:149-154, 389-401` (`_fetch_daily_costs`
   still called every cycle; the `cost_data` branch can never execute).
 - Why it matters: the documented third consumption fallback (GraphQL
@@ -44,7 +44,7 @@ Scope: dead code, test gaps, and places where the docs no longer match the code.
 ### 7.4 Doc drift from code [verified]
 
 - `AGENTS.md:20` says "Primary platform: `sensor`" and `docs/ai/context.md:53` says
-  `PLATFORMS = ["sensor"]` — actual is `["sensor", "binary_sensor", "event"]`
+  `PLATFORMS = ["sensor"]` - actual is `["sensor", "binary_sensor", "event"]`
   (`const.py:29`). The thin adapters (`.cursor/rules/00-project.mdc`,
   `.github/copilot-instructions.md`) mirror the stale text.
 - The consumption fallback chain documented as REST half-hourly → REST daily →
@@ -54,12 +54,12 @@ Scope: dead code, test gaps, and places where the docs no longer match the code.
 
 ### 7.5 Assorted small items [reported]
 
-- `eonnext.py:822-824` — unreachable export-meter MPAN heuristic (details in
+- `eonnext.py:822-824` - unreachable export-meter MPAN heuristic (details in
   spec 04).
-- `services.py:166-174` — `async_unregister_services` is never called.
-- `sensor.py:672` — unused `RestoreEntity` mixin on `CostTrackerSensor` (spec 03,
+- `services.py:166-174` - `async_unregister_services` is never called.
+- `sensor.py:672` - unused `RestoreEntity` mixin on `CostTrackerSensor` (spec 03,
   3.8).
-- `binary_sensor.py:60-79` — triple recomputation of `is_off_peak` per state write
+- `binary_sensor.py:60-79` - triple recomputation of `is_off_peak` per state write
   (spec 03, 3.7).
 
 ## Positive observations (for the record)

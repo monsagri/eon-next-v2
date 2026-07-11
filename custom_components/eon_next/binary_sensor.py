@@ -62,7 +62,7 @@ class OffPeakBinarySensor(TariffBoundaryRefreshMixin, EonNextBinarySensorBase):
     @callback
     def _recompute_tariff_state(self) -> None:
         # Compute once per write instead of scanning the schedule three times
-        # (available/is_on/icon) — which could also disagree across a boundary.
+        # (available/is_on/icon) - which could also disagree across a boundary.
         data = self._meter_data
         self._is_tou = bool(data.get("tariff_is_tou", False)) if data else False
         self._off_peak = is_off_peak(data) if data else None

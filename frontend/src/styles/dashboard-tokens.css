@@ -1,0 +1,79 @@
+/*
+ * Design tokens for the redesigned EON Next dashboard.
+ *
+ * These are the final, brand-specific colours, radii and fonts from the design
+ * handoff. They are intentionally NOT wired to HA theme variables: the dashboard
+ * is a self-contained branded surface (warm cream + terracotta) that should read
+ * the same regardless of the host theme.
+ *
+ * Custom properties inherit through shadow-DOM boundaries, so defining them on
+ * every dashboard component's :host keeps each component self-sufficient.
+ *
+ * box-sizing does NOT cross shadow boundaries, so it is reset here - in the one
+ * file every dashboard component imports - rather than relying on the host page.
+ * The layout is authored for border-box (e.g. a 238px rail with 16px padding, a
+ * width:100% content column with 40px padding); without this reset those paddings
+ * add to the widths and the panel overflows its host by ~80px, which only shows
+ * once HA offsets it behind the 256px sidebar.
+ */
+
+:host,
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  /* Surfaces */
+  --eon-bg: #efe9df;
+  --eon-dark: #26221f;
+  --eon-dark-inner: #322c27;
+  --eon-dark-pill: #3a342e;
+  --eon-card: #faf7f1;
+  --eon-card-border: #eadfce;
+  --eon-hairline: #e2dacc;
+  --eon-hairline-soft: #eee4d3;
+  --eon-track: #efe6d7;
+
+  /* Text */
+  --eon-text: #2a2521;
+  --eon-muted: #8a8178;
+  --eon-faint: #a99e92;
+  --eon-subtle: #6b625a;
+  --eon-on-dark: #f4efe7;
+  --eon-on-dark-muted: #b0a596;
+  --eon-on-dark-faint: #8f857b;
+
+  /* Fuel + accents */
+  --eon-elec: #c4623d;
+  --eon-elec-standing: #b79b6f;
+  --eon-elec-tile: #f6e3da;
+  --eon-gas: #b8863f;
+  --eon-gas-standing: #d8c69a;
+  --eon-gas-tile: #f4ead6;
+  --eon-accent-on-dark: #e6b78c;
+
+  /* Green (credit / healthy / charging) */
+  --eon-green: #4f7a52;
+  --eon-green-light: #8fbf93;
+  --eon-green-bg: #eaf1e9;
+  --eon-green-text: #3f6a43;
+  --eon-green-ready-bg: #2f4a35;
+
+  /* Amber callout */
+  --eon-amber-bg: #f6eede;
+  --eon-amber-text: #8a6a3a;
+
+  /* Fonts (loaded into document.head by the panel; graceful fallbacks) */
+  --eon-font-ui: 'Figtree', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --eon-font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --eon-font-mono: 'Space Mono', 'SF Mono', ui-monospace, monospace;
+
+  /* Radii */
+  --eon-radius-card: 18px;
+  --eon-radius-stat: 16px;
+  --eon-radius-pill: 20px;
+  --eon-radius-control: 12px;
+  --eon-radius-tile: 10px;
+}

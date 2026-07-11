@@ -411,7 +411,7 @@ class EonNext:
             self.__reset_authentication()
             return False
         except EonNextApiError:
-            # API/transient error — don't destroy auth state.
+            # API/transient error - don't destroy auth state.
             raise
 
         if self._json_contains_key_chain(result, ["data", "obtainKrakenToken", "token"]):
@@ -454,7 +454,7 @@ class EonNext:
             self.__reset_authentication()
             return False
         except EonNextApiError as err:
-            # API/transient error — don't destroy the refresh token so it
+            # API/transient error - don't destroy the refresh token so it
             # can be retried once the API recovers.
             _LOGGER.debug("API error during token refresh, will retry later: %s", err)
             raise
@@ -568,7 +568,7 @@ class EonNext:
                         if "results" in data:
                             return data
                         # 200 with no results key: genuine "no data for this
-                        # period" — distinct from a transport error below.
+                        # period" - distinct from a transport error below.
                         return None
 
                     # Non-200 is a transport/server error, not "no data".  Raise
@@ -616,7 +616,7 @@ class EonNext:
         is returned per meter point.
 
         Tariff values (unit rate, standing charge) are returned as-is from
-        the API — callers should interpret them as pence/kWh or pence/day.
+        the API - callers should interpret them as pence/kWh or pence/day.
         """
         if not account_number:
             return None
@@ -915,10 +915,10 @@ class EnergyAccount:
 
         Detection relies on register names: export meters have registers with
         "export" in the name.  (A profile-class check on the MPAN is not
-        possible here — the API returns the 13-digit MPAN core, not the full
+        possible here - the API returns the 13-digit MPAN core, not the full
         top-line that carries the profile class.)
         """
-        del mpan  # unused — kept for call-site symmetry / future top-line data
+        del mpan  # unused - kept for call-site symmetry / future top-line data
 
         # Register name check
         registers = meter_config.get("registers")
@@ -975,7 +975,7 @@ class EnergyMeter:
     def _apply_latest_reading(self, edges: list[dict[str, Any]]) -> None:
         """Set latest_reading/date from the newest reading edge, if any.
 
-        Preserves decimal precision (register reads can be fractional — e.g.
+        Preserves decimal precision (register reads can be fractional - e.g.
         gas m³) and guards a meter with no registers so an empty list does not
         raise ``IndexError`` and abort the whole coordinator update.
         """
@@ -1070,6 +1070,6 @@ class GasMeter(EnergyMeter):
         kwh = kwh * GAS_CALORIC_VALUE
         kwh = kwh / 3.6
         # Keep sub-kWh precision (whole-kWh rounding loses real consumption on
-        # small deltas).  Calorific value is a fixed approximation (38) — real
+        # small deltas).  Calorific value is a fixed approximation (38) - real
         # per-period values vary and would need a dedicated API source.
         return round(kwh, 3)

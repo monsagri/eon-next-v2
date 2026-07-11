@@ -28,7 +28,7 @@ class EonConsumptionView extends LitElement {
   @state() private _loading = true
   @state() private _selectedDays = 0
 
-  /** Memoized chart data — recomputed when history or meter pricing context changes. */
+  /** Memoized chart data - recomputed when history or meter pricing context changes. */
   private _chartLabels: string[] = []
   private _chartDatasets: ChartDataset[] = []
   private _memoizedHistory: ConsumptionHistoryEntry[] | null = null

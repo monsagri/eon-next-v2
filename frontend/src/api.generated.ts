@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------
-// THIS FILE IS AUTO-GENERATED — DO NOT EDIT BY HAND
+// THIS FILE IS AUTO-GENERATED - DO NOT EDIT BY HAND
 //
 // Source of truth: custom_components/eon_next/schemas.py
 // Regenerate:      python scripts/generate_ts_api.py
@@ -60,6 +60,7 @@ export interface BackfillStatusResponse {
 export interface ConsumptionHistoryEntry {
   date: string
   consumption: number
+  missing: boolean
 }
 
 export interface ConsumptionHistoryResponse {

@@ -79,7 +79,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         "supply_point_id": meter.supply_point_id,
                         "latest_reading": meter.latest_reading,
                         "latest_reading_date": meter.latest_reading_date,
-                        # Defaults for cost/tariff fields — overwritten below
+                        # Defaults for cost/tariff fields - overwritten below
                         # when the respective API calls succeed.
                         "daily_consumption": None,
                         "daily_consumption_last_reset": None,
@@ -140,7 +140,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         # as one partial midnight bucket; importing it would be
                         # double-counted once half-hourly hours arrive (and the
                         # historical backfill owns complete past days).  Live
-                        # imports always run now — the historical backfill
+                        # imports always run now - the historical backfill
                         # recomputes sums instead of suspending them.
                         if consumption_granularity == "half_hour":
                             try:
@@ -204,7 +204,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                         else:
                             _LOGGER.warning(
                                 "No tariff data available for meter %s "
-                                "(supply point %s) — tariff sensor will show "
+                                "(supply point %s) - tariff sensor will show "
                                 "as unknown until data arrives from the API",
                                 meter.serial,
                                 meter.supply_point_id,
@@ -284,7 +284,7 @@ class EonNextCoordinator(DataUpdateCoordinator):
                     ):
                         if meter.serial not in self._cost_warning_logged:
                             _LOGGER.debug(
-                                "No cost data available for meter %s — "
+                                "No cost data available for meter %s - "
                                 "standing charge, previous day cost, and "
                                 "unit rate sensors will show as unknown "
                                 "until a cost data source becomes available",
@@ -469,8 +469,8 @@ class EonNextCoordinator(DataUpdateCoordinator):
         Filters entries to today's date in Home Assistant local time and sums
         their consumption values.  Returns a dict with:
 
-        * ``total`` — summed kWh (float) or ``None`` when no data at all.
-        * ``last_reset`` — the ``interval_start`` of the earliest today
+        * ``total`` - summed kWh (float) or ``None`` when no data at all.
+        * ``last_reset`` - the ``interval_start`` of the earliest today
           entry when data exists, or today's local midnight (ISO 8601)
           when consumption data is available but no entries match today
           yet (so the sensor reads "0 kWh" instead of "unknown").
@@ -519,12 +519,12 @@ class EonNextCoordinator(DataUpdateCoordinator):
         if has_value:
             return {"total": round(total, 3), "last_reset": earliest_start}
 
-        # Today entries exist but all have None/invalid consumption —
+        # Today entries exist but all have None/invalid consumption -
         # report as unknown rather than a misleading 0 kWh.
         if has_today_entry:
             return {"total": None, "last_reset": None}
 
-        # No entries for today yet — report zero with midnight as the
+        # No entries for today yet - report zero with midnight as the
         # reset point so the sensor reads "0 kWh" rather than "unknown"
         # while waiting for today's data to arrive from the smart meter.
         if consumption_results:

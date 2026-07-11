@@ -107,7 +107,7 @@ class TestMergeAndRecomputeSeries:
         assert result == [(_h(2), 3.0)]
 
     def test_baseline_offset_is_preserved(self) -> None:
-        """A nonzero baseline just shifts the whole series — deltas unchanged."""
+        """A nonzero baseline just shifts the whole series - deltas unchanged."""
         existing = [(_h(2), 110.0)]  # h2 = 10kWh above baseline 100
         result = _merge_and_recompute_series(100.0, existing, {_h(1): 5.0})
         assert result == [(_h(1), 105.0), (_h(2), 115.0)]

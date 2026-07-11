@@ -90,7 +90,7 @@ class EonConsumptionBreakdownView extends LitElement {
     const id = ++this._requestId
     try {
       const resp = await getConsumptionHistory(this.hass, this.meter.serial!, days)
-      if (id !== this._requestId) return // stale response — a newer request superseded this one
+      if (id !== this._requestId) return // stale response - a newer request superseded this one
       this._history = resp.entries
     } catch {
       if (id !== this._requestId) return

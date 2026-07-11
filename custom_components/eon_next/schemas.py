@@ -64,6 +64,9 @@ class ConsumptionHistoryEntry:
 
     date: str
     consumption: float
+    # True for calendar days synthesised by gap-filling (no reading received
+    # yet), so the frontend can shade them instead of drawing a real zero bar.
+    missing: bool = False
 
 
 @dataclass
@@ -126,7 +129,7 @@ class BackfillStatusResponse:
 
 
 # ---------------------------------------------------------------------------
-# Command registry — maps WS command type strings to response dataclasses
+# Command registry - maps WS command type strings to response dataclasses
 # ---------------------------------------------------------------------------
 
 WS_COMMANDS: dict[str, type] = {
@@ -137,7 +140,7 @@ WS_COMMANDS: dict[str, type] = {
 
 # Response types for *parameterized* commands (those that accept request
 # arguments beyond ``type``).  The code-generator emits interfaces for these
-# but does **not** generate zero-argument API wrapper functions — the typed
+# but does **not** generate zero-argument API wrapper functions - the typed
 # callers live in ``frontend/src/api.ts``.
 WS_EXTRA_RESPONSE_TYPES: list[type] = [
     ConsumptionHistoryResponse,

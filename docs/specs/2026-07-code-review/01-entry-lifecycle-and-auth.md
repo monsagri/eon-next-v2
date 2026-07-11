@@ -1,4 +1,4 @@
-# Spec 01 — Entry Lifecycle, Auth, and Token Handling
+# Spec 01 - Entry Lifecycle, Auth, and Token Handling
 
 Scope: `__init__.py`, `eonnext.py` (auth/session paths), `config_flow.py`.
 
@@ -14,7 +14,7 @@ Scope: `__init__.py`, `eonnext.py` (auth/session paths), `config_flow.py`.
   calls `async_reload`.
 - Failure scenario: at runtime the access token expires (~hourly), the client
   refreshes it, Kraken rotates the refresh token, the token is persisted, and HA
-  reloads the whole integration mid-coordinator-update — the aiohttp session is
+  reloads the whole integration mid-coordinator-update - the aiohttp session is
   closed under in-flight requests ("Session is closed"), backfill restarts, entities
   flap. Repeats every rotation. Masked in tests because setup-time persists happen
   before the listener is registered.
@@ -47,7 +47,7 @@ Scope: `__init__.py`, `eonnext.py` (auth/session paths), `config_flow.py`.
   unexpected payloads), `__init__.py:239-240` (`backfill.async_prime()` /
   `cost_trackers.async_initialize()` outside any try/finally).
 - Failure scenario: an auth blip or malformed payload during account/meter loading
-  escapes `async_setup_entry` unhandled — the entry shows "Error" with a stack trace
+  escapes `async_setup_entry` unhandled - the entry shows "Error" with a stack trace
   instead of triggering re-auth (`ConfigEntryAuthFailed`) or retry
   (`ConfigEntryNotReady`); the authenticated `ClientSession` leaks. A storage error in
   `async_prime` leaks a session per setup retry ("Unclosed client session").
@@ -65,7 +65,7 @@ Scope: `__init__.py`, `eonnext.py` (auth/session paths), `config_flow.py`.
 - Problem: the reauth confirm step lets the user submit a different email but never
   calls `async_set_unique_id` / `_abort_if_unique_id_mismatch` before
   `async_update_entry`.
-- Failure scenario: user enters account B's credentials during account A's reauth —
+- Failure scenario: user enters account B's credentials during account A's reauth -
   entry data now belongs to B while `unique_id` remains A's email. Adding B later is
   silently possible (duplicate entries, colliding meter-serial unique_ids); re-adding
   A is wrongly blocked.
@@ -123,7 +123,7 @@ Scope: `__init__.py`, `eonnext.py` (auth/session paths), `config_flow.py`.
 
 - Token refresh is correctly serialized under `_auth_lock`
   (`eonnext.py:228-243`); inner logins use `authenticated=False`, no deadlock.
-- `_get_session` has no await between check and assign — no double-session race.
+- `_get_session` has no await between check and assign - no double-session race.
 - All HTTP calls inherit the session-level 30 s `ClientTimeout`.
 - `entry.runtime_data` is used consistently as the state source.
 - Config-flow duplicate prevention via email unique_id in `async_step_user` is

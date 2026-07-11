@@ -1,9 +1,9 @@
-# Spec 02 — Energy Dashboard Statistics and Historical Backfill
+# Spec 02 - Energy Dashboard Statistics and Historical Backfill
 
 Scope: `statistics.py`, `backfill.py`, coordinator statistics-import paths.
 
 The project guardrail (`AGENTS.md`) requires external statistics imports to avoid
-duplicate or regressive imports — cumulative sums must stay monotonic and hours must
+duplicate or regressive imports - cumulative sums must stay monotonic and hours must
 never be imported twice. Several paths currently violate this.
 
 ## Critical
@@ -16,12 +16,12 @@ never be imported twice. Several paths currently violate this.
   **no skip guard** (`last_start=None`) and a **zero sum base** (`last_sum=0.0`).
 - Failure scenario: one failed lookup during a 30-min poll re-imports the last ~48 h
   of hours with sums restarting at 0; `async_add_external_statistics` overwrites the
-  existing rows with regressed sums — large negative spike in the Energy Dashboard
+  existing rows with regressed sums - large negative spike in the Energy Dashboard
   that requires manual statistics repair.
 - Fix: let `_get_last_stat` re-raise (or return a sentinel) and **skip the import
   cycle entirely** when the last-stat lookup fails. Never import with a guessed base.
 
-### 2.2 Backfill advances past failed chunks — permanent holes [verified]
+### 2.2 Backfill advances past failed chunks - permanent holes [verified]
 
 - Where: `custom_components/eon_next/backfill.py:451-473`; root cause in
   `eonnext.py:481-489` (`async_get_consumption` returns `None` for non-200 and
@@ -77,7 +77,7 @@ never be imported twice. Several paths currently violate this.
 - Problem: disabling backfill re-enables coordinator imports, which set the newest
   statistic to ~now; on re-enable, every remaining historical day is `<= last_start`
   and silently skipped while `next_start` advances to done.
-- Failure scenario: user toggles backfill off for a week and back on — the entire
+- Failure scenario: user toggles backfill off for a week and back on - the entire
   un-backfilled middle range is permanently lost; state machine reports "completed".
 
 ## Medium
@@ -88,7 +88,7 @@ never be imported twice. Several paths currently violate this.
   `backfill.py:391-396`.
 - Failure scenario: user shrinks lookback 3650 → 365 to "finish faster": all
   per-meter progress resets, `rebuild_done=False`, and with rebuild enabled (default)
-  **all** existing statistics are cleared — including history older than the new
+  **all** existing statistics are cleared - including history older than the new
   window. Fix: only reset progress when the window *extends*; never clear statistics
   outside the affected range without explicit opt-in.
 
@@ -99,7 +99,7 @@ never be imported twice. Several paths currently violate this.
 - Problem: chunk boundaries are local dates labeled UTC, so during BST the window is
   shifted 1 h relative to local days and `period_to` includes the start of an extra
   local day. With `page_size=day_count` and newest-first ordering (uncertain), the
-  oldest day of a chunk can be truncated while `next_start` still advances past it —
+  oldest day of a chunk can be truncated while `next_start` still advances past it -
   silent gap. Fix: build boundaries with `dt_util.start_of_local_day()` and convert
   to UTC properly; size `page_size` with headroom.
 
@@ -121,17 +121,17 @@ never be imported twice. Several paths currently violate this.
 
 ## Related coordinator findings
 
-- `coordinator.py:246, 552, 590, 626` — "yesterday" computed as
+- `coordinator.py:246, 552, 590, 626` - "yesterday" computed as
   `(dt_util.now() - timedelta(days=1)).date()`: lands two days back between 00:00 and
   01:00 on the day after spring-forward. [reported]
-- `coordinator.py:624-632` — `_yesterday_midnight_iso` reuses today's UTC offset via
+- `coordinator.py:624-632` - `_yesterday_midnight_iso` reuses today's UTC offset via
   `.replace()`; wrong offset on DST transition days. [reported]
-- `coordinator.py:290-299` — on transient consumption failure only `previous_day_*`
+- `coordinator.py:290-299` - on transient consumption failure only `previous_day_*`
   fields are retained; `daily_consumption`/`consumption` flip to `None`, so the
-  today-consumption sensor goes unknown — inconsistent with the retention convention
+  today-consumption sensor goes unknown - inconsistent with the retention convention
   used for tariff/cost fields. [reported]
-- `coordinator.py:414-420, 127-129` — `page_size=96` can truncate the 50-slot
+- `coordinator.py:414-420, 127-129` - `page_size=96` can truncate the 50-slot
   clocks-back day late in the evening; the hardcoded `>= 44` completeness threshold
   mislabels that day. [reported]
-- `coordinator.py:53-63` — `last_updated` stamped `utcnow()` even when the balance
+- `coordinator.py:53-63` - `last_updated` stamped `utcnow()` even when the balance
   fetch failed and a stale balance is re-published. [reported]

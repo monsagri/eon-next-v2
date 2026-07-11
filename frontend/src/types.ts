@@ -1,7 +1,7 @@
 /**
  * Minimal type definitions for Home Assistant frontend integration.
  *
- * These are intentionally lightweight — only the surface area that the panel
+ * These are intentionally lightweight - only the surface area that the panel
  * and cards actually consume is typed here.
  */
 
@@ -43,7 +43,7 @@ export interface PanelInfo {
 }
 
 /**
- * API response types — re-exported from the generated file so that existing
+ * API response types - re-exported from the generated file so that existing
  * ``import { MeterSummary } from "../types"`` paths keep working.
  */
 export type {

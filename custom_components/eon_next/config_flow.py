@@ -148,7 +148,7 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Reauth must stay on the same account: if the user submits a
             # different email, abort instead of silently rebinding the entry to
             # another account (which would leave unique_id pointing at A while
-            # its data belongs to B — duplicate entries and colliding
+            # its data belongs to B - duplicate entries and colliding
             # meter-serial unique_ids follow).
             await self.async_set_unique_id(email)
             self._abort_if_unique_id_mismatch(reason="reauth_account_mismatch")

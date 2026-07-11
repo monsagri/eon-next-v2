@@ -33,7 +33,10 @@
   outline-offset: -2px;
 }
 
+/* Prefer the dashboard's dark brand colour when present (the panel pages), so
+   the selected range reads clearly on the warm-cream surface. Falls back to the
+   HA-theme primary in the legacy Lovelace cards, which don't define --eon-dark. */
 .range-btn.active {
-  background: var(--eon-primary);
-  color: #fff;
+  background: var(--eon-dark, var(--eon-primary));
+  color: var(--eon-on-dark, #fff);
 }
