@@ -37,6 +37,7 @@ here is open (§10).
 | D12 | **Currency plumbing is wired end-to-end; GBP is the only launch currency** | `currency`/`minor_unit_scale` flow descriptor → model → `Intl.NumberFormat` on the frontend from the first commit (no dead declarative fields this time). Non-GBP tenants are config later, not surgery. |
 | D13 | **Devices/dispatches are first-class capability domains** | EV/SmartFlex stops being a Kraken special case; capability gating covers it like everything else. See §5 for the provisional domain split. |
 | D14 | **Naming is deferred** — domain slug, repo name, brand are chosen once everything else is locked | It is the gate for Phase 0 (§9): the slug lands in every unique id, statistic id and WS command, forever. |
+| D15 | **The core lives in its own private repository and is vendored into the public integration at release** | The public repo stays fully self-contained and reviewable (the best posture for the HACS-default review and user trust), setup needs no pip/network dependency, and the core version moves atomically with each integration release. This mirrors the committed-frontend-bundle pattern already proven in `eon-next-v2`. The core's development history, unreleased work and roadmap stay private; the vendored snapshot itself is public source, as any shipped Python necessarily is. |
 
 Non-goals carried over unchanged from the predecessor plan: no DCC-direct
 access (resellers only), no Octopus-proprietary features (Intelligent
@@ -53,6 +54,8 @@ only the generated contract.
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │ CORE (pure Python, no homeassistant imports)                       │
+│ — source of truth in the private core repo (D15); vendored into    │
+│   the public repo at custom_components/<domain>/core/ per release  │
 │                                                                    │
 │  model.py        typed normalised model (§5) — the single model    │
 │  adapter.py      Adapter protocol + Capabilities (§6)              │
@@ -82,6 +85,10 @@ Notes:
 - **IO lives in the shell, never in the core.** Adapters declare capabilities
   and produce provenance-stamped records; the shell schedules them (poll
   intervals, backoff, MQTT lifecycle) and feeds records into the store.
+- **The core package is relocatable (D15).** Relative imports only, no
+  absolute self-references, no packaging assumptions — it must drop into
+  `custom_components/<domain>/core/` unmodified. Decided before the first
+  module is written; painful to retrofit.
 - **The composition engine is pure**: records in → merged view out. All
   composition tests run without an HA test harness, against synthetic
   multi-source fixtures.
@@ -206,6 +213,10 @@ Rationale: the `ProviderDescriptor` on `eon-next-v2` declared `currency`,
 declaration nothing enforces is how an adapter pattern rots. The kit is the
 enforcement.
 
+Per D15, the kit and the composition test suites live in the core repo; the
+public integration repo's CI runs them against the vendored copy, which
+doubles as a vendoring-sync check.
+
 ---
 
 ## 7. Composition engine
@@ -263,17 +274,19 @@ gate for any second consumption source.
 Naming (D14) is the entry gate for Phase 0. Each phase is independently
 useful; tests, docs and changelog discipline carry over from `eon-next-v2`.
 
-- **Phase 0 — Bootstrap.** New repo seeded with the ported branch stack as
-  reference. Port tooling (CI, release-please + metadata lockstep, codegen,
-  test harness, hassfest/HACS validation). Finalise every identity string
-  (§4) — they are frozen after this.
-- **Phase 1 — The core engine (the exercise).** Typed model, adapter
-  protocol, conformance kit, composition engine + policy tables, freshness
-  records, statistics import-plan computation. Pure Python, test-first,
-  synthetic multi-source fixtures (overlap, gap-fill, backfill-vs-live,
-  same-source revision, precedence flips, unlinked sources). **No HA code in
-  this phase.** Exit: the adversarial composition suite passes; a fake
-  two-source household merges deterministically.
+- **Phase 0 — Bootstrap.** Two repos (D15): the private core repo, and the
+  integration repo (private until Phase 3) seeded with the ported branch
+  stack as reference. Port tooling (CI, release-please + metadata lockstep,
+  codegen, test harness, hassfest/HACS validation); add the vendoring release
+  script. Finalise every identity string (§4) — they are frozen after this.
+- **Phase 1 — The core engine (the exercise).** In the core repo: typed
+  model, adapter protocol, conformance kit, composition engine + policy
+  tables, freshness records, statistics import-plan computation. Pure
+  Python, relocatable package, test-first, synthetic multi-source fixtures
+  (overlap, gap-fill, backfill-vs-live, same-source revision, precedence
+  flips, unlinked sources). **No HA code in this phase.** Exit: the
+  adversarial composition suite passes; a fake two-source household merges
+  deterministically.
 - **Phase 2 — Kraken adapter + HA shell + frontend port.** Kraken client
   rebuilt behind the protocol (transport/auth/queries carried over);
   household store; merged entities + per-source diagnostics; statistics gate
