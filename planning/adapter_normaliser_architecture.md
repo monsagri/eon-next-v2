@@ -5,8 +5,10 @@ Status: Target architecture + phased build plan (no code yet)
 Relationship to other docs:
 - Builds on `planning/provider_generalization.md` (Phases 1-6, shipped: the
   Kraken multi-tenant slice).
-- Synthesises three research inputs: the Kraken provider map, the Octopus
-  incumbent feature map, and the adapter/normaliser architecture spec.
+- Synthesises three research inputs (committed under `planning/research/`):
+  the [Kraken provider map](./research/kraken-provider-map.md), the
+  [Octopus incumbent feature map](./research/octopus-incumbent-feature-map.md),
+  and the [adapter/normaliser architecture spec](./research/adapter-normaliser-architecture.md).
 
 ---
 
