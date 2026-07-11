@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [1.10.0](https://github.com/monsagri/eon-next-v2/compare/v1.9.3...v1.10.0) (2026-07-11)
+
+
+### Features
+
+* **frontend:** adopt the lightning-bolt brand mark in the panel ([7d77636](https://github.com/monsagri/eon-next-v2/commit/7d776362ef7357f5580d0a489b8b2f0fb0edf79a))
+* **frontend:** open the HA sidebar from the brand logo ([5eb2a74](https://github.com/monsagri/eon-next-v2/commit/5eb2a74e9989ece56099fc3de07bb4ac9f7b4dfa))
+* **frontend:** redesign dashboard panel as a multi-page app ([9567c90](https://github.com/monsagri/eon-next-v2/commit/9567c9011ebb391221976ae7674065532778e1ee))
+
+
+### Bug Fixes
+
+* **frontend:** render dense charts, stop page overflow, shade no-data days ([8c1c535](https://github.com/monsagri/eon-next-v2/commit/8c1c5350bddec76e5301bdaddd7413a4311deab9))
+* **frontend:** resolve dashboard panel layout and chart styling issues ([658df6a](https://github.com/monsagri/eon-next-v2/commit/658df6a01e8b2001d27ce65e38b9501b35aefb44))
+
 ## [1.9.3](https://github.com/monsagri/eon-next-v2/compare/v1.9.2...v1.9.3) (2026-07-09)
 
 
