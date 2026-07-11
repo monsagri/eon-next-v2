@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 This project is a fork of [madmachinations/eon-next-v2](https://github.com/madmachinations/eon-next-v2), maintained by [@monsagri](https://github.com/monsagri).
 
+## [2.0.0](https://github.com/monsagri/eon-next-v2/compare/v1.10.0...v2.0.0) (2026-07-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* raise minimum Home Assistant to 2026.3.0 (Python 3.14) ([#82](https://github.com/monsagri/eon-next-v2/issues/82))
+
+### Features
+
+* raise minimum Home Assistant to 2026.3.0 (Python 3.14) ([#82](https://github.com/monsagri/eon-next-v2/issues/82)) ([67a4760](https://github.com/monsagri/eon-next-v2/commit/67a4760048f70a054585fa6bb865836ab88c4c2d))
+
 ## [1.10.0](https://github.com/monsagri/eon-next-v2/compare/v1.9.3...v1.10.0) (2026-07-11)
 
 
