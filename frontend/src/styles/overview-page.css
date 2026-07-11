@@ -1,0 +1,254 @@
+.greeting {
+  font-size: 13px;
+  color: var(--eon-muted);
+  margin-top: -6px;
+}
+
+.accent {
+  color: var(--eon-accent-on-dark);
+}
+
+.accent-green {
+  color: var(--eon-green);
+}
+
+/* --- Hero --- */
+
+.hero {
+  padding: 30px 32px;
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.hero-label {
+  font-size: 14px;
+}
+
+.hero-total {
+  font-size: 58px;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.hero-sub {
+  font-size: 14px;
+  color: var(--eon-subtle);
+  margin-top: 8px;
+}
+
+.projection {
+  text-align: right;
+}
+
+.proj-label {
+  font-size: 13px;
+}
+
+.proj-value {
+  font-size: 30px;
+}
+
+.proj-pill {
+  margin-top: 8px;
+}
+
+.hero-split {
+  margin-top: 26px;
+}
+
+.split-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--eon-track);
+}
+
+.split-seg {
+  height: 100%;
+}
+
+.split-legend {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--eon-subtle);
+  gap: 22px;
+}
+
+.split-val {
+  color: var(--eon-text);
+}
+
+.hero-callout {
+  margin-top: 14px;
+}
+
+/* --- Fuel cards --- */
+
+.fuel-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fuel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fuel-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.fuel-name .tile {
+  width: 30px;
+  height: 30px;
+}
+
+.fuel-label {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.fuel-serial {
+  font-size: 11px;
+  color: var(--eon-faint);
+}
+
+.fuel-cost {
+  font-size: 22px;
+}
+
+.fuel-chart,
+.fuel-chart-empty {
+  height: 88px;
+}
+
+.fuel-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+/* --- Tariff + health row --- */
+
+.tariff-health {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 720px) {
+  .tariff-health {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tariff-card {
+  padding: 22px 26px;
+}
+
+.tariff-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tariff-name {
+  font-size: 23px;
+  margin-top: 6px;
+}
+
+.tariff-stats {
+  display: flex;
+  gap: 34px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.tariff-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tariff-stat-label {
+  font-size: 12px;
+  color: var(--eon-on-dark-muted);
+  margin-top: 2px;
+}
+
+.tariff-note {
+  border-left: 1px solid var(--eon-dark-pill);
+  padding-left: 20px;
+}
+
+.tariff-note .accent {
+  font-size: 13px;
+}
+
+/* --- Health card --- */
+
+.health-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.health-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--eon-green);
+}
+
+.health-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.health-value {
+  color: var(--eon-text);
+  font-weight: 600;
+}
+
+.health-backfill {
+  margin-top: 14px;
+}
+
+.health-backfill-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.progress {
+  height: 6px;
+  background: var(--eon-track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--eon-green);
+}

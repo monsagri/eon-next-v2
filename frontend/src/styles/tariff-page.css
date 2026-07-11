@@ -1,0 +1,122 @@
+.chart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* --- Dark tariff hero --- */
+
+.tariff-hero {
+  padding: 28px 30px;
+}
+
+.tariff-hero-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.tariff-hero-name {
+  font-size: 30px;
+  margin-top: 6px;
+}
+
+.tariff-hero-dates {
+  font-size: 13px;
+  color: var(--eon-on-dark-muted);
+  margin-top: 4px;
+}
+
+.tariff-hero-pill {
+  height: fit-content;
+}
+
+.tariff-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .tariff-hero-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.hero-stat {
+  border-left: 2px solid var(--eon-elec);
+  padding-left: 14px;
+}
+
+.tariff-stat-label {
+  font-size: 12px;
+  color: var(--eon-on-dark-muted);
+}
+
+.hero-stat-value {
+  font-size: 24px;
+  margin-top: 3px;
+}
+
+.hero-stat-sub {
+  font-size: 11px;
+  color: var(--eon-on-dark-faint);
+}
+
+/* --- Rate strip --- */
+
+.rate-strip-card {
+  padding: 24px 28px;
+}
+
+.rate-headline {
+  font-size: 13px;
+}
+
+.rate-callout {
+  margin-top: 14px;
+}
+
+/* --- Timelines --- */
+
+.timeline-card {
+  padding: 22px 24px;
+}
+
+.timeline-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.timeline-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--eon-hairline-soft);
+  font-size: 14px;
+}
+
+.timeline-row:last-child {
+  border-bottom: none;
+}
+
+.timeline-row--current .timeline-rate {
+  font-weight: 700;
+}
+
+.timeline-note {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 2px;
+}

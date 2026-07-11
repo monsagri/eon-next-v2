@@ -19,7 +19,7 @@ from custom_components.eon_next.tariff_helpers import (
     rate_for_timestamp,
 )
 
-# Dynamic reference time: today at 03:00 UTC — inside a typical off-peak
+# Dynamic reference time: today at 03:00 UTC - inside a typical off-peak
 # window.  All schedule timestamps are derived from this so the tests
 # remain valid regardless of when they run.
 _REF_DATE = datetime.now(tz=timezone.utc).replace(
@@ -83,7 +83,7 @@ def _tou_meter_data_with_schedule() -> dict[str, Any]:
 # ── ToU meter data with pattern fallback ─────────────────────
 
 def _tou_meter_data_pattern_only() -> dict[str, Any]:
-    """ToU meter without time windows — falls back to tariff_patterns registry."""
+    """ToU meter without time windows - falls back to tariff_patterns registry."""
     return {
         "tariff_unit_rate": 0.10,
         "tariff_is_tou": True,
@@ -384,7 +384,7 @@ class TestGetCurrentRate:
         assert info.is_off_peak is False
 
     def test_tou_api_schedule_returns_current_window(self) -> None:
-        """At 03:00 UTC we're in the 7p off-peak window — not the mean."""
+        """At 03:00 UTC we're in the 7p off-peak window - not the mean."""
         data = _tou_meter_data_with_schedule()
         with _patch_utcnow():
             info = get_current_rate(data)

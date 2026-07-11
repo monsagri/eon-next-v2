@@ -32,7 +32,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     # into ``async_register_panel`` (the second raising "Overwriting panel").
     hass.data[_PANEL_REGISTERED_KEY] = True
 
-    # Ensure panel_custom is loaded — in a standard HA install it is
+    # Ensure panel_custom is loaded - in a standard HA install it is
     # always available via after_dependencies ordering, but calling
     # async_setup_component is idempotent and handles edge cases.
     from homeassistant.setup import async_setup_component  # noqa: E402

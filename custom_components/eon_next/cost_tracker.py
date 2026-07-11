@@ -390,7 +390,7 @@ class EonNextCostTrackerManager:
             return delta
 
         # Power branch: integrate the *previous* reading over the elapsed
-        # interval, using the previous state's own unit — a W↔kW change between
+        # interval, using the previous state's own unit - a W↔kW change between
         # updates must not scale one interval's energy by 1000x.
         if unit in VALID_POWER_UNITS and old_state is not None:
             old_unit = str(old_state.attributes.get("unit_of_measurement") or "")

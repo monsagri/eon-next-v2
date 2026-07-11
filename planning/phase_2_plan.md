@@ -52,13 +52,13 @@ These changes should land before or alongside the Phase 2A entity work. They pro
    PLATFORMS = ["sensor", "binary_sensor", "event"]
    ```
 
-2. Create `binary_sensor.py` with `async_setup_entry` following the same pattern as `sensor.py` — read meters from `config_entry.runtime_data`, instantiate entity classes, call `async_add_entities`.
+2. Create `binary_sensor.py` with `async_setup_entry` following the same pattern as `sensor.py` - read meters from `config_entry.runtime_data`, instantiate entity classes, call `async_add_entities`.
 
 3. Create `event.py` with `async_setup_entry` for event entities. HA event entities use `EventEntity` from `homeassistant.components.event` and fire events via `self._trigger_event(event_type, event_attributes)`.
 
 4. Both files use `EonNextSensorBase`-style coordinator entity pattern (extend `CoordinatorEntity` + platform entity class).
 
-**Risk:** None — adding platforms is additive. Existing sensor entities are unaffected.
+**Risk:** None - adding platforms is additive. Existing sensor entities are unaffected.
 
 ### A2. Tariff Data Enrichment in Coordinator
 
@@ -70,7 +70,7 @@ These changes should land before or alongside the Phase 2A entity work. They pro
 
 1. Extend `_find_active_agreement()` to also return:
    - `unit_rates_schedule`: The raw `unitRates` list from `HalfHourlyTariff` responses (list of `{value, validFrom, validTo}` dicts), or `None` for flat-rate tariffs.
-   - `tariff_is_tou`: Boolean flag — `True` when `__typename` is `HalfHourlyTariff` or when `unitRates` contains more than one distinct rate value.
+   - `tariff_is_tou`: Boolean flag - `True` when `__typename` is `HalfHourlyTariff` or when `unitRates` contains more than one distinct rate value.
 
 2. Flow the new fields through the coordinator's `meter_data` dict alongside existing `tariff_*` keys:
    ```python
@@ -185,7 +185,7 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 
 3. The coordinator can expose it as a simple account-level key in the data dict.
 
-**Effort:** Minimal — the data is already fetched.
+**Effort:** Minimal - the data is already fetched.
 
 ---
 
@@ -194,7 +194,7 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 ### 2A.1 Previous Rate Sensor
 
 **Entity:** `sensor.eon_next_{serial}__previous_unit_rate`
-**Device class:** `MONETARY` (no `state_class` — not a measurement)
+**Device class:** `MONETARY` (no `state_class` - not a measurement)
 **Unit:** `GBP/kWh`
 
 **Behavior:**
@@ -241,7 +241,7 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 - `unavailable` for flat-rate tariffs that have no off-peak concept.
 
 **Rate window determination (priority order):**
-1. API-provided rate schedule with time windows and rate values (compare current rate to lowest rate — if current equals lowest, off-peak is true).
+1. API-provided rate schedule with time windows and rate values (compare current rate to lowest rate - if current equals lowest, off-peak is true).
 2. Tariff pattern registry match (check current time against known windows).
 3. If neither source provides data, entity is `unavailable`.
 
@@ -323,18 +323,18 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 
 **Unique ID:** `{serial}__export_daily_consumption`
 
-**Note:** Export consumption and export earnings sensors share the same data path as import sensors — the only difference is the MPAN used. No new API calls are needed.
+**Note:** Export consumption and export earnings sensors share the same data path as import sensors - the only difference is the MPAN used. No new API calls are needed.
 
 ### 2A Implementation Order
 
-1. **A2** (tariff data enrichment) — extends the GraphQL query and coordinator data flow
-2. **A3** (tariff pattern registry) — provides fallback for rate window detection
-3. **A1** (new platforms) — registers `binary_sensor` and `event` in HA
-4. **2A.1 + 2A.2** (previous/next rate sensors) — new `sensor` entities using enriched tariff data
-5. **2A.3** (off-peak binary sensor) — first `binary_sensor` entity
-6. **2A.4** (day rates event) — first `event` entity
-7. **A4** (export detection) — prerequisite for export entities
-8. **2A.5 + 2A.6** (export entities) — capability-gated sensor entities
+1. **A2** (tariff data enrichment) - extends the GraphQL query and coordinator data flow
+2. **A3** (tariff pattern registry) - provides fallback for rate window detection
+3. **A1** (new platforms) - registers `binary_sensor` and `event` in HA
+4. **2A.1 + 2A.2** (previous/next rate sensors) - new `sensor` entities using enriched tariff data
+5. **2A.3** (off-peak binary sensor) - first `binary_sensor` entity
+6. **2A.4** (day rates event) - first `event` entity
+7. **A4** (export detection) - prerequisite for export entities
+8. **2A.5 + 2A.6** (export entities) - capability-gated sensor entities
 
 ---
 
@@ -359,7 +359,7 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 - For **power sensors (W):** Integrates power over time to estimate consumption, then multiplies by the current unit rate.
 - For **energy sensors (kWh):** Uses the delta between readings, multiplied by the current unit rate.
 - Accumulates cost over each day. Resets at midnight (local time), recording the daily total.
-- Standing charge is **not** included — this tracks marginal cost of individual device usage.
+- Standing charge is **not** included - this tracks marginal cost of individual device usage.
 
 **Attributes:**
 - `tracked_entity`: The entity being tracked
@@ -402,7 +402,7 @@ If per-rate time windows are **not** available in the schema, we can still deriv
 **Device class:** `MONETARY`
 **State class:** `MEASUREMENT`
 
-Wait — `MEASUREMENT` + `MONETARY` is forbidden by HA. Use no `state_class` instead.
+Wait - `MEASUREMENT` + `MONETARY` is forbidden by HA. Use no `state_class` instead.
 
 **Device class:** `MONETARY`
 **State class:** None
@@ -411,7 +411,7 @@ Wait — `MEASUREMENT` + `MONETARY` is forbidden by HA. Use no `state_class` ins
 **Behavior:**
 - Shows the current account balance in pounds.
 - Positive = credit, negative = debit.
-- Updated each coordinator refresh (balance comes from `headerGetLoggedInUser`, already fetched at init — but we need to re-fetch periodically).
+- Updated each coordinator refresh (balance comes from `headerGetLoggedInUser`, already fetched at init - but we need to re-fetch periodically).
 
 **Implementation:**
 - Currently `headerGetLoggedInUser` is only called at integration startup. To keep balance fresh, call it on each coordinator refresh cycle (or on a slower cadence, e.g., every 4 hours).
@@ -446,10 +446,10 @@ Wait — `MEASUREMENT` + `MONETARY` is forbidden by HA. Use no `state_class` ins
 
 ### 2B Implementation Order
 
-1. **A5** (account balance storage) — small prerequisite
-2. **2B.3** (previous day consumption) — trivial, uses existing coordinator method
-3. **2B.2** (account balance sensor) — uses A5, requires minor coordinator change
-4. **2B.1** (cost tracker entities + services) — largest feature, depends on working tariff rate data
+1. **A5** (account balance storage) - small prerequisite
+2. **2B.3** (previous day consumption) - trivial, uses existing coordinator method
+3. **2B.2** (account balance sensor) - uses A5, requires minor coordinator change
+4. **2B.1** (cost tracker entities + services) - largest feature, depends on working tariff rate data
 
 ---
 
@@ -550,7 +550,7 @@ All other features use data already fetched by existing API calls. Export meters
 
 ### Automated Tests to Add
 
-- Unit tests for `tariff_patterns.py` — pattern matching, edge cases (midnight crossover, DST transitions)
+- Unit tests for `tariff_patterns.py` - pattern matching, edge cases (midnight crossover, DST transitions)
 - Unit tests for previous/next rate calculation logic
 - Unit tests for off-peak determination from both API schedule and pattern registry
 - Unit tests for cost tracker accumulation and reset logic

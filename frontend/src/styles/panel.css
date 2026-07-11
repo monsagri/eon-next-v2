@@ -1,176 +1,337 @@
 :host {
   display: block;
-  padding: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
+  font-family: var(--eon-font-ui);
+  color: var(--eon-text);
+  background: var(--eon-bg);
 }
 
-.header {
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--eon-bg);
+}
+
+/* ============================= RAIL ============================= */
+
+.rail {
+  width: 238px;
+  flex: 0 0 238px;
+  background: var(--eon-dark);
+  color: var(--eon-on-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 11px;
+  padding: 4px 8px 26px;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 1.5em;
-  color: var(--eon-text-primary);
+/* Doubles as the sidebar toggle (see EonNextPanel._toggleSidebar). */
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--eon-elec);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
-/* Sidebar toggle — the only way back to the HA menu inside the iOS app.
-   ha-menu-button hides itself when the sidebar is already docked. */
-.header .menu-button {
-  --mdc-icon-button-size: 40px;
-  color: var(--eon-text-primary);
-  margin-left: -8px;
+.brand-logo:hover {
+  filter: brightness(1.08);
 }
 
-.version-badge {
-  font-size: 0.75em;
-  color: var(--eon-text-secondary);
-  background: var(--eon-divider);
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-left: auto;
+.brand-logo:focus-visible {
+  outline: 2px solid var(--eon-accent-on-dark);
+  outline-offset: 2px;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
+.brand-bolt {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
-.card {
-  background: var(--eon-background);
-  color: var(--eon-text-primary);
-  border-radius: var(--ha-card-border-radius, 12px);
-  box-shadow: var(
-    --ha-card-box-shadow,
-    0 2px 2px 0 rgba(0, 0, 0, 0.14),
-    0 1px 5px 0 rgba(0, 0, 0, 0.12),
-    0 3px 1px -2px rgba(0, 0, 0, 0.2)
-  );
-  padding: 16px;
+.brand-name {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.01em;
 }
 
-.card h2 {
-  margin: 0 0 12px;
-  font-size: 1.1em;
-  color: var(--eon-text-primary);
+.brand-sub {
+  font-size: 11px;
+  color: var(--eon-on-dark-faint);
 }
 
-.meter-row {
+.nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--eon-radius-control);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  background: transparent;
+  color: var(--eon-on-dark-faint);
+}
+
+.nav-item:hover {
+  color: var(--eon-on-dark);
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--eon-accent-on-dark);
+  outline-offset: 2px;
+}
+
+.nav-item--active {
+  background: var(--eon-elec);
+  color: #fff;
+  font-weight: 700;
+}
+
+.nav-item--active:hover {
+  color: #fff;
+}
+
+.nav-item ha-icon {
+  flex: 0 0 auto;
+}
+
+.rail-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.balance {
+  margin: 12px 8px;
+  padding: 14px;
+  background: var(--eon-dark-inner);
+  border-radius: 14px;
+}
+
+.balance-label {
+  font-size: 11px;
+  color: var(--eon-on-dark-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.balance-value {
+  font-size: 26px;
+  margin-top: 3px;
+}
+
+.balance--credit {
+  color: var(--eon-green-light);
+}
+
+.balance--debit {
+  color: var(--eon-accent-on-dark);
+}
+
+.balance-sub {
+  font-size: 12px;
+  color: var(--eon-on-dark-faint);
+}
+
+/* ============================= MAIN ============================= */
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--eon-divider);
-  color: var(--eon-text-primary);
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--eon-hairline);
+  gap: 12px;
 }
 
-.meter-row:last-child {
-  border-bottom: none;
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
-.label {
-  color: var(--eon-text-secondary);
-  font-size: 0.9em;
-}
-
-.card-divider {
-  border-top: 1px solid var(--eon-divider);
-  margin: 12px 0;
-}
-
-/* --- Skeleton loading state --- */
-
-.loading {
-  padding: 0;
-}
-
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.skeleton-card {
-  background: var(--eon-background);
-  border-radius: var(--ha-card-border-radius, 12px);
-  box-shadow: var(
-    --ha-card-box-shadow,
-    0 2px 2px 0 rgba(0, 0, 0, 0.14),
-    0 1px 5px 0 rgba(0, 0, 0, 0.12),
-    0 3px 1px -2px rgba(0, 0, 0, 0.2)
-  );
-  height: 280px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* --- Error state --- */
-
-.error-state {
-  text-align: center;
-  padding: 48px 16px;
-  color: var(--error-color, #db4437);
-}
-
-.error-state h2 {
-  margin: 12px 0 4px;
-  font-size: 1.2em;
-}
-
-.error-state p {
-  color: var(--eon-text-secondary);
-  font-size: 0.9em;
+.topbar-title {
+  font-size: 24px;
+  color: var(--eon-text);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* --- Empty state --- */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
 
-.empty-state {
+.freshness {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--eon-muted);
+  white-space: nowrap;
+}
+
+.refresh-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--eon-radius-control);
+  border: 1px solid var(--eon-hairline);
+  background: var(--eon-card);
+  color: var(--eon-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.refresh-btn:hover {
+  background: var(--eon-track);
+}
+
+.refresh-btn:focus-visible {
+  outline: 2px solid var(--eon-elec);
+  outline-offset: 2px;
+}
+
+.content {
+  flex: 1;
+  padding: 32px 40px 56px;
+  max-width: 1080px;
+  width: 100%;
+}
+
+/* --- Full-view states --- */
+
+.state-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   text-align: center;
-  padding: 48px 16px;
-  color: var(--eon-text-secondary);
+  padding: 64px 16px;
+  color: var(--eon-muted);
+  font-size: 16px;
 }
 
-.empty-state h2 {
-  margin: 12px 0 4px;
-  font-size: 1.2em;
-  color: var(--eon-text-primary);
+.state-msg--error {
+  color: var(--eon-elec);
 }
 
-.empty-state p {
-  margin: 0;
-  font-size: 0.9em;
+.state-sub {
+  font-size: 13px;
+  color: var(--eon-faint);
 }
 
-/* --- Diagnostics section --- */
+/* ============================= RESPONSIVE ============================= */
 
-.section-divider {
-  border-top: 1px solid var(--eon-divider);
-  margin: 24px 0;
+@media (max-width: 860px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .rail {
+    width: 100%;
+    flex: none;
+    height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 12px 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .brand {
+    padding: 0 8px 0 4px;
+    flex: 0 0 auto;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .nav-items {
+    flex-direction: row;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .nav-item {
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+
+  .nav-item span {
+    display: none;
+  }
+
+  .nav-item--active span {
+    display: inline;
+  }
+
+  .rail-bottom {
+    margin-top: 0;
+    flex-direction: row;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  .balance {
+    display: none;
+  }
+
+  .topbar {
+    padding: 16px 20px;
+  }
+
+  .content {
+    padding: 20px 20px 40px;
+  }
 }
 
-.diagnostics {
-  background: var(--eon-background);
-  border-radius: var(--ha-card-border-radius, 12px);
-  box-shadow: var(
-    --ha-card-box-shadow,
-    0 2px 2px 0 rgba(0, 0, 0, 0.14),
-    0 1px 5px 0 rgba(0, 0, 0, 0.12),
-    0 3px 1px -2px rgba(0, 0, 0, 0.2)
-  );
-  padding: 16px;
+@media (max-width: 520px) {
+  .freshness {
+    display: none;
+  }
 }

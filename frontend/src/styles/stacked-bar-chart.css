@@ -1,0 +1,78 @@
+:host {
+  display: block;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  /* Belt-and-braces: the gap scales with bar count (set inline), but never let
+     the row push the card wider than its container. */
+  overflow: hidden;
+}
+
+.col {
+  flex: 1;
+  /* Allow columns to shrink below their content width for dense ranges. */
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  margin-inline: auto;
+}
+
+/* A day with no reading yet: a faint diagonal hatch spanning the full height,
+   so it reads as "no data" rather than a genuine zero-usage bar. */
+.stack--missing {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--eon-hairline) 0,
+    var(--eon-hairline) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+  border-radius: 3px;
+}
+
+.stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.seg {
+  min-height: 1px;
+}
+
+.seg--usage {
+  border-radius: 3px 3px 0 0;
+}
+
+.seg--stand {
+  min-height: 2px;
+}
+
+.labels {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.label {
+  flex: 1;
+  /* Without this a non-empty label's min-content width (nowrap) forces the row
+     wider than the card, stretching the whole page on 90d. min-width:0 lets the
+     slot shrink; the text still spills into empty neighbours via overflow. */
+  min-width: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--eon-faint);
+  font-family: var(--eon-font-mono);
+  /* Labels are sparse for dense ranges (every 5th/15th bar), so let a label
+     spill into its empty neighbours rather than clip to one thin bar slot -
+     otherwise 30d/90d date labels get chopped to a single character. */
+  overflow: visible;
+  white-space: nowrap;
+}

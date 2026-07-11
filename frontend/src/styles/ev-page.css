@@ -1,0 +1,72 @@
+.ev-banner {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 28px 30px;
+}
+
+.ev-tile {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--eon-dark-pill);
+  color: var(--eon-accent-on-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.ev-banner-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ev-banner-title {
+  font-size: 24px;
+}
+
+.ev-banner-desc {
+  font-size: 13px;
+  color: var(--eon-on-dark-muted);
+  margin-top: 4px;
+}
+
+.charge-card {
+  padding: 22px 24px;
+}
+
+.charge-label {
+  font-size: 13px;
+}
+
+.charge-value {
+  font-size: 30px;
+  margin-top: 6px;
+}
+
+.charge-value--empty {
+  font-size: 22px;
+  color: var(--eon-faint);
+}
+
+.charge-desc {
+  font-size: 13px;
+  color: var(--eon-subtle);
+  margin-top: 6px;
+}
+
+.schedule-card {
+  padding: 22px 26px;
+}
+
+.schedule-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.schedule-legend {
+  margin-top: 14px;
+}

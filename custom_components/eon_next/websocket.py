@@ -41,7 +41,7 @@ def _utc_boundary_iso(day: date) -> str:
 
     Formatting a local date with a literal ``Z`` labels a local midnight as
     UTC, shifting the requested window by the local offset (an hour off during
-    BST — daily buckets then straddle days / include partial days).
+    BST - daily buckets then straddle days / include partial days).
     """
     return (
         dt_util.as_utc(dt_util.start_of_local_day(day)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -242,7 +242,9 @@ def _gap_fill(
     for offset in range(days):
         day = (today - timedelta(days=days - 1 - offset)).isoformat()
         if day not in existing:
-            entries.append(ConsumptionHistoryEntry(date=day, consumption=0.0))
+            entries.append(
+                ConsumptionHistoryEntry(date=day, consumption=0.0, missing=True)
+            )
     entries.sort(key=lambda e: e.date)
     return entries[-days:]
 
@@ -427,7 +429,7 @@ def ws_ev_schedule(
             )
             return
 
-    # Device not found — return empty response
+    # Device not found - return empty response
     connection.send_result(
         msg["id"],
         dataclasses.asdict(

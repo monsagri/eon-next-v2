@@ -14,7 +14,7 @@ basedpyright -p pyrightconfig.json 2>&1 | grep -v reportMissingImports | grep -v
 python3 .github/scripts/check_release_metadata.py
 ```
 
-Note: `reportMissingImports` and similar errors are pre-existing environment issues (HA not installed locally) — filter them out and only flag NEW type errors introduced by the changes.
+Note: `reportMissingImports` and similar errors are pre-existing environment issues (HA not installed locally) - filter them out and only flag NEW type errors introduced by the changes.
 
 ## Home Assistant Integration Conventions
 
@@ -46,7 +46,7 @@ Check every changed file against these HA-specific rules:
 ### API Client Rules (eonnext.py)
 - GraphQL queries MUST be defined as module-level constants.
 - New API methods MUST follow the pattern: validate input, call `_graphql_post`, check response with `_json_contains_key_chain`, return parsed data or `None`.
-- Monetary values from the API are in pence — convert to pounds (divide by 100) before exposing to sensors.
+- Monetary values from the API are in pence - convert to pounds (divide by 100) before exposing to sensors.
 
 ## HACS and Metadata Conventions
 
@@ -72,7 +72,7 @@ If a catch-all `except Exception` (or `except BaseException`) re-raises or logs,
 Required pattern:
 ```python
 except SpecificExpectedError:
-    _LOGGER.debug("...")  # expected — debug level, no traceback
+    _LOGGER.debug("...")  # expected - debug level, no traceback
     raise
 except Exception:
     _LOGGER.exception("Unexpected error ...")  # truly unexpected
@@ -80,7 +80,7 @@ except Exception:
 ```
 
 ### Inaccurate log messages / comments
-Log messages and inline comments describing error categories MUST accurately reflect what can trigger them. For example, if an exception can be caused by non-network failures (invalid JSON, unexpected HTTP status), do not label the log/comment as "Network error" — use a broader label like "API error" or include the exception type/message.
+Log messages and inline comments describing error categories MUST accurately reflect what can trigger them. For example, if an exception can be caused by non-network failures (invalid JSON, unexpected HTTP status), do not label the log/comment as "Network error" - use a broader label like "API error" or include the exception type/message.
 
 Scan changed code for log messages containing words like "network", "connection", "timeout" and verify the caught exception type actually guarantees that category. Flag mismatches as warnings.
 
@@ -96,13 +96,13 @@ When a change introduces or modifies an `except` branch that alters control flow
 
 ### Test Date Hygiene (BLOCKING)
 
-**No hardcoded calendar dates in test files.** This is a blocking issue — tests with literal dates like `"2026-02-25"` or `datetime(2026, 1, 10)` will silently break when those dates pass.
+**No hardcoded calendar dates in test files.** This is a blocking issue - tests with literal dates like `"2026-02-25"` or `datetime(2026, 1, 10)` will silently break when those dates pass.
 
 Scan every test file for:
 - ISO date strings: patterns like `"20XX-XX-XX"` or `"XXXX-XX-XX"` in assertions, fixtures, or mock data.
 - `datetime(YYYY, ...)` literals used as reference times (including monkeypatched `dt_util.now`).
 
-Required pattern — use dynamic references:
+Required pattern - use dynamic references:
 ```python
 import datetime
 _TODAY = datetime.date.today()
@@ -127,9 +127,9 @@ Exceptions: Dates that represent **historical facts** (e.g. a fixed API schema v
 
 Produce a structured review with these sections:
 
-1. **Automated Check Results** — pass/fail for each command.
-2. **Issues Found** — numbered list of problems, each with file path, line number, severity (blocking/warning), and specific fix needed.
-3. **Conventions Verified** — brief confirmation of each checked convention category.
-4. **Summary** — overall pass/fail verdict and whether the changes are safe to push.
+1. **Automated Check Results** - pass/fail for each command.
+2. **Issues Found** - numbered list of problems, each with file path, line number, severity (blocking/warning), and specific fix needed.
+3. **Conventions Verified** - brief confirmation of each checked convention category.
+4. **Summary** - overall pass/fail verdict and whether the changes are safe to push.
 
 If there are blocking issues, do NOT push. List the fixes needed and offer to apply them.

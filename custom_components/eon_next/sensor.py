@@ -72,7 +72,7 @@ async def async_setup_entry(
             # Export meters get dedicated Export* variants below.  The generic
             # daily-consumption and current-rate sensors read the very same
             # coordinator keys, so creating both would register duplicate
-            # entities with identical values — skip the generic pair here.
+            # entities with identical values - skip the generic pair here.
             if not is_export_meter:
                 entities.append(DailyConsumptionSensor(coordinator, meter))
                 entities.append(CurrentUnitRateSensor(coordinator, meter))
@@ -238,7 +238,7 @@ class LatestGasKwhSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Gas kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        # Cumulative register-derived total — see LatestElectricKwhSensor.
+        # Cumulative register-derived total - see LatestElectricKwhSensor.
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_icon = "mdi:meter-gas-outline"
         self._attr_unique_id = f"{meter.serial}__gas_kwh"
@@ -257,7 +257,7 @@ class LatestGasCubicMetersSensor(EonNextSensorBase):
         self._attr_name = f"{meter.serial} Gas"
         self._attr_device_class = SensorDeviceClass.GAS
         self._attr_native_unit_of_measurement = UnitOfVolume.CUBIC_METERS
-        # Cumulative gas volume register — monotonic counter.
+        # Cumulative gas volume register - monotonic counter.
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_icon = "mdi:meter-gas-outline"
         self._attr_unique_id = f"{meter.serial}__gas_m3"

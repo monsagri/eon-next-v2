@@ -7,7 +7,7 @@ export const renderEvCard = (ev: EvChargerSummary) => html`
   <div class="card">
     <h2>
       <ha-icon icon="mdi:ev-station" style="--mdc-icon-size: 20px;"></ha-icon>
-      EV Charger — ${ev.serial}
+      EV Charger - ${ev.serial}
     </h2>
 
     <div class="meter-row">

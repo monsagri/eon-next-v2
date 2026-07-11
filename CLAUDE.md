@@ -52,14 +52,14 @@ Commit sanity: `npm run commitlint:last` (Conventional Commits enforced via Husk
 
 ## Architecture
 
-Runtime flow: `__init__.py` sets up the config entry, stores runtime state on `entry.runtime_data` (`models.py`), and forwards to platforms (`sensor`, `binary_sensor`, `event`). `EonNextCoordinator` (`coordinator.py`) polls every 30 minutes; entities read from coordinator data keys — never call the API from entity properties.
+Runtime flow: `__init__.py` sets up the config entry, stores runtime state on `entry.runtime_data` (`models.py`), and forwards to platforms (`sensor`, `binary_sensor`, `event`). `EonNextCoordinator` (`coordinator.py`) polls every 30 minutes; entities read from coordinator data keys - never call the API from entity properties.
 
-- `eonnext.py` — API client: email/password auth, refresh-token persistence in config entry data, GraphQL + REST calls. Auth failures requiring user action must raise `ConfigEntryAuthFailed` (triggers HA re-auth).
+- `eonnext.py` - API client: email/password auth, refresh-token persistence in config entry data, GraphQL + REST calls. Auth failures requiring user action must raise `ConfigEntryAuthFailed` (triggers HA re-auth).
 - Consumption fetching has a deliberate fallback chain (do not change casually): REST half-hourly → REST daily. (The GraphQL `consumptionDataByMpxn` fallback was removed from the Kraken API.) Fallbacks are expected behavior, not exceptional logic.
 - Coordinator data keys: meter serial for meters, `ev::<device_id>` for EV devices.
-- `statistics.py` / `backfill.py` — external statistics import for the Energy Dashboard; avoid duplicate or regressive imports.
-- `cost_tracker.py` / `services.py` — cost tracker entities with persistent storage, managed via `eon_next.*` services.
-- `panel.py` + `websocket.py` — register the sidebar panel and the WebSocket API consumed by the frontend. `frontend/src/api.generated.ts` is generated from the Python types (`npm run codegen`).
+- `statistics.py` / `backfill.py` - external statistics import for the Energy Dashboard; avoid duplicate or regressive imports.
+- `cost_tracker.py` / `services.py` - cost tracker entities with persistent storage, managed via `eon_next.*` services.
+- `panel.py` + `websocket.py` - register the sidebar panel and the WebSocket API consumed by the frontend. `frontend/src/api.generated.ts` is generated from the Python types (`npm run codegen`).
 - Frontend builds two committed bundles (`entrypoint.js` sidebar panel, `cards.js` Lovelace cards) so HACS installs need no build step.
 
 ## Non-Negotiable Guardrails
@@ -68,11 +68,11 @@ Runtime flow: `__init__.py` sets up the config entry, stores runtime state on `e
 - Never log credentials, JWT/refresh tokens, or raw auth payloads.
 - Release metadata lockstep: `custom_components/eon_next/manifest.json` version == top `CHANGELOG.md` version == `.release-please-manifest.json` version. CI enforces this (`metadata-consistency.yml`).
 - User-visible behavior changes must update `README.md` and `CHANGELOG.md` in the same change.
-- Sensor state-class rules matter for Energy Dashboard/long-term statistics — see `docs/ai/conventions.md` (e.g. `MEASUREMENT` cannot pair with `device_class=MONETARY`; `TOTAL` requires `last_reset`).
+- Sensor state-class rules matter for Energy Dashboard/long-term statistics - see `docs/ai/conventions.md` (e.g. `MEASUREMENT` cannot pair with `device_class=MONETARY`; `TOTAL` requires `last_reset`).
 - Releases go through release-please: SemVer is computed from Conventional Commit types; merging the release PR publishes the tag/release HACS discovers.
 
 ## Claude-Specific Notes
 
 - Prefer minimal, focused patches consistent with existing HA integration patterns.
 - **Before pushing changes**, run `/review` (`.claude/commands/review.md`) for a full code review against HA/HACS conventions. Do not push if the review reports blocking issues.
-- Before implementing HA-facing features/fixes, verify the approach against https://developers.home-assistant.io/ — HA enforces semantics that compile/type checks won't catch.
+- Before implementing HA-facing features/fixes, verify the approach against https://developers.home-assistant.io/ - HA enforces semantics that compile/type checks won't catch.

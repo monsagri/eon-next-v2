@@ -85,7 +85,7 @@ async def test_refresh_token_login_propagates_api_error_and_preserves_auth() -> 
     with pytest.raises(EonNextApiError, match="connection timeout"):
         await api.login_with_refresh_token("saved-refresh")
 
-    # Auth state must NOT have been reset — the refresh token is preserved
+    # Auth state must NOT have been reset - the refresh token is preserved
     # so it can be retried once connectivity recovers.
     assert api.auth["refresh"]["token"] == "saved-refresh"
     assert api.auth["issued"] == 1000000000

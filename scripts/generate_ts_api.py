@@ -6,7 +6,7 @@ Run from the repository root::
     python scripts/generate_ts_api.py
 
 The generated file contains TypeScript interfaces, WS command constants, and
-typed API wrapper functions — all derived from the dataclasses defined in
+typed API wrapper functions - all derived from the dataclasses defined in
 ``custom_components/eon_next/schemas.py``.
 """
 
@@ -170,7 +170,7 @@ def generate() -> str:
     sections.append(
         textwrap.dedent("""\
         // ---------------------------------------------------------------
-        // THIS FILE IS AUTO-GENERATED — DO NOT EDIT BY HAND
+        // THIS FILE IS AUTO-GENERATED - DO NOT EDIT BY HAND
         //
         // Source of truth: custom_components/eon_next/schemas.py
         // Regenerate:      python scripts/generate_ts_api.py

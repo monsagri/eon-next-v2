@@ -1,7 +1,7 @@
 """Recorder-backed tests for recompute-forward historical import (2.4 / 2.5).
 
 Verifies that splicing an earlier chunk into an existing series keeps the
-cumulative sums monotonic and preserves the per-hour deltas of later rows —
+cumulative sums monotonic and preserves the per-hour deltas of later rows -
 the property that lets historical backfill run without suspending live
 imports.
 """
@@ -89,7 +89,7 @@ async def _read_sums(
     executor read can momentarily race ahead of the applied rows.  Poll with a
     flush between attempts until at least ``expect`` rows are visible (or the
     attempt budget is spent) so the assertion runs against a settled series
-    rather than a half-applied one — deterministic, and a genuinely wrong merge
+    rather than a half-applied one - deterministic, and a genuinely wrong merge
     still fails because the values won't match.
     """
     from homeassistant.helpers.recorder import get_instance
@@ -200,7 +200,7 @@ def test_merge_daily_bucket_skipped_when_finer_rows_exist() -> None:
         (_MIDNIGHT + timedelta(hours=i), round(baseline + 0.5 * (i + 1), 3))
         for i in range(24)
     ]
-    # Backfill offers the same day as a single daily bucket (30 kWh) — a value
+    # Backfill offers the same day as a single daily bucket (30 kWh) - a value
     # that, if applied on top, would inflate the day massively.
     new = {_MIDNIGHT: 30.0}
 

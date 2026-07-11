@@ -22,7 +22,7 @@ function prodPlugins() {
   return [...plugins(), terser({ format: { comments: false } })];
 }
 
-/** Core bundles — always built. */
+/** Core bundles - always built. */
 const bundles = [
   {
     input: "src/panel.ts",

@@ -16,7 +16,7 @@ class TariffBoundaryRefreshMixin:
 
     Coordinator refreshes are 30 minutes apart, so a rate/off-peak entity would
     otherwise lag a window transition (e.g. the 07:00 off-peak→peak change) by
-    up to that long — breaking the "switch loads at the boundary" automations
+    up to that long - breaking the "switch loads at the boundary" automations
     the README advertises.  This schedules a one-shot callback at the next
     transition (from :func:`get_off_peak_metadata`) to write state immediately,
     then reschedules for the following one.

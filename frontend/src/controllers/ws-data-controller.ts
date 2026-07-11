@@ -1,7 +1,7 @@
 import type { ReactiveController, ReactiveControllerHost } from 'lit'
 import type { HomeAssistant } from '../types'
 
-/** Background refresh cadence — aligned to the 30-min coordinator poll. */
+/** Background refresh cadence - aligned to the 30-min coordinator poll. */
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
 /**
@@ -32,7 +32,7 @@ export class WsDataController<T> implements ReactiveController {
   /**
    * Latch set synchronously once the first fetch is kicked off. Guards against
    * `hostUpdated` re-entering `_fetch` while the initial request is still in
-   * flight — each `_fetch` calls `requestUpdate()`, which re-runs `hostUpdated`
+   * flight - each `_fetch` calls `requestUpdate()`, which re-runs `hostUpdated`
    * before `data` is populated, so a `data === null` guard would spawn an
    * unbounded storm of WebSocket requests and overload the connection.
    */
@@ -58,7 +58,7 @@ export class WsDataController<T> implements ReactiveController {
       this._started = true
       this._fetch(hass)
     } else if (this._lastConnection !== hass.connection) {
-      // HA reconnected (new connection object) — refresh against it.
+      // HA reconnected (new connection object) - refresh against it.
       this._lastConnection = hass.connection
       this._fetch(hass)
     }
