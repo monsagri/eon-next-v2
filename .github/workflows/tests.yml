@@ -12,12 +12,18 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.13 resolves the last Python 3.13-compatible HA (floor era);
+        # 3.14 resolves the latest HA, which most users now run.
+        python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements_test.txt
 
