@@ -51,10 +51,7 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> EonNextOptionsFlow:
         """Return options flow for this handler."""
-        return EonNextOptionsFlow(config_entry)
-
-    def __init__(self) -> None:
-        self._reauth_entry: ConfigEntry | None = None
+        return EonNextOptionsFlow()
 
     async def _validate_credentials(self, email: str, password: str) -> str | None:
         """Validate credentials against E.ON Next.
@@ -122,12 +119,6 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]):
         """Handle initiation of re-auth flow."""
-        del entry_data
-        entry_id = self.context.get("entry_id")
-        if not isinstance(entry_id, str):
-            return self.async_abort(reason="unknown")
-
-        self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -136,10 +127,8 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle confirmation of re-auth flow."""
         errors: dict[str, str] = {}
 
-        if self._reauth_entry is None:
-            return self.async_abort(reason="unknown")
-
-        existing_email = self._reauth_entry.data[CONF_EMAIL]
+        reauth_entry = self._get_reauth_entry()
+        existing_email = reauth_entry.data[CONF_EMAIL]
 
         if user_input is not None:
             email = user_input[CONF_EMAIL].strip().lower()
@@ -162,7 +151,7 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 if refresh_token is not None:
                     return self.async_update_reload_and_abort(
-                        self._reauth_entry,
+                        reauth_entry,
                         data_updates={
                             CONF_EMAIL: email,
                             CONF_PASSWORD: password,
@@ -187,15 +176,12 @@ class EonNextConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class EonNextOptionsFlow(config_entries.OptionsFlow):
     """Handle Eon Next options."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        self._config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Manage Eon Next options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options = self._config_entry.options
+        options = self.config_entry.options
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(

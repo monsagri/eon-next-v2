@@ -125,7 +125,7 @@ resources:
 
 ## Requirements
 
-- Home Assistant `2024.7.0` or newer.
+- Home Assistant `2026.3.0` or newer (which requires Python 3.14).
 - An active E.ON Next account.
 
 ## Install with HACS (recommended)
