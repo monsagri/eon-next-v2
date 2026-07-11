@@ -41,6 +41,22 @@ def _quiet_sqlalchemy_engine_logs() -> Generator[None, None, None]:
         logger.setLevel(previous_level)
 
 
+@pytest.fixture(autouse=True)
+def _mock_entry_lifecycle() -> Generator[None, None, None]:
+    """These tests exercise the config flow itself, not entry setup.
+
+    Creating (or re-auth reloading) an entry would otherwise run the real
+    ``async_setup_entry``, which performs a refresh-token login and opens a
+    real socket - rejected by the test harness. Mock the entry lifecycle so
+    the flow assertions run without touching the network.
+    """
+    with (
+        patch("custom_components.eon_next.async_setup_entry", return_value=True),
+        patch("custom_components.eon_next.async_unload_entry", return_value=True),
+    ):
+        yield
+
+
 class _FakeFlowApi:
     """Stand-in for EonNext used inside the config flow's credential check."""
 
