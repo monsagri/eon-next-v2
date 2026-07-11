@@ -600,10 +600,14 @@ class TestWsConsumptionHistory:
         assert len(entries) == 3
         assert entries[0]["date"] == _two_days_ago.isoformat()
         assert entries[0]["consumption"] == 8.123
+        assert entries[0]["missing"] is False
         assert entries[1]["date"] == _yesterday.isoformat()
         assert entries[1]["consumption"] == 0.0
+        assert entries[1]["missing"] is False
+        # Today had no reading, so it is gap-filled and flagged as missing.
         assert entries[2]["date"] == _today.isoformat()
         assert entries[2]["consumption"] == 0.0
+        assert entries[2]["missing"] is True
 
 
 class TestWsEvSchedule:

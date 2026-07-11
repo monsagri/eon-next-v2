@@ -25,10 +25,18 @@ class EonStackedBarChart extends LitElement {
   @property({ type: Boolean }) showLabels = true
 
   render() {
+    // The gap between columns is fixed px and cannot shrink, so dense ranges
+    // (90d ~ 90 bars) would otherwise blow the row past the card width - the
+    // columns collapse to zero and nothing renders. Scale the gap down as the
+    // series grows so the whole row always fits its container.
+    const gap = Math.max(
+      1,
+      Math.min(5, Math.floor(150 / Math.max(1, this.bars.length - 1)))
+    )
     return html`
       <div
         class="bars"
-        style="height:${this.height}px"
+        style="height:${this.height}px;gap:${gap}px"
         role="img"
         aria-label="Daily cost - energy used stacked on the standing charge"
       >
@@ -36,7 +44,7 @@ class EonStackedBarChart extends LitElement {
       </div>
       ${
         this.showLabels
-          ? html`<div class="labels">
+          ? html`<div class="labels" style="gap:${gap}px">
               ${this.bars.map((b) => html`<span class="label">${b.label}</span>`)}
             </div>`
           : nothing
@@ -45,6 +53,17 @@ class EonStackedBarChart extends LitElement {
   }
 
   private _renderBar(bar: StackedBar) {
+    if (bar.missing) {
+      return html`
+        <div
+          class="col col--missing"
+          style="max-width:${this.maxBarWidth}px"
+          title="No usage data received for this day yet"
+        >
+          <div class="stack stack--missing"></div>
+        </div>
+      `
+    }
     const title = `${formatPounds(bar.usageCost + bar.standCost)} · usage ${formatPounds(
       bar.usageCost
     )} + standing ${formatPounds(bar.standCost)}`

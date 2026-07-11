@@ -242,7 +242,9 @@ def _gap_fill(
     for offset in range(days):
         day = (today - timedelta(days=days - 1 - offset)).isoformat()
         if day not in existing:
-            entries.append(ConsumptionHistoryEntry(date=day, consumption=0.0))
+            entries.append(
+                ConsumptionHistoryEntry(date=day, consumption=0.0, missing=True)
+            )
     entries.sort(key=lambda e: e.date)
     return entries[-days:]
 

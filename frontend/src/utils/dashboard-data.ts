@@ -26,6 +26,8 @@ export interface StackedBar {
   /** Absolute pound values, for tooltips / accessibility. */
   usageCost: number
   standCost: number
+  /** No reading received for this day yet - rendered as a shaded placeholder. */
+  missing?: boolean
 }
 
 /** Rate window read from a `*_unit_rate` sensor's attributes. */
@@ -287,7 +289,8 @@ export function toStackedBars(
   const computed = entries.map((e) => ({
     date: e.date,
     usageCost: Math.max(0, e.consumption) * r,
-    standCost: stand
+    standCost: stand,
+    missing: e.missing === true
   }))
 
   const max = Math.max(0.0001, ...computed.map((c) => c.usageCost + c.standCost))
@@ -297,6 +300,7 @@ export function toStackedBars(
     standPct: (c.standCost / max) * 100,
     usageCost: c.usageCost,
     standCost: c.standCost,
+    missing: c.missing,
     label: barLabel(c.date, i, entries.length, totalDays, locale)
   }))
 }
@@ -315,7 +319,10 @@ export function toMonthlyStackedBars(
   const r = rate ?? 0
   const stand = standingPerDay ?? 0
 
-  const buckets = new Map<string, { kwh: number; days: number; date: Date }>()
+  const buckets = new Map<
+    string,
+    { kwh: number; days: number; realDays: number; date: Date }
+  >()
   for (const e of entries) {
     const d = new Date(`${e.date}T00:00:00`)
     if (isNaN(d.getTime())) continue
@@ -323,10 +330,12 @@ export function toMonthlyStackedBars(
     const bucket = buckets.get(key) ?? {
       kwh: 0,
       days: 0,
+      realDays: 0,
       date: new Date(d.getFullYear(), d.getMonth(), 1)
     }
     bucket.kwh += Math.max(0, e.consumption)
     bucket.days += 1
+    if (e.missing !== true) bucket.realDays += 1
     buckets.set(key, bucket)
   }
 
@@ -336,7 +345,8 @@ export function toMonthlyStackedBars(
   const computed = ordered.map((b) => ({
     date: b.date,
     usageCost: b.kwh * r,
-    standCost: b.days * stand
+    standCost: b.days * stand,
+    missing: b.realDays === 0
   }))
   const max = Math.max(0.0001, ...computed.map((c) => c.usageCost + c.standCost))
 
@@ -345,6 +355,7 @@ export function toMonthlyStackedBars(
     standPct: (c.standCost / max) * 100,
     usageCost: c.usageCost,
     standCost: c.standCost,
+    missing: c.missing,
     label: c.date.toLocaleDateString(locale, { month: 'narrow' })
   }))
 }

@@ -64,6 +64,9 @@ class ConsumptionHistoryEntry:
 
     date: str
     consumption: float
+    # True for calendar days synthesised by gap-filling (no reading received
+    # yet), so the frontend can shade them instead of drawing a real zero bar.
+    missing: bool = False
 
 
 @dataclass

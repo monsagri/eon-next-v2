@@ -60,6 +60,7 @@ export interface BackfillStatusResponse {
 export interface ConsumptionHistoryEntry {
   date: string
   consumption: number
+  missing: boolean
 }
 
 export interface ConsumptionHistoryResponse {
