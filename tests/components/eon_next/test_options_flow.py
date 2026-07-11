@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
+from unittest.mock import patch
 
-from custom_components.eon_next.config_flow import EonNextOptionsFlow
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import recorder as recorder_helper
+from homeassistant.setup import async_setup_component
+
 from custom_components.eon_next.const import (
     CONF_BACKFILL_CHUNK_DAYS,
     CONF_BACKFILL_DELAY_SECONDS,
@@ -24,14 +29,35 @@ from custom_components.eon_next.const import (
     DEFAULT_BACKFILL_RUN_INTERVAL_MINUTES,
     DEFAULT_SHOW_CARD,
     DEFAULT_SHOW_PANEL,
+    DOMAIN,
 )
 
 
-async def test_options_flow_uses_defaults() -> None:
-    """Options form should include conservative backfill defaults."""
-    flow = EonNextOptionsFlow(SimpleNamespace(options={}))
+async def _ensure_recorder(hass: HomeAssistant) -> None:
+    """The eon_next integration depends on recorder; a flow init loads it."""
+    if "recorder" in hass.config.components:
+        return
+    recorder_helper.async_initialize_recorder(hass)
+    with patch("homeassistant.components.recorder.ALLOW_IN_MEMORY_DB", True):
+        assert await async_setup_component(
+            hass,
+            "recorder",
+            {"recorder": {"db_url": "sqlite://", "commit_interval": 0}},
+        )
+    await hass.async_block_till_done()
+    await hass.data[recorder_helper.DATA_RECORDER].db_connected
 
-    result = await flow.async_step_init()
+
+async def test_options_flow_uses_defaults(
+    hass: HomeAssistant, enable_custom_integrations: None
+) -> None:
+    """Options form should include conservative backfill defaults."""
+    del enable_custom_integrations
+    await _ensure_recorder(hass)
+    entry = MockConfigEntry(domain=DOMAIN, options={})
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
 
     assert result["type"] == "form"
     schema = result["data_schema"]
