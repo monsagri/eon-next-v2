@@ -6,6 +6,12 @@ A custom integration that brings your E.ON Next electricity, gas and EV‑chargi
 
 <br clear="left" />
 
+[![Validate with hassfest](https://github.com/monsagri/eon-next-v2/actions/workflows/hassfest.yml/badge.svg)](https://github.com/monsagri/eon-next-v2/actions/workflows/hassfest.yml)
+[![HACS Validate](https://github.com/monsagri/eon-next-v2/actions/workflows/validate.yml/badge.svg)](https://github.com/monsagri/eon-next-v2/actions/workflows/validate.yml)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+![downloads](https://img.shields.io/github/downloads/monsagri/eon-next-v2/total.svg)
+![latest downloads](https://img.shields.io/github/downloads/monsagri/eon-next-v2/latest/total.svg)
+
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/monsagri)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/monsagri)
 
@@ -129,6 +135,16 @@ resources:
 - An active E.ON Next account.
 
 ## Install with HACS (recommended)
+
+The quickest way - click to open this repository directly in your Home Assistant's HACS:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=monsagri&repository=eon-next-v2&category=integration)
+
+Then click **Download**, restart Home Assistant, and add the integration:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=eon_next)
+
+Or add it manually:
 
 1. Open HACS in Home Assistant.
 2. Go to **Integrations**.
