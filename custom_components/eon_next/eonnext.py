@@ -259,8 +259,23 @@ class EonNext:
         async with self._auth_lock:
             if not self.__auth_token_is_valid():
                 if self.__refresh_token_is_valid():
-                    await self.__login_with_refresh_token()
+                    refreshed = await self.__login_with_refresh_token()
+
+                    if not refreshed:
+                        _LOGGER.warning(
+                            "Stored E.ON refresh token was rejected; "
+                            "falling back to username/password authentication"
+                        )
+                        await self.login_with_username_and_password(
+                            self.username,
+                            self.password,
+                            initialise=False,
+                        )
                 else:
+                    _LOGGER.debug(
+                        "E.ON refresh token is unavailable or expired; "
+                        "using username/password authentication"
+                    )
                     await self.login_with_username_and_password(
                         self.username,
                         self.password,
@@ -273,26 +288,45 @@ class EonNext:
             return self.auth["token"]["token"]
 
     async def _force_token_refresh(self) -> bool:
-        """Force a new access token after a server 401, ignoring the cache.
+        """Force a new access token after a server 401/403.
 
-        The cached access token can look valid locally yet be rejected by the
-        server (mild clock skew, or expiry between issue and arrival).  This
-        invalidates it and refreshes once under the auth lock so a single 401
-        is retried transparently rather than escalating to a re-auth prompt.
-        Returns ``True`` if a valid token was obtained.
+        The cached access token can look valid locally but still be rejected
+        by the server. First try the stored refresh token. If that refresh
+        token has expired or is rejected, automatically fall back to the
+        stored username/password instead of forcing Home Assistant into
+        manual reauthentication.
+
+        Returns True if a valid access token was obtained.
         """
         async with self._auth_lock:
-            # Drop the cached access token so the refresh cannot short-circuit.
+            # Drop the cached access token so authentication cannot use it.
             self.auth["token"]["token"] = None
             self.auth["token"]["expires"] = None
+
             if self.__refresh_token_is_valid():
-                await self.__login_with_refresh_token()
+                refreshed = await self.__login_with_refresh_token()
+
+                if not refreshed:
+                    _LOGGER.warning(
+                        "E.ON refresh token failed after API authentication "
+                        "rejection; falling back to username/password"
+                    )
+                    await self.login_with_username_and_password(
+                        self.username,
+                        self.password,
+                        initialise=False,
+                    )
             else:
+                _LOGGER.debug(
+                    "E.ON refresh token is unavailable or expired after API "
+                    "authentication rejection; using username/password"
+                )
                 await self.login_with_username_and_password(
                     self.username,
                     self.password,
                     initialise=False,
                 )
+
             return self.__auth_token_is_valid()
 
     async def _get_session(self) -> aiohttp.ClientSession:
