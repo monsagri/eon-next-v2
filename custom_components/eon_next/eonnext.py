@@ -541,7 +541,10 @@ class EonNext:
         else:
             return None
 
-        params: dict[str, str] = {"group_by": group_by, "page_size": str(page_size)}
+        # Half-hourly is the endpoint's default; it rejects group_by=half_hour.
+        params: dict[str, str] = {"page_size": str(page_size)}
+        if group_by != "half_hour":
+            params["group_by"] = group_by
         if period_from:
             params["period_from"] = period_from
         if period_to:
